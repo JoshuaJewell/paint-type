@@ -1,104 +1,192 @@
-= RSR Template Repository
-:toc: preamble
+= paint.type
+:toc: left
+:toc-title: Contents
+:toclevels: 2
 :icons: font
+:source-highlighter: rouge
+:rouge-style: github
 
-image:https://www.bestpractices.dev/projects/{{OPENSSF_PROJECT_ID}}/badge[OpenSSF Best Practices, link="https://www.bestpractices.dev/projects/{{OPENSSF_PROJECT_ID}}"]
-image:https://api.securityscorecards.dev/projects/github.com/{{OWNER}}/{{REPO}}/badge[OpenSSF Scorecard, link="https://securityscorecards.dev/viewer/?uri=github.com/{{OWNER}}/{{REPO}}"]
+The open, cross-platform image editor Paint.NET users are actually asking for.
 
-[NOTE]
-====
-This repository is a template. Placeholder tokens like `{{OWNER}}`, `{{REPO}}`,
-and `{{PROJECT_NAME}}` are expected before running `just init`.
-====
+image:https://img.shields.io/badge/license-PMPL--1.0--or--later-blue[License: PMPL-1.0-or-later]
+image:https://img.shields.io/badge/status-starting-orange[Status: Starting]
+image:https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey[Platforms]
 
-== Overview
+---
 
-This template now uses a split maintenance model:
+== What this is
 
-* Authoritative session protocols live centrally in `standards/session-management-standards`.
-* This repo keeps only thin local integration (Justfile aliases, local hooks,
-  coordination bindings, and repo-local checks).
-* Runtime session artifacts are generated per working repository in `.session/`.
+Paint.NET is one of the best ideas in image editing: capable enough for real work, simple enough to learn without a manual, fast enough to reach for without thinking. Its community knows this. The https://news.ycombinator.com/item?id=39871186[forum threads], the plugin ecosystem, the years of requests — they all say the same thing. The tool is right. The constraints are wrong.
 
-== Session Management Integration
+paint.type is the answer to those constraints.
 
-Canonical command model:
+* Open source, community-maintained
+* Linux, macOS, and Windows — same experience, same file format, everywhere
+* A plugin ecosystem that doesn't live in forum threads
+* Real-time collaboration via https://github.com/hyperpolymath/burble[Burble] — built in, not bolted on
+* The same simplicity contract Paint.NET made with its users, kept
 
-* `intake repo <path>`
-* `checkpoint change <path>`
-* `verify maintenance <path>`
-* `verify substantial <path>`
-* `verify release <path>`
-* `close planned <path>`
-* `close urgent <path>`
-* `recover repo <path>`
-* `handover full <path>`
-* `handover split <path>`
-* `handover model <path>`
-* `handover human <path>`
+This is not a GIMP. It is not a Krita. It is not a Photoshop. It is the tool Paint.NET users have been asking for, built by one of them.
 
-Local binding files in this template:
+---
 
-* `session/dispatch.sh`
-* `session/custom-checks.k9`
-* `session/local-hooks.sh`
-* `session/README.md`
-* `coordination.k9`
+== Status
 
-Run `just session-help` for local aliases.
+Starting. The architecture is defined, the ecosystem it sits in is battle-tested, and the first lines of real code are being written now.
 
-== ABI/FFI Seam Layout
+If you are a Paint.NET user who has ever wanted this to exist on Linux, or wanted to share a plugin without posting a forum thread, or wanted to paint with someone else in real time — this is the right moment to show up.
 
-The template keeps a verified interface seam split:
+See <<contributing>> if you want to be part of building it from the ground up.
 
-* ABI (Idris2): `src/interface/Abi/*.idr`
-* FFI (Zig): `src/interface/ffi/src/*.zig`
-* Generated artifacts: `src/interface/generated/`
+---
 
-== Repository Layout
+== What it will be
+
+=== The core experience
+
+* Layers, blend modes, masks
+* Unlimited history — bounded memory, not bounded undo
+* Fast everyday editing without professional-pipeline overhead
+* Familiar tool set: selection, brush, clone, gradient, shapes, text
+* Full colour management — sRGB, Display P3, wide gamut
+
+=== The plugin story, done properly
+
+The Paint.NET plugin ecosystem is one of its best features and one of its biggest frustrations. Finding plugins means searching forum threads. Knowing if a plugin works on your version means hoping. paint.type fixes this:
+
+* In-app plugin browser — find, install, update without leaving the tool
+* Signed packages — integrity without gatekeeping
+* WASM plugin tier — write once, runs on every platform without recompilation
+* Native plugin tier — maximum performance where it matters
+* Stable SDK — plugins do not break on every release
+* Sandboxed permissions — plugins declare what they need, the runtime enforces it
+
+=== Collaboration
+
+paint.type is Groove-aware. If https://github.com/hyperpolymath/burble[Burble] is running on the same machine, the two find each other automatically. No configuration. No account. No setup. You open a session, someone joins, and you are painting together.
+
+The session includes an LLM channel — not an AI-first experience, not a creative director that tells you what to do, but a participant in the session that holds context, mediates conflicts when two people edit the same region, and answers when addressed. It does not touch the canvas unless explicitly asked. It does not offer unsolicited opinions about your palette.
+
+=== What it will not try to be
+
+paint.type will not try to beat Photoshop at professional print workflows. It will not try to be a full digital content creation suite. It will not accumulate features until it becomes the thing Paint.NET was never supposed to be.
+
+The scope contract is: capable enough for real work, simple enough to reach for without thinking. That contract does not expire.
+
+---
+
+== Architecture
+
+paint.type is built on the https://github.com/hyperpolymath[hyperpolymath] ecosystem:
 
 [cols="1,3"]
 |===
-| Path | Purpose
+| Layer | Technology
 
-| `.machine_readable/`
-| Machine-readable policy and project metadata.
+| Desktop shell
+| https://github.com/hyperpolymath/gossamer[Gossamer] — linearly-typed webview shell, provable resource safety, compile-time IPC type safety
 
-| `session/`
-| Thin local bindings to central session-management standards.
+| UI frontend
+| Web (HTML/CSS/JS) hosted in Gossamer — layer panel, tool chrome, inspector panels, plugin UI
 
-| `coordination.k9`
-| Local coordination wiring to canonical session commands.
+| Native image core
+| https://github.com/hyperpolymath/ephapax[Ephapax] — linear types with region-based allocation; tile ownership, compositing pipeline, brush engine, undo graph, codecs
 
-| `docs/`
-| Human-facing technical and governance documentation.
+| Bridge language
+| https://github.com/hyperpolymath/affinescript[AffineScript] — algebraic effects for the IPC traffic classes; latency-critical brush commands separated from throughput-oriented tile delivery
 
-| `src/interface/`
-| ABI/FFI/generated seam scaffolding.
+| Cross-language boundary
+| https://github.com/hyperpolymath/typed-wasm[typed-wasm] — multi-module type safety at the AffineScript/Ephapax boundary; shared region schemas verified at compile time, no bitmap copies across the bridge
 
-| `verification/`
-| Proof and verification scaffolding.
+| Collaboration
+| https://github.com/hyperpolymath/burble[Burble] — sub-10ms WebRTC voice, embeddable client, session presence model
+
+| Service discovery
+| https://github.com/hyperpolymath/groove-browser-harness[Groove] — automatic localhost service discovery; paint.type and Burble find each other without configuration
+
 |===
 
-== Quick Start
+The canvas bridge is command-in, dirty-rect-out. The native core owns the pixel buffer. The webview renders chrome. Tile data does not cross the bridge as bitmap copies — the frontend holds a typed reference into the native core's tile region, verified at compile time by typed-wasm.
 
-[source,bash]
-----
-just init
-just verify
-just session-help
-----
+---
 
-== Documentation
+== Ecosystem position
 
-* link:AUDIT.adoc[AUDIT.adoc] -- local audit gate summary
-* link:EXPLAINME.adoc[EXPLAINME.adoc] -- template claim-to-implementation map
-* link:session/README.md[session/README.md] -- session binding usage
-* link:docs/governance/README.adoc[docs/governance/README.adoc] -- governance docs index
-* link:CONTRIBUTING.md[CONTRIBUTING.md]
-* link:SECURITY.md[SECURITY.md]
+paint.type is part of the https://github.com/hyperpolymath[hyperpolymath / palimpsest] ecosystem, a set of projects built around correctness-by-construction: Gossamer, Ephapax, AffineScript, typed-wasm, Burble, Groove, BoJ. Each project is independently useful. Together they make paint.type possible without rebuilding foundational infrastructure from scratch.
+
+License across the ecosystem: PMPL-1.0-or-later. See https://github.com/hyperpolymath/palimpsest-license[PMPL-1.0].
+
+---
+
+== Comparison
+
+[cols="2,1,1,1,1"]
+|===
+| | paint.type | Paint.NET | GIMP | Krita
+
+| Linux
+| ✓
+| ✗
+| ✓
+| ✓
+
+| macOS
+| ✓
+| ✗
+| ✓
+| ✓
+
+| Open source
+| ✓
+| ✗
+| ✓
+| ✓
+
+| Plugin marketplace
+| ✓
+| Forum threads
+| Limited
+| Limited
+
+| Real-time collaboration
+| ✓
+| ✗
+| ✗
+| ✗
+
+| Paint.NET complexity level
+| ✓
+| ✓
+| ✗
+| ✗
+
+|===
+
+---
+
+[#contributing]
+== Contributing
+
+paint.type is starting now. The best time to get involved is before the conventions are set.
+
+If you know Paint.NET well — what it gets right, what it gets wrong, what you reach for it for — that knowledge is exactly what this project needs. If you can write Rust, Zig, AffineScript, Ephapax, or web frontend code, there is real work to do. If you want to help define the plugin SDK, the file format spec, or the collaboration model, those conversations are open.
+
+Open an issue, start a discussion, or reach out directly.
+
+`paint-type@pm.me`
+
+---
 
 == License
 
-SPDX-License-Identifier: PMPL-1.0-or-later
-See link:LICENSE[LICENSE].
+PMPL-1.0-or-later — see link:LICENSE[LICENSE]
+
+MPL-2.0 fallback available for components where store distribution requires it.
+
+---
+
+== Author
+
+Joshua Jewell — https://github.com/JoshuaJewell[JoshuaJewell]
+
+Built within the https://github.com/hyperpolymath[hyperpolymath] ecosystem.
