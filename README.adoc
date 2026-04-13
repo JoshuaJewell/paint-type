@@ -1,0 +1,104 @@
+= RSR Template Repository
+:toc: preamble
+:icons: font
+
+image:https://www.bestpractices.dev/projects/{{OPENSSF_PROJECT_ID}}/badge[OpenSSF Best Practices, link="https://www.bestpractices.dev/projects/{{OPENSSF_PROJECT_ID}}"]
+image:https://api.securityscorecards.dev/projects/github.com/{{OWNER}}/{{REPO}}/badge[OpenSSF Scorecard, link="https://securityscorecards.dev/viewer/?uri=github.com/{{OWNER}}/{{REPO}}"]
+
+[NOTE]
+====
+This repository is a template. Placeholder tokens like `{{OWNER}}`, `{{REPO}}`,
+and `{{PROJECT_NAME}}` are expected before running `just init`.
+====
+
+== Overview
+
+This template now uses a split maintenance model:
+
+* Authoritative session protocols live centrally in `standards/session-management-standards`.
+* This repo keeps only thin local integration (Justfile aliases, local hooks,
+  coordination bindings, and repo-local checks).
+* Runtime session artifacts are generated per working repository in `.session/`.
+
+== Session Management Integration
+
+Canonical command model:
+
+* `intake repo <path>`
+* `checkpoint change <path>`
+* `verify maintenance <path>`
+* `verify substantial <path>`
+* `verify release <path>`
+* `close planned <path>`
+* `close urgent <path>`
+* `recover repo <path>`
+* `handover full <path>`
+* `handover split <path>`
+* `handover model <path>`
+* `handover human <path>`
+
+Local binding files in this template:
+
+* `session/dispatch.sh`
+* `session/custom-checks.k9`
+* `session/local-hooks.sh`
+* `session/README.md`
+* `coordination.k9`
+
+Run `just session-help` for local aliases.
+
+== ABI/FFI Seam Layout
+
+The template keeps a verified interface seam split:
+
+* ABI (Idris2): `src/interface/Abi/*.idr`
+* FFI (Zig): `src/interface/ffi/src/*.zig`
+* Generated artifacts: `src/interface/generated/`
+
+== Repository Layout
+
+[cols="1,3"]
+|===
+| Path | Purpose
+
+| `.machine_readable/`
+| Machine-readable policy and project metadata.
+
+| `session/`
+| Thin local bindings to central session-management standards.
+
+| `coordination.k9`
+| Local coordination wiring to canonical session commands.
+
+| `docs/`
+| Human-facing technical and governance documentation.
+
+| `src/interface/`
+| ABI/FFI/generated seam scaffolding.
+
+| `verification/`
+| Proof and verification scaffolding.
+|===
+
+== Quick Start
+
+[source,bash]
+----
+just init
+just verify
+just session-help
+----
+
+== Documentation
+
+* link:AUDIT.adoc[AUDIT.adoc] -- local audit gate summary
+* link:EXPLAINME.adoc[EXPLAINME.adoc] -- template claim-to-implementation map
+* link:session/README.md[session/README.md] -- session binding usage
+* link:docs/governance/README.adoc[docs/governance/README.adoc] -- governance docs index
+* link:CONTRIBUTING.md[CONTRIBUTING.md]
+* link:SECURITY.md[SECURITY.md]
+
+== License
+
+SPDX-License-Identifier: PMPL-1.0-or-later
+See link:LICENSE[LICENSE].
