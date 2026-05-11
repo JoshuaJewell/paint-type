@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+#
+# Ephapax — the native image core for paint.type.
+# Consumes libpt (the Zig FFI implementation) via static linking.
+
+[package]
+name = "ephapax"
+version = "0.1.0"
+edition = "2021"
+license = "PMPL-1.0-or-later"
+description = "Native image core for paint.type. Bridges Idris2-defined ABI to the Rust runtime."
+links = "pt"
+build = "build.rs"
+
+[lib]
+name = "ephapax"
+crate-type = ["rlib"]
+
+[build-dependencies]
+
+[dependencies]
+
+[dev-dependencies]
