@@ -102,7 +102,7 @@ check_file_exists "AUDIT.adoc" "Release audit gate"
 # Directories
 check_dir_exists ".machine_readable" "Machine-readable metadata"
 check_dir_exists ".github" "GitHub community metadata"
-check_dir_exists "src/interface/abi" "Idris2 ABI definitions"
+check_dir_exists "src/interface/Abi" "Idris2 ABI definitions"
 check_dir_exists "src/interface/ffi" "Zig FFI implementation"
 check_dir_exists "src/interface/generated/abi" "Generated C headers"
 check_dir_exists "docs" "Documentation"
@@ -190,9 +190,9 @@ log_info "Phase 4: Idris2 ABI and Zig FFI source files"
 echo ""
 
 # Idris2 ABI files
-check_file_exists "src/interface/abi/Types.idr" "Core type definitions"
-check_file_exists "src/interface/abi/Layout.idr" "Memory layout specifications"
-check_file_exists "src/interface/abi/Foreign.idr" "FFI foreign declarations"
+check_file_exists "src/interface/Abi/Types.idr" "Core type definitions"
+check_file_exists "src/interface/Abi/Layout.idr" "Memory layout specifications"
+check_file_exists "src/interface/Abi/Foreign.idr" "FFI foreign declarations"
 
 # Zig FFI files
 check_file_exists "src/interface/ffi/build.zig" "Zig build configuration"
@@ -204,23 +204,19 @@ check_file_exists "src/interface/ffi/test/integration_test.zig" "Integration tes
 #==============================================================================
 
 echo ""
-log_info "Phase 5: Placeholder token replacement (skipped in template repo)"
+log_info "Phase 5: Placeholder token replacement"
 echo ""
 
-# Note: Template repo is allowed to have placeholders
-# For derived repos, we'd check that placeholders are replaced
-if [ "$(basename "$REPO_ROOT")" = "rsr-template-repo" ]; then
-    log_pass "Skipping placeholder check for template repo"
-else
-    # Check that key files don't have unresolved placeholders
-    for file in "$REPO_ROOT/README.adoc" "$REPO_ROOT/Justfile" "$REPO_ROOT/.machine_readable/STATE.a2ml"; do
-        if [ -f "$file" ]; then
-            if has_placeholder "$file"; then
-                log_warning "File contains unresolved placeholders: $(basename "$file")"
-            fi
+# Check that key files don't have unresolved placeholders
+for file in "$REPO_ROOT/README.adoc" "$REPO_ROOT/Justfile" "$REPO_ROOT/.machine_readable/STATE.a2ml"; do
+    if [ -f "$file" ]; then
+        if has_placeholder "$file"; then
+            log_warning "File contains unresolved placeholders: $(basename "$file")"
+        else
+            [ "$VERBOSE" = "1" ] && log_pass "No placeholders: $(basename "$file")"
         fi
-    done
-fi
+    fi
+done
 
 #==============================================================================
 # VALIDATION PHASE 6: SPDX LICENSE HEADERS
@@ -280,7 +276,7 @@ fi
 
 # Check Idris2 syntax (if available)
 if command -v idris2 &> /dev/null; then
-    IDS_FILES=$(find "$REPO_ROOT/src/interface/abi" -name "*.idr" -type f 2>/dev/null || true)
+    IDS_FILES=$(find "$REPO_ROOT/src/interface/Abi" -name "*.idr" -type f 2>/dev/null || true)
     while IFS= read -r ids_file; do
         if [ -z "$ids_file" ]; then continue; fi
         if ! idris2 --check "$ids_file" 2>&1 | grep -q "Error"; then
