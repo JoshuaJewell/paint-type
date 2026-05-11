@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
-# Copyright (c) {{CURRENT_YEAR}} {{AUTHOR}} ({{OWNER}}) <{{AUTHOR_EMAIL}}>
+# Copyright (c) 2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me>
 #
 # K9 Validator: Methodology Guard
 # Checks that agent work respects methodology constraints declared in

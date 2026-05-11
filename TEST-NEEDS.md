@@ -1,107 +1,88 @@
-# TEST-NEEDS: rsr-template-repo
+# TEST-NEEDS: paint-type
 
-## CRG Grade: C — ACHIEVED 2026-04-04
+## CRG Grade: D — current
 
-## Current State (Updated 2026-04-04)
+## Current State (Updated 2026-05-11)
 
 | Category | Count | Details |
 |----------|-------|---------|
-| **Source modules** | 6 | 3 Idris2 ABI (Foreign, Layout, Types), 2 Zig FFI (build, main), 1 Zig integration test template |
-| **Unit tests** | 0 | None in main source (inline tests in main.zig) |
-| **Integration tests** | 1 | test/integration_test.zig (documented template, 1 placeholder test) |
-| **E2E tests** | 1 | tests/e2e/template_instantiation_test.sh (full instantiation + validation) |
-| **Workflow tests** | 1 | tests/workflows/validate_workflows_test.sh (21 workflows validated) |
-| **Validation tests** | 1 | scripts/validate-template.sh (8-phase comprehensive validation) |
-| **Benchmarks** | 5 | benches/template_bench.sh (validation, Zig build, tests, workflows, instantiation) |
-| **Fuzz tests** | 0 | README.adoc scaffold with harness instructions |
+| **Source modules** | 7 | 3 Idris2 ABI (Foreign, Layout, Types), 2 Zig FFI (build, main), 1 Zig integration test, 1 Rust Ephapax crate |
+| **Unit tests** | ~12 | Zig inline tests in `src/interface/ffi/src/main.zig`; Rust unit tests in `src/ephapax/src/` |
+| **Integration tests** | 1 | `src/interface/ffi/test/integration_test.zig` — lifecycle, blit, memory safety, version checks |
+| **E2E tests** | 1 | `tests/e2e.sh` (scaffold); `tests/e2e/template_instantiation_test.sh` (structure validation) |
+| **Aspect tests** | 1 | `tests/aspect_tests.sh` (scaffold — not yet populated with paint-type assertions) |
+| **Workflow tests** | 1 | `tests/workflows/validate_workflows_test.sh` (validates CI workflow presence and structure) |
+| **Fuzz tests** | 0 | `tests/fuzz/README.adoc` scaffold; harness not yet wired |
 
-## Completed Work (CRG C - Testing & Benchmarking)
+## What Exists and Passes
 
-### Template Validation Script ✅
-- [x] `scripts/validate-template.sh` — 8-phase validation
-  - Phase 1: Core repository structure (root files, directories)
-  - Phase 2: Machine-readable metadata (.machine_readable/)
-  - Phase 3: GitHub Actions workflows (17 required + all present)
-  - Phase 4: Idris2 ABI and Zig FFI source files
-  - Phase 5: Placeholder token replacement (skipped in template)
-  - Phase 6: SPDX license headers (100% coverage, 6/6 files)
-  - Phase 7: Build system verification (zig build + idris2 syntax check)
-  - Phase 8: Documentation requirements (TOPOLOGY, ABI-FFI-README, etc)
-- Status: **PASSING** (0 errors, 3 warnings about template placeholders)
+### Zig FFI Integration Tests (PASSING)
 
-### E2E Template Instantiation Test ✅
-- [x] `tests/e2e/template_instantiation_test.sh` — full workflow
-  - Clones template to temp directory
-  - Replaces all {{PLACEHOLDER}} tokens with test values
-  - Validates resulting structure with scripts/validate-template.sh
-  - Verifies Zig build works after instantiation
-  - Checks no remaining placeholders
-  - Cleans up temp directory
-- Status: **READY TO TEST** (can be verified by CI)
+`src/interface/ffi/test/integration_test.zig`:
 
-### Workflow Validation Test ✅
-- [x] `tests/workflows/validate_workflows_test.sh`
-  - Validates all 21 workflows exist and have proper structure
-  - Checks SPDX headers, 'name' field
-  - Verifies all 15 required workflows present
-- Status: **PASSING** (0 errors, 15/15 required workflows found)
+- Tile lifecycle tests: `pt_tile_alloc` → `pt_tile_free` round-trip
+- Blit operation tests: src → dst tile copy, bounds checking
+- Memory safety tests: double-free detection, null pointer handling
+- Version checks: `pt_version()` returns expected semver string
+- Threading: concurrent alloc/free stress test scaffold
 
-### Zig FFI Tests ✅
-- [x] `src/interface/ffi/test/integration_test.zig` — template with examples
-  - Converted from {{project}} placeholders to "template" namespace
-  - Added comprehensive comments for how to instantiate
-  - Tests grouped by category (lifecycle, operations, strings, errors, version, memory safety, threading)
-  - Compiles and passes placeholder test
-- Status: **PASSING** (1 test: placeholder_test_implementation_required passes)
+Run with: `zig build test` from `src/interface/ffi/`
 
-### Benchmarks ✅
-- [x] `benches/template_bench.sh` — 5 benchmark suites
-  - Validation script: ~5.8s average (3 runs)
-  - Zig build: ~19ms (clean build)
-  - Zig tests: ~20ms
-  - Workflow validation: ~117ms
-  - Template instantiation: ~427ms
-- Formats: human, json, csv
-- Status: **PASSING** (all benchmarks execute)
+### Rust Ephapax Unit Tests (PASSING)
 
-### Build System ✅
-- [x] `src/interface/ffi/build.zig` — updated for Zig 0.15.2
-  - Simplified to test-only configuration
-  - Supports both unit tests and integration tests
-  - Works with `zig build` without errors
-- Status: **PASSING** (builds successfully)
+`src/ephapax/src/lib.rs` and submodules:
+
+- Tile header construction and field access
+- RGBA16F pixel arithmetic (add, multiply, clamp)
+- Tile buffer allocation and deallocation
+- Basic compositing: over operator, alpha premultiplication
+
+Run with: `cargo test` from `src/ephapax/`
+
+### Workflow Validation Tests (PASSING)
+
+`tests/workflows/validate_workflows_test.sh`:
+
+- Validates all expected CI workflows are present
+- Checks SPDX headers on workflow files
+- Verifies required `name:` field in each workflow
+
+## What Is Missing (Priority Order)
+
+### P1 — Required for CRG Grade C
+
+- [ ] Aspect tests with real paint-type assertions — `tests/aspect_tests.sh` needs population
+  - File I/O round-trip: create a tile, save, reload, verify bytes identical
+  - Idris2 ABI proof check integrated into CI (`idris2 --check` on ABI modules)
+- [ ] E2E test: end-to-end tile alloc → composite → free pipeline via the Zig FFI
+- [ ] Coverage reporting wired into CI for both Zig and Rust
+
+### P2 — Required for CRG Grade B
+
+- [ ] Fuzz harness for `pt_tile_blit` (inputs: arbitrary src/dst dimensions, offsets)
+- [ ] Property-based tests for RGBA16F arithmetic (Rust + `proptest`)
+- [ ] Performance regression tests: tile alloc throughput baseline, blit throughput baseline
+
+### P3 — Planned for v0.3.0+ (after Gossamer shell integration)
+
+- [ ] UI integration tests: canvas gesture → tile mutation round-trip
+- [ ] Plugin sandbox isolation tests: plugin cannot escape to Ephapax memory
+- [ ] Collaboration session tests: two peers, tile mutation, CRDT merge verification
 
 ## Test Results Summary
 
 ```
-Validation Script:    PASS (0 errors, 3 warnings)
-Workflow Validation:  PASS (21/21 workflows valid)
-Integration Tests:    PASS (1/1 placeholder test)
-E2E Instantiation:    READY (needs CI confirmation)
-Benchmarks:           PASS (5/5 benchmark suites)
-Build System:         PASS (zig build succeeds)
+Zig FFI Integration Tests:    PASS (zig build test)
+Rust Ephapax Unit Tests:      PASS (cargo test)
+Workflow Validation:          PASS (validate_workflows_test.sh)
+Aspect Tests:                 STUB (not yet populated)
+E2E Tests:                    STUB (structure test only)
+Fuzz Tests:                   NOT STARTED
 ```
 
-## CRG C Compliance
+## Next Steps
 
-- **Coverage**: 6/6 test categories (unit, integration, E2E, workflow, validation, benchmarks)
-- **Documentation**: All test files have SPDX headers + inline documentation
-- **Author Attribution**: Jonathan D.A. Jewell <6759885+hyperpolymath@users.noreply.github.com>
-- **License**: PMPL-1.0-or-later on all new files
-- **Automation**: All scripts executable + working
-
-## FLAGGED ISSUES - ALL RESOLVED
-
-- ~~**Template repo used by ALL new repos has 0 validation tests**~~ → FIXED: 4 test suites + validation script
-- ~~**fuzz/placeholder.txt**~~ → FIXED: replaced with README.adoc containing real harness instructions
-- ~~**No E2E tests for template instantiation**~~ → FIXED: full E2E test suite
-- ~~**Zig FFI integration tests are placeholders**~~ → FIXED: converted to documented template format
-
-## Next Steps (Future Sessions)
-
-- [ ] Integrate test scripts into CI/CD workflows
-- [ ] Generate test coverage reports
-- [ ] Add more specialized benchmarks (memory, threading stress)
-- [ ] Document test instantiation patterns for new repos
-
-## Priority: P0 (COMPLETE) ✅
+- [ ] Populate `tests/aspect_tests.sh` with real paint-type assertions
+- [ ] Wire `idris2 --check src/interface/Abi/*.idr` into CI
+- [ ] Add fuzz harness for `pt_tile_blit`
+- [ ] Set up coverage reporting for Zig (kcov) and Rust (cargo-llvm-cov)

@@ -2,7 +2,13 @@
 ;; Ecosystem position and relationships
 (ecosystem
   (version "1.0.0")
-  (name "{{REPO}}")
-  (type "library")
-  (purpose "{{REPO_DESCRIPTION}}")
-  (related-projects))
+  (name "paint-type")
+  (type "application")
+  (purpose "Cross-platform open-source image editor — RGBA16F tile engine, formally-verified ABI bridge, Gossamer shell integration")
+  (related-projects
+    (gossamer "linearly-typed webview shell — desktop container for paint-type UI")
+    (ephapax "Rust image core — RGBA16F tiles, compositing, brush engine")
+    (burble "WebRTC collaboration layer — sub-10ms shared canvas")
+    (groove "service discovery — .well-known/groove/ peer announcement")
+    (proven "formally verified safety library — used in ABI bridge")
+    (palimpsest "hyperpolymath ecosystem — paint-type is part of this")))

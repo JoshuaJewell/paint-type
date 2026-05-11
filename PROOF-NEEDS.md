@@ -1,58 +1,64 @@
-# Proof Requirements — {{PROJECT}}
+# Proof Requirements — paint-type
 <!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
-<!-- Template: rsr-template-repo/PROOF-NEEDS.md -->
-<!-- Authoritative master list: ~/Desktop/PROOF-REQUIREMENTS-MASTER.md -->
 
 ## Proof Tier
 
-<!-- Assign one: T1 (Critical), T2 (High), T3 (Standard), T4 (Light), T5 (Exempt) -->
-**Tier**: T3 — Standard
+**Tier**: T1 — Critical (image editor with formally-verified ABI bridge; linear type safety is load-bearing)
 
 ## Proof Categories
 
 | Code | Meaning | Applies? |
 |------|---------|----------|
 | **TP** | Typing Proofs (type soundness, type safety) | Yes |
-| **INV** | Invariant Proofs (state machines, monotonicity, bounds) | |
-| **SEC** | Security Proofs (crypto, injection freedom, access control) | |
-| **CONC** | Concurrency Proofs (linearizability, deadlock freedom) | |
-| **ALG** | Algorithm Proofs (termination, correctness, bounds) | |
-| **ABI** | ABI/FFI Proofs (memory layout, pointer safety, platform compat) | Yes |
-| **DOM** | Domain-Specific Proofs (bespoke to this project) | |
+| **INV** | Invariant Proofs (state machines, monotonicity, bounds) | Yes |
+| **SEC** | Security Proofs (crypto, injection freedom, access control) | Yes (plugin sandbox) |
+| **CONC** | Concurrency Proofs (linearizability, deadlock freedom) | Yes (Burble collaboration) |
+| **ALG** | Algorithm Proofs (termination, correctness, bounds) | Yes (compositing, undo graph) |
+| **ABI** | ABI/FFI Proofs (memory layout, pointer safety, platform compat) | Yes — primary |
+| **DOM** | Domain-Specific Proofs (bespoke to this project) | Yes (tile compositing correctness) |
 
-## Mandatory Proofs (All RSR Repos)
-
-These proofs come from the rsr-template-repo and MUST be present in every repo:
-
-### ABI/FFI Boundary Proofs (Idris2)
+## ABI/FFI Boundary Proofs (Idris2) — Partially Complete
 
 | # | Proof | Status | File |
 |---|-------|--------|------|
-| ABI-1 | Non-null pointer proofs (`So (ptr /= 0)`) | Needed | `verification/proofs/idris2/ABI/Pointers.idr` |
-| ABI-2 | Memory layout correctness (`HasSize`, `HasAlignment`) | Needed | `verification/proofs/idris2/ABI/Layout.idr` |
+| ABI-1 | Non-null pointer proofs (`So (ptr /= 0)`) | **Done** | `src/interface/Abi/Types.idr` |
+| ABI-2 | Memory layout correctness (`HasSize`, `HasAlignment`) | **Done** | `src/interface/Abi/Layout.idr` |
 | ABI-3 | Platform type size proofs (per platform) | Needed | `verification/proofs/idris2/ABI/Platform.idr` |
-| ABI-4 | FFI function return type proofs | Needed | `verification/proofs/idris2/ABI/Foreign.idr` |
+| ABI-4 | FFI function return type proofs | **Done** | `src/interface/Abi/Foreign.idr` |
 | ABI-5 | C ABI compliance (`CABICompliant`, `FieldsAligned`) | Needed | `verification/proofs/idris2/ABI/Compliance.idr` |
 
-### Typing Proofs (Prover Varies)
+## Typing Proofs
 
 | # | Proof | Status | File |
 |---|-------|--------|------|
-| TP-1 | Core data type well-formedness | Needed | `verification/proofs/idris2/Types.idr` |
-| TP-2 | Public API type safety (exported functions) | Needed | `verification/proofs/lean4/ApiTypes.lean` |
+| TP-1 | Tile primitive type well-formedness | **Done** | `src/interface/Abi/Types.idr` |
+| TP-2 | Public API type safety (exported pt_ functions) | Needed | `verification/proofs/lean4/ApiTypes.lean` |
+| TP-3 | RGBA16F pixel format bounds (no overflow, no NaN propagation) | Needed | `verification/proofs/idris2/Pixel.idr` |
 
-## Project-Specific Proofs
+## Invariant Proofs
 
-<!-- Fill in proofs specific to this project. Copy from PROOF-REQUIREMENTS-MASTER.md -->
-<!-- Delete this section for T4/T5 repos -->
+| # | Proof | Status | File |
+|---|-------|--------|------|
+| INV-1 | Tile pool invariant (no double-free, no use-after-free) | Needed | `verification/proofs/idris2/TilePool.idr` |
+| INV-2 | Undo graph monotonicity (history only grows; no silent discard) | Needed | `verification/proofs/lean4/UndoGraph.lean` |
+| INV-3 | Compositing blend function totality (terminates on all inputs) | Needed | `verification/proofs/agda/Compositing.agda` |
 
-| # | Proof Needed | Category | Prover | Priority | File(s) |
-|---|-------------|----------|--------|----------|---------|
-| | | | | | |
+## Security Proofs (Plugin Sandbox)
+
+| # | Proof | Status | File |
+|---|-------|--------|------|
+| SEC-1 | Plugin WASM sandbox isolation (no escape to Ephapax memory) | Needed | `verification/proofs/tlaplus/PluginSandbox.tla` |
+| SEC-2 | Plugin API surface confinement (only typed-wasm API, no raw FFI) | Needed | `verification/proofs/lean4/PluginConfinement.lean` |
+
+## Concurrency Proofs (Burble Collaboration)
+
+| # | Proof | Status | File |
+|---|-------|--------|------|
+| CONC-1 | CRDT tile merge commutativity (A⊕B = B⊕A) | Needed | `verification/proofs/agda/TileCRDT.agda` |
+| CONC-2 | CRDT tile merge associativity (A⊕(B⊕C) = (A⊕B)⊕C) | Needed | `verification/proofs/agda/TileCRDT.agda` |
+| CONC-3 | Session liveness (every committed tile mutation is eventually visible) | Needed | `verification/proofs/tlaplus/BurbleSession.tla` |
 
 ## Dangerous Patterns (BANNED)
-
-The following MUST NOT appear anywhere in proof files:
 
 | Pattern | Language | Meaning |
 |---------|----------|---------|
@@ -65,39 +71,44 @@ The following MUST NOT appear anywhere in proof files:
 | `Obj.magic` | OCaml/ReScript | Unsafe type cast |
 | `unsafe` (unaudited) | Rust | Unsafe block without safety comment |
 
-CI will reject any PR introducing these patterns (enforced by `panic-attack assail`).
+CI rejects any PR introducing these patterns (enforced by `panic-attack assail`).
 
 ## Prover Selection Guide
 
 | Use Case | Recommended Prover | Why |
 |----------|-------------------|-----|
 | ABI/FFI boundaries | **Idris2** | Dependent types model layouts precisely |
-| Type system proofs | **Coq** or **Lean4** | Mature proof assistants for metatheory |
-| Algebraic properties | **Lean4** | Good mathlib support |
-| Inductive/coinductive | **Agda** | Native support for (co)induction |
-| Distributed systems | **TLA+** | Model checking for protocols |
-| Numerical properties | **Isabelle** | Strong real analysis library |
+| Tile pool invariants | **Idris2** | Linear types match the Rust ownership model |
+| Type system proofs | **Lean4** | Good mathlib support for API surface proofs |
+| CRDT properties | **Agda** | Native support for algebraic structures |
+| Plugin sandbox / protocols | **TLA+** | Model checking for isolation and liveness |
+| Compositing bounds | **Agda** | Inductive proofs on pixel value ranges |
 
 ## Proof File Locations
 
 ```
 verification/proofs/
-├── idris2/          # Idris2 proofs (ABI, dependent types)
+├── idris2/          # Idris2 proofs (ABI, tile pool, pixel bounds)
 │   ├── ABI/         # ABI-specific proofs
-│   └── *.idr        # Project-specific Idris2 proofs
-├── lean4/           # Lean4 proofs (algebra, lattices)
-│   └── *.lean
-├── agda/            # Agda proofs (induction, metatheory)
-│   └── *.agda
-├── coq/             # Coq proofs (type systems, compilation)
-│   └── *.v
-└── tlaplus/         # TLA+ specs (distributed protocols)
-    └── *.tla
+│   ├── TilePool.idr # Tile pool invariants
+│   └── Pixel.idr    # RGBA16F bounds
+├── lean4/           # Lean4 proofs (API types, undo graph, plugin confinement)
+│   ├── ApiTypes.lean
+│   ├── UndoGraph.lean
+│   └── PluginConfinement.lean
+├── agda/            # Agda proofs (compositing, CRDT properties)
+│   ├── Compositing.agda
+│   └── TileCRDT.agda
+├── coq/             # Coq proofs (type safety scaffold)
+│   └── TypeSafety.v
+└── tlaplus/         # TLA+ specs (plugin sandbox, Burble session)
+    ├── StateMachine.tla
+    ├── PluginSandbox.tla
+    └── BurbleSession.tla
 ```
 
 ## References
 
-- Master list: `~/Desktop/PROOF-REQUIREMENTS-MASTER.md`
 - Proof status tracking: `PROOF-STATUS.md` (this repo)
 - Proven library: `proven` repo (Idris2 verified foundations)
-- Template: `rsr-template-repo/PROOF-NEEDS.md`
+- ABI definitions: `src/interface/Abi/` (Idris2, already verified)

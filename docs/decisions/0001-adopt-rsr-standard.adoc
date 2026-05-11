@@ -1,6 +1,6 @@
 = Architecture Decision Record: 0001-adopt-rsr-standard
 <!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
-<!-- Copyright (c) {{CURRENT_YEAR}} {{AUTHOR}} ({{OWNER}}) <{{AUTHOR_EMAIL}}> -->
+<!-- Copyright (c) 2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me> -->
 
 # 1. Adopt Rhodium Standard Repository (RSR) Template
 
@@ -29,7 +29,7 @@ required manual setup and inevitably drifted from best practices over time.
 
 ## Decision
 
-Adopt the Rhodium Standard Repository (RSR) template (`rsr-template-repo`) as
+Adopt the Rhodium Standard Repository (RSR) template (`paint-type`) as
 the canonical starting point for all new repositories. Existing repositories
 will migrate incrementally as they receive active development.
 
@@ -51,7 +51,7 @@ The RSR template provides:
 New repositories are created by cloning the template:
 
 ```bash
-git clone https://github.com/{{OWNER}}/rsr-template-repo new-repo-name
+git clone https://github.com/JoshuaJewell/paint-type new-repo-name
 cd new-repo-name
 rm -rf .git && git init
 ```

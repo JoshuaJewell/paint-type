@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
 
 [project]
-name = "rsr-template-repo"
+name = "paint-type"
 
 [[functions]]
 name = "build"

@@ -1,68 +1,120 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
-= RSR Template Repo - Explainme
+= paint-type — Repository Structure Guide
 :toc:
 :icons: font
 
-This file explains how the key template claims map to real files.
+This file explains how the repository is structured and what each piece does.
 
-== Central Session Protocol Authority
+== What Is paint-type?
 
-Claim:
-Session protocols are centrally maintained and not duplicated in this template.
+paint-type is a cross-platform open-source image editor in the spirit of Paint.NET —
+capable enough for real work, simple enough to reach for without thinking.
+License: PMPL-1.0-or-later. Owner: Joshua Jewell (JoshuaJewell on GitHub).
 
-How this is implemented:
+Part of the hyperpolymath/palimpsest ecosystem.
 
-* The local dispatcher (`session/dispatch.sh`) maps canonical commands to central
-  protocol paths in `standards/session-management-standards`.
-* Local files (`session/custom-checks.k9`, `session/local-hooks.sh`,
-  `coordination.k9`) are integration-only.
+== Top-Level Files
 
-Caveat:
+`TOPOLOGY.md`:: Architecture topology — how the components fit together.
+`ROADMAP.adoc`:: Milestone plan from v0.1.0 (Foundation) to v1.0.0 (Stable).
+`READINESS.md`:: Component Readiness Grade (CRG) assessment — current grade D.
+`PROOF-NEEDS.md`:: What formal proofs are required and why.
+`PROOF-STATUS.md`:: Current proof completion status.
+`TEST-NEEDS.md`:: Test landscape — what exists, what is missing.
+`AUDIT.adoc`:: Root audit gate — hard rules that govern releases.
+`TEMPLATE-STANDARDS-AUDIT.adoc`:: Standards compliance audit.
+`EXPLAINME.adoc`:: This file.
+`0-AI-MANIFEST.a2ml`:: AI agent entry point — read this first.
+`Justfile`:: Task runner. `just build`, `just test`, `just doctor`.
+`coordination.k9`:: Session coordination bindings.
 
-* If `SESSION_STANDARDS_DIR` is unset and no adjacent standards checkout exists,
-  the dispatcher records the command but cannot resolve central checklist paths.
+== Source Tree (`src/`)
 
-== Canonical Command Surface
+=== `src/ephapax/` — Native Image Core (Rust)
 
-Claim:
-Template bindings align to one canonical command model.
+Ephapax is the Rust crate that implements the image engine:
+RGBA16F tile pool, compositing, brush engine, and undo graph.
+Linear types enforce no aliased mutable tile access.
+Entry point: `src/ephapax/src/lib.rs`.
+Build with `cargo test` from `src/ephapax/`.
 
-How this is implemented:
+=== `src/interface/Abi/` — Formally Verified ABI Definitions (Idris2)
 
-* `Justfile` provides thin aliases (`intake-repo`, `checkpoint-change`,
-  `verify-maintenance`, `verify-substantial`, `verify-release`, `close-planned`,
-  `close-urgent`, `recover-repo`, `handover-*`).
-* Every alias calls `session/dispatch.sh` with canonical verb-object pairs.
+Three Idris2 modules prove correctness of the tile ABI:
 
-Caveat:
+`Types.idr`:: Tile primitive types — `TileHeader`, `TileBuffer`, `RGBA16F` pixel layout.
+`Layout.idr`:: Memory layout proofs — `HasSize`, `HasAlignment`, layout correctness lemmas.
+`Foreign.idr`:: FFI function wrappers — `pt_tile_alloc`, `pt_tile_free`, `pt_tile_blit`
+             with dependent-type pre/post conditions.
 
-* Recipes are wrappers only. They do not replace protocol content from
-  the central standards repo.
+=== `src/interface/ffi/` — Zig FFI Bridge
 
-== Runtime State Is Local
+`src/ffi/src/main.zig`:: C ABI implementation (`libpt`). Exports `pt_tile_alloc`,
+  `pt_tile_free`, `pt_tile_blit`, and related functions.
+`src/ffi/build.zig`:: Zig 0.15+ build file. Run `zig build test`.
+`src/ffi/test/integration_test.zig`:: Integration tests — lifecycle, blit operations,
+  memory safety, version checks. Run with `zig build test`.
 
-Claim:
-Session state is per-repository runtime output, not standards text.
+=== `src/bridges/` — AffineScript → typed-wasm Bridge (stub)
 
-How this is implemented:
+Future: generated from the Idris2 ABI definitions. Not yet populated.
 
-* `session/dispatch.sh` writes command and continuity-core capture stubs to
-  `.session/LAST-CANONICAL-COMMAND.md` in the target repository path.
+=== `src/aspects/` — Cross-Cutting Concerns
 
-Caveat:
+Integrity, observability, and security cross-cuts. Scaffold in place; content planned for v0.2.0+.
 
-* Runtime files are intentionally lightweight and require human/agent completion.
+== Verification (`verification/`)
 
-== Template Token Policy
+Formal proofs and safety cases:
 
-Claim:
-Placeholders are explicit template content until initialization.
+`verification/proofs/idris2/`:: Idris2 ABI proofs (planned, see PROOF-NEEDS.md).
+`verification/proofs/lean4/ApiTypes.lean`:: Lean4 type safety scaffold.
+`verification/proofs/agda/Properties.agda`:: Agda inductive properties scaffold.
+`verification/proofs/coq/TypeSafety.v`:: Coq type safety scaffold.
+`verification/proofs/tlaplus/StateMachine.tla`:: TLA+ state machine scaffold.
 
-How this is implemented:
+== Machine-Readable Metadata (`.machine_readable/`)
 
-* `README.adoc` and bootstrap recipes keep `{{TOKEN}}` placeholders visible.
-* `just init` performs token replacement.
+`.machine_readable/STATE.a2ml`:: Current project state — phase, milestone, next actions.
+`.machine_readable/META.a2ml`:: Project identity — version, architecture decisions.
+`.machine_readable/ECOSYSTEM.a2ml`:: Ecosystem position — dependencies, consumers.
+`.machine_readable/CLADE.a2ml`:: Clade registry entry.
+`.machine_readable/MUST.contractile`:: Hard invariants — never violate these.
+`.machine_readable/TRUST.contractile`:: AI agent trust level and permitted actions.
+`.machine_readable/INTENT.contractile`:: Project purpose and anti-purpose.
+`.machine_readable/ADJUST.contractile`:: Accessibility invariants (WCAG 2.2 AA).
 
-Caveat:
+== Session Protocol
 
-* Uninitialized placeholders must not be treated as project-specific truth.
+`session/dispatch.sh`:: Maps canonical session commands to central protocol paths.
+`session/custom-checks.k9`:: Repo-local K9 checks.
+`session/local-hooks.sh`:: Local hook wiring.
+`coordination.k9`:: Session coordination signals.
+
+Central session protocol authority lives in `standards/session-management-standards/`.
+Local files here are integration-only thin bindings.
+
+== Docs (`docs/`)
+
+`docs/developer/ABI-FFI-README.adoc`:: Detailed ABI/FFI bridge reference.
+`docs/architecture/THREAT-MODEL.adoc`:: Security threat model.
+`docs/decisions/`:: Architecture Decision Records (ADRs).
+`docs/governance/`:: CRG criteria, maintenance checklists, development approach.
+
+== Container (`container/`)
+
+Stapeln-based container definitions for running paint-type as a containerized service
+(primarily for CI and headless render scenarios). Chainguard Wolfi base, signed with ML-DSA-87.
+
+== CI/CD (`.github/workflows/`)
+
+Key workflows:
+
+`rust-ci.yml`:: Rust build and test for Ephapax.
+`dogfood-gate.yml`:: A2ML, K9, eclexiaiser, Groove compliance.
+`hypatia-scan.yml`:: Neurosymbolic CI/CD safety scan.
+`static-analysis-gate.yml`:: Security static analysis.
+`openssf-compliance.yml`:: OpenSSF Scorecard.
+`codeql.yml`:: GitHub CodeQL.
+`secret-scanner.yml`:: Secret detection.
+`mirror.yml`:: Multi-forge sync.

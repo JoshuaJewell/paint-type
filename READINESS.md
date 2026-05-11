@@ -1,32 +1,51 @@
 <!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
-<!-- Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk> -->
+<!-- Last updated: 2026-05-11 -->
 
-# {{REPO}} Component Readiness Assessment
+# paint-type Component Readiness Assessment
 
 **Standard:** [Component Readiness Grades (CRG) v2.2](https://github.com/hyperpolymath/standards/tree/main/component-readiness-grades)
-**Current Grade:** C
-**Assessed:** {{DATE}}
-**Assessor:** Jonathan D.A. Jewell
+**Current Grade:** D
+**Assessed:** 2026-05-11
+**Assessor:** Joshua Jewell
 
 ---
 
 ## Summary
 
-| Component           | Grade | Release Stage | Evidence Summary                          |
-|---------------------|-------|---------------|-------------------------------------------|
-| Primary component   | C     | Alpha-stable  | Dogfooded on own project; CI passing      |
+| Component           | Grade | Release Stage | Evidence Summary                                          |
+|---------------------|-------|---------------|-----------------------------------------------------------|
+| Idris2 ABI (Types, Layout, Foreign) | D | Pre-alpha | Compiles, proofs typecheck, no external consumers yet |
+| Zig FFI (libpt)     | D     | Pre-alpha     | Integration tests pass; no external consumers             |
+| Ephapax (Rust core) | D     | Pre-alpha     | Crate skeleton; tile primitive defined; not feature-complete |
+| AffineScript bridge | D     | Pre-alpha     | Stubs only; bridge not yet generated                      |
+| Gossamer shell integration | D | Pre-alpha  | Not started; architecture specified                       |
+| Burble / Groove     | D     | Pre-alpha     | Not started; architecture specified                       |
 
-**Overall:** Grade C — dogfooding confirmed, CI passing, deep annotation in place.
+**Overall:** Grade D — RSR-compliant structure in place; CI passing; first real code landed (tile primitive and ABI bridge). No feature-complete functionality yet.
 
 ---
 
-## Grade C Evidence
+## Grade D Evidence
 
-- Deployed and dogfooded on the {{REPO}} project itself
-- CI passing (dogfood-gate, hypatia-scan, static-analysis-gate)
-- TEST-NEEDS.md documents test matrix
-- No home failures
-- Deep code and folder annotation in place per CRG v2 requirements
+- Repository follows RSR standards (CI/CD, SPDX, machine-readable metadata, CRG structure)
+- `src/interface/Abi/` — Idris2 types and layout proofs compile and typecheck
+- `src/interface/ffi/` — Zig libpt builds and integration tests pass
+- `src/ephapax/` — Rust crate builds with `cargo test`
+- dogfood-gate, hypatia-scan, and static-analysis-gate workflows all green
+- TOPOLOGY.md, TEST-NEEDS.md, PROOF-NEEDS.md, and ROADMAP.adoc reflect actual project state
+
+---
+
+## Promotion Path to Grade C
+
+Grade C requires: **deep code and folder annotation; CI passing; dogfooded on own project**.
+
+To reach C:
+1. Complete Ephapax brush engine and tile compositing (v0.2.0 milestone)
+2. Generate AffineScript → typed-wasm bridge from Idris2 ABI
+3. Integrate with Gossamer shell for a runnable application
+4. Wire integration tests into CI
+5. Update this file with evidence
 
 ---
 
@@ -34,20 +53,13 @@
 
 Grade B requires: **6+ diverse external targets tested, issues fed back**.
 
-Diversity means: different languages, different architectures, different use cases.
-
-To reach B:
-1. Deploy on at least 6 external projects that differ meaningfully from each other
-2. Confirm it works in each (or document failures)
-3. Feed back any issues found (GitHub issues or PRs)
-4. Update this file with the evidence
+This follows after reaching Grade C. Target: after v0.3.0 Desktop Shell milestone.
 
 ---
 
 ## Concerns and Maintenance Notes
 
-*Document any known limitations, demotion risks, or maintenance concerns here.*
-
----
-
-## Run `just crg-badge` to generate the shields.io badge for your README.
+- Ephapax is architecturally specified but not yet feature-complete — compositing, brush engine, and undo graph are all v0.2.0 work
+- AffineScript bridge is stub-only; the code generator is not yet integrated
+- Gossamer shell integration has not started; depends on Gossamer reaching a usable API surface
+- Burble and Groove collaboration layers are future work (v0.5.0)

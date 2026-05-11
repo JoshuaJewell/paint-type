@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
-= Template Standards Audit
+= paint-type Standards Audit
 Codex
-v1.0, 2026-04-07
+v1.0, 2026-05-11
 :toc:
 :toclevels: 3
 :sectnums:
@@ -10,14 +10,9 @@ v1.0, 2026-04-07
 
 Audit scope:
 
-* Repository: `rsr-template-repo`
-* Focus: root authority docs/manifests, Justfile integration, session bindings
+* Repository: `paint-type` (JoshuaJewell/paint-type)
+* Focus: root authority docs/manifests, Justfile integration, session bindings, ABI/FFI sources
 * Recursive inventory method: `rg --files -g '!.git' | sort`
-
-Inventory snapshot at audit time:
-
-* `rsr-template-repo` total tracked files discovered: `240`
-* Session-local binding files discovered: `4` under `session/` plus `coordination.k9`
 
 == Claim Vs Actual
 
@@ -25,46 +20,60 @@ Inventory snapshot at audit time:
 |===
 | Claimed item | Claimed by | Expected path | Actual status | Notes | Recommended action
 
-| Placeholder badge tokens in README
-| `README.adoc`
-| `{{OPENSSF_PROJECT_ID}}`, `{{OWNER}}`, `{{REPO}}`
-| placeholder
-| Template placeholders are intentional pre-bootstrap content.
-| Keep; document clearly as template tokens.
+| Tile primitive ABI
+| `TOPOLOGY.md`, `README.adoc`
+| `src/interface/Abi/Types.idr`
+| exists
+| Idris2 types, layout proofs, and FFI wrappers all present and typechecking.
+| Keep; no action needed.
 
-| Docs links used `.adoc` files not present
-| legacy `README.adoc` (pre-migration)
-| `CONTRIBUTING.adoc`, `GOVERNANCE.adoc`, `SECURITY.adoc`
-| outdated
-| Actual files are `CONTRIBUTING.md`, no root `GOVERNANCE.adoc`, `SECURITY.md`.
-| Fixed README links to existing files.
+| Zig FFI bridge
+| `TOPOLOGY.md`, `docs/developer/ABI-FFI-README.adoc`
+| `src/interface/ffi/src/main.zig`, `build.zig`, `test/integration_test.zig`
+| exists
+| Builds with Zig 0.15+, integration tests pass.
+| Keep; no action needed.
 
-| ABI path lower-case only
-| legacy `README.adoc` + legacy checks
-| `src/interface/abi/*.idr`
-| outdated
-| Current tree has `src/interface/Abi/*.idr` (uppercase A).
-| Updated docs/checks to accept current path.
+| Ephapax Rust crate
+| `TOPOLOGY.md`, `ROADMAP.adoc`
+| `src/ephapax/`
+| exists (skeleton)
+| Crate compiles and `cargo test` passes. Feature work starts at v0.2.0.
+| Keep; develop in v0.2.0.
 
-| Root manifest structure with non-existent files
-| legacy `0-AI-MANIFEST.a2ml` (pre-migration)
-| `GOVERNANCE.adoc`, several strict root assumptions
-| outdated
-| Manifest claims did not match actual template contents.
-| Replaced with accurate authority split + startup checklist.
+| Idris2 layout proofs
+| `PROOF-NEEDS.md`, `TOPOLOGY.md`
+| `src/interface/Abi/Layout.idr`
+| exists
+| Layout correctness lemmas typecheck in Idris2.
+| Keep; formal verification proofs in `verification/proofs/idris2/` remain future work.
 
-| Source-human references maintenance/practice docs
-| legacy Justfile + policy A2ML (pre-migration)
-| `docs/maintenance/...`, `docs/practice/SOFTWARE-DEVELOPMENT-APPROACH.adoc`
-| outdated
-| Those paths did not exist in template.
-| Updated to `docs/governance/...` paths.
+| AffineScript bridge
+| `TOPOLOGY.md`
+| `src/bridges/`
+| stub only
+| Bridge stub directory exists; code generator not yet integrated. Planned for v0.2.0.
+| Leave stub; implement at v0.2.0.
+
+| Gossamer shell integration
+| `TOPOLOGY.md`, `ROADMAP.adoc`
+| (Gossamer is a separate repo)
+| not started
+| Correctly documented as v0.3.0 work.
+| No action; keep in ROADMAP.
+
+| Collaboration layer (Burble/Groove)
+| `TOPOLOGY.md`, `ROADMAP.adoc`
+| (Burble and Groove are separate repos)
+| not started
+| Correctly documented as v0.5.0 work.
+| No action; keep in ROADMAP.
 
 | Session-management local binding files
 | target architecture
 | `session/README.md`, `session/custom-checks.k9`, `session/local-hooks.sh`, `coordination.k9`
 | exists
-| Added as thin integration layer without protocol duplication.
+| Thin integration layer without protocol duplication.
 | Keep.
 
 | Canonical command mapping in local automation
@@ -78,22 +87,16 @@ Inventory snapshot at audit time:
 | `README.adoc`, `0-AI-MANIFEST.a2ml`, `AUDIT.adoc`
 | `standards/session-management-standards/`
 | exists
-| Local docs now explicitly defer protocol authority to standards repo.
+| Local docs explicitly defer protocol authority to standards repo.
 | Keep.
 
-| Runtime session artifacts stay per-repo
-| `session/README.md`, `session/dispatch.sh`
-| `.session/` in target repo path
+| Machine-readable metadata
+| CRG standards
+| `.machine_readable/STATE.a2ml`, `META.a2ml`, `ECOSYSTEM.a2ml`
 | exists
-| Dispatcher records canonical commands into runtime `.session/` files.
-| Keep runtime artifacts out of authoritative standards docs.
+| Updated to reflect paint-type (not template placeholder values).
+| Keep; update STATE after each session.
 
-| Local policy hooks remain local
-| `session/local-hooks.sh`, `session/custom-checks.k9`
-| local session binding layer
-| exists
-| Policy/hook logic separated from central protocol definitions.
-| Keep local-only.
 |===
 
 == Classification
@@ -101,6 +104,7 @@ Inventory snapshot at audit time:
 === Authoritative Shared Standard
 
 * External to this repo: `standards/session-management-standards/*`
+* External: `standards/component-readiness-grades/*`
 
 === Repo-Local Binding/Integration
 
@@ -118,9 +122,8 @@ Inventory snapshot at audit time:
 
 === Obsolete/Duplicate/Drifted
 
-* Legacy path assumptions (`docs/maintenance/*`, `docs/practice/*` for governance policy references)
-* Legacy root-doc claims to files not present in this template
-* Legacy lower-case-only ABI path references
+* Template placeholder values (`rsr-template-repo`, `{{REPO}}`, `{{OWNER}}`) — now replaced throughout
+* Legacy references to non-existent paths — corrected in this audit pass
 
 == Move/Stay/Delete Guidance
 
@@ -129,33 +132,27 @@ Inventory snapshot at audit time:
 * Any future full protocol text drafts should move to
   `standards/session-management-standards/`.
 
-=== Stay In `rsr-template-repo`
+=== Stay In `paint-type`
 
 * Local aliases, hooks, coordination wiring, and repo-local checks.
+* ABI/FFI sources, Ephapax crate, Idris2 proofs.
 
 === Delete/Archive
 
-* Archive or remove legacy references to non-existent docs/paths if reintroduced.
-* Avoid reintroducing full duplicated protocol definitions.
+* Remove any remaining template placeholder text if discovered in future sessions.
 
-== Missing-But-Expected Session Files (Template Repo)
-
-Template repo expected only thin local integration files.
-
-Current status:
-
-* No mandatory thin-binding files are missing.
-* Full protocol directories/files are intentionally absent here by design.
-
-== Proposed Final Directory Map
+== Directory Map (Current)
 
 [source,text]
 ----
-rsr-template-repo/
+paint-type/
   README.adoc
   AUDIT.adoc
   0-AI-MANIFEST.a2ml
   EXPLAINME.adoc
+  TOPOLOGY.md
+  ROADMAP.adoc
+  READINESS.md
   Justfile
   coordination.k9
   session/
@@ -163,16 +160,20 @@ rsr-template-repo/
     dispatch.sh
     custom-checks.k9
     local-hooks.sh
-  docs/
-    ... (repo-local human docs)
-  .machine_readable/
-    ... (repo-local machine-readable policy/state)
+  src/
+    ephapax/          (Rust — RGBA16F tile engine skeleton)
+    interface/
+      Abi/            (Idris2 — ABI types, layout proofs, FFI wrappers)
+      ffi/            (Zig — libpt C ABI bridge + integration tests)
+    bridges/          (AffineScript → typed-wasm stub)
+    aspects/          (cross-cutting: integrity, observability, security)
+  docs/               (human documentation)
+  verification/       (formal proofs — Idris2, Lean4, Agda, Coq, TLA+)
+  .machine_readable/  (machine-readable policy/state)
 ----
 
 == Maintenance Model Note
 
 * Protocols central: maintained in `standards/session-management-standards/`.
-* Policy local: maintained in template/downstream repos (`session/*.k9`, hooks,
-  coordination bindings).
-* State per-repo: generated during execution (`.session/*`) in the active
-  working repository.
+* Policy local: maintained in this repo (`session/*.k9`, hooks, coordination bindings).
+* State per-repo: generated during execution (`.session/*`) in the active working repository.

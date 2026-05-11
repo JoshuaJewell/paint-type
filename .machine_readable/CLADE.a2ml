@@ -5,22 +5,20 @@
 [identity]
 uuid = "a5ea1382-a34c-5334-8a46-a2ebe904c810"
 primary-forge = "github"
-primary-owner = "hyperpolymath"
-canonical-name = "rsr-template-repo"
-prefixed-name = "rm-rsr-template-repo"
+primary-owner = "JoshuaJewell"
+canonical-name = "paint-type"
+prefixed-name = "pt-paint-type"
 
 [clade]
-primary = "rm"
+primary = "pt"
 secondary = ["gv"]
-assigned = "2026-03-16"
-rationale = ""
+assigned = "2026-05-11"
+rationale = "paint-type image editor — pt prefix"
 
 [forges]
-github = "hyperpolymath/rsr-template-repo"
-gitlab = "hyperpolymath/rsr-template-repo"
-bitbucket = "hyperpolymath/rsr-template-repo"
+github = "JoshuaJewell/paint-type"
 
 [lineage]
 type = "standalone"
-parent = "RSR template — scaffold for new repos"
-born = "2026-03-16"
+parent = "palimpsest ecosystem"
+born = "2026-05-11"

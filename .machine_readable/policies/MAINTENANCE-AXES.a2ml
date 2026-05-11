@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
-# Copyright (c) {{CURRENT_YEAR}} {{AUTHOR}} ({{OWNER}}) <{{AUTHOR_EMAIL}}>
+# Copyright (c) 2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me>
 #
 # Canonical maintenance governance model
 
 [metadata]
 version = "1.0.0"
-last-updated = "{{CURRENT_DATE}}"
+last-updated = "2026-05-11"
 scope = "repo"
 
 [discovery]

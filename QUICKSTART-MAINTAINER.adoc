@@ -1,29 +1,53 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
-// Template: QUICKSTART-MAINTAINER.adoc — packaging, deploying, and maintaining
-// Replace rsr-template-repo, {{PACKAGE_NAME}}, {{DEPS}} with actuals
-= rsr-template-repo — Quick Start for Platform Maintainers
+= paint-type — Quick Start for Platform Maintainers
 :toc:
 :toclevels: 2
 
 == Overview
 
-This guide covers packaging, deploying, and maintaining rsr-template-repo for
-distribution on your platform.
+This guide covers building, packaging, and maintaining paint-type for distribution
+on your platform.
 
 == Runtime Dependencies
 
-{{DEPS}}
+At v0.1.0 (current), paint-type is a library/bridge crate, not a standalone binary.
+Runtime dependencies will be specified at v0.3.0 (Gossamer shell integration).
+
+For build dependencies, see: `guix.scm` (Guix) or `flake.nix` (Nix).
 
 == Build from Source
 
+=== Prerequisites
+
+* Rust stable toolchain
+* Zig 0.15+
+* Idris2 (for ABI proof verification)
+* `just` task runner
+
+=== Steps
+
 [source,bash]
 ----
-git clone https://github.com/hyperpolymath/rsr-template-repo.git
-cd rsr-template-repo
+git clone https://github.com/JoshuaJewell/paint-type.git
+cd paint-type
 just build-release
 ----
 
-Output: `{{BUILD_OUTPUT_PATH}}`
+=== Zig FFI only
+
+[source,bash]
+----
+cd src/interface/ffi
+zig build -Doptimize=ReleaseSafe
+----
+
+=== Rust Ephapax only
+
+[source,bash]
+----
+cd src/ephapax
+cargo build --release
+----
 
 == Packaging
 
@@ -45,52 +69,20 @@ nix build
 
 [source,bash]
 ----
-just stapeln-export    # Generates Containerfile
-podman build -t rsr-template-repo .
+just stapeln-export    # Generates signed container image
+podman build -t paint-type .
 ----
 
-=== Manual Package
-
-[source,bash]
-----
-just install --prefix=/usr/local
-----
-
-Files installed:
-
-[cols="1,2"]
-|===
-| Path | Contents
-
-| `$PREFIX/bin/`
-| Executables
-
-| `$PREFIX/share/{{PACKAGE_NAME}}/`
-| Data files, assets
-
-| `$PREFIX/share/doc/{{PACKAGE_NAME}}/`
-| Documentation
-
-| `$PREFIX/share/applications/`
-| .desktop file (Linux, if GUI)
-
-| `$PREFIX/share/man/man1/`
-| Man pages
-|===
-
-== Configuration
-
-Default config location: `$XDG_CONFIG_HOME/{{PACKAGE_NAME}}/config.toml`
-
-Fallback: `$HOME/.config/{{PACKAGE_NAME}}/config.toml`
+Container is based on Chainguard Wolfi, signed with ML-DSA-87 via cerro-torre.
 
 == Health Checks
 
 [source,bash]
 ----
 just doctor            # Full diagnostic
-just run --version   # Version check
-just run --selftest  # Built-in self-test
+just test              # Run test suite
+cd src/interface/ffi && zig build test   # Zig FFI tests
+cd src/ephapax && cargo test             # Rust unit tests
 ----
 
 == Updating
@@ -99,31 +91,23 @@ just run --selftest  # Built-in self-test
 ----
 git pull
 just build-release
-just install --prefix=/usr/local
 ----
-
-Or via OPSM: `opsm update {{PACKAGE_NAME}}`
 
 == Security Notes
 
 * License: PMPL-1.0-or-later (Palimpsest License)
-* All dependencies SHA-pinned
-* `panic-attacker` scan results: link:INSTALL-SECURITY-REPORT.adoc[]
+* All GitHub Actions SHA-pinned
+* `panic-attacker` scan runs on every PR
 * OpenSSF Scorecard: see badge in README
+* Security contact: paint-type@pm.me
 
 == Multi-Instance Deployment
 
-For deploying multiple instances (e.g., different users or tenants):
-
-[source,bash]
-----
-just install --prefix=/opt/{{PACKAGE_NAME}}-instance1 --config=/etc/{{PACKAGE_NAME}}/instance1.toml
-just install --prefix=/opt/{{PACKAGE_NAME}}-instance2 --config=/etc/{{PACKAGE_NAME}}/instance2.toml
-----
-
-Each instance has isolated config, data, and logs.
+paint-type at v0.1.0 is not yet a deployed service. Multi-instance notes will be
+added at v0.3.0 when the Gossamer shell integration lands.
 
 == Reporting Issues
 
-* Upstream: https://github.com/hyperpolymath/rsr-template-repo/issues
+* Upstream: https://github.com/JoshuaJewell/paint-type/issues
 * With diagnostic: `just help-me` (pre-fills context)
+* Security: paint-type@pm.me

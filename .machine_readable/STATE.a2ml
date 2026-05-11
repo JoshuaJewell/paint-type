@@ -2,26 +2,26 @@
 ;; Project state — update throughout each session
 (state
   (metadata
-    (version "1.0.1")
-    (project "rsr-template-repo")
-    (last-updated "2026-04-04"))
+    (version "0.1.0")
+    (project "paint-type")
+    (last-updated "2026-05-11"))
   (project-context
-    (description "RSR Standard Repository Template — baseline for all hyperpolymath projects")
-    (primary-language "Idris2 (ABI) + Zig (FFI)")
-    (status "testing-complete"))
+    (description "paint-type — cross-platform open-source image editor in the spirit of Paint.NET. Capable enough for real work, simple enough to reach for without thinking.")
+    (primary-language "Rust (Ephapax) + Idris2 (ABI) + Zig (FFI) + AffineScript→typed-wasm (bridge)")
+    (status "early-development"))
   (current-position
-    (phase "testing")
-    (completion-percentage 100)
-    (milestone "CRG C - Testing & Benchmarking complete"))
+    (phase "implementation")
+    (completion-percentage 10)
+    (milestone "v0.1.0 Foundation — tile primitive, ABI bridge, Ephapax skeleton"))
   (testing-summary
-    (validation-script "scripts/validate-template.sh: PASS (0 errors)")
-    (workflow-tests "tests/workflows/validate_workflows_test.sh: PASS (21/21 workflows)")
-    (integration-tests "test/integration_test.zig: PASS (placeholder template)")
-    (e2e-tests "tests/e2e/template_instantiation_test.sh: READY")
-    (benchmarks "benches/template_bench.sh: PASS (5 suites)")
-    (zig-build "Zig 0.15.2 compatible: PASS"))
+    (zig-ffi-tests "src/interface/ffi/: PASS (zig build test)")
+    (rust-tests "src/ephapax/: PASS (cargo test)")
+    (workflow-tests "tests/workflows/validate_workflows_test.sh: PASS")
+    (aspect-tests "tests/aspect_tests.sh: STUB (not yet populated)")
+    (e2e-tests "tests/e2e.sh: STUB"))
   (critical-next-actions
-    ("Commit test suite"
-     "Push to GitHub"
-     "Verify CI workflows pass"
-     "Document test instantiation patterns")))
+    ("Implement Ephapax brush engine and tile compositing (v0.2.0)"
+     "Generate AffineScript → typed-wasm bridge from Idris2 ABI"
+     "Wire idris2 --check into CI for ABI proof validation"
+     "Add fuzz harness for pt_tile_blit"
+     "Integrate Gossamer shell for a runnable application (v0.3.0)")))

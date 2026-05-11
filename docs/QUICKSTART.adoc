@@ -1,4 +1,5 @@
-= Quickstart
+// SPDX-License-Identifier: PMPL-1.0-or-later
+= paint-type — Quickstart
 :toc: preamble
 
 Get up and running in 60 seconds.
@@ -6,19 +7,38 @@ Get up and running in 60 seconds.
 == Prerequisites
 
 * Git 2.40+
-* just (command runner)
-* Your language toolchain (see Justfile for details)
+* `just` (command runner)
+* Rust stable toolchain
+* Zig 0.15+
 
-== From Template (New Project)
+== Clone and Build
 
 [source,bash]
 ----
-git clone https://github.com/{{OWNER}}/rsr-template-repo my-project
-cd my-project
-rm -rf .git && git init -b main
-just init       # interactive placeholder replacement
+git clone https://github.com/JoshuaJewell/paint-type.git
+cd paint-type
+just build
+just test
+----
+
+== Zig FFI Tests
+
+[source,bash]
+----
+cd src/interface/ffi
+zig build test
+----
+
+== Rust Ephapax Tests
+
+[source,bash]
+----
+cd src/ephapax
+cargo test
 ----
 
 == Project Structure
 
-See README.adoc in the root for the Dual-Track architecture summary.
+See link:../EXPLAINME.adoc[EXPLAINME.adoc] for the full directory structure guide.
+See link:../TOPOLOGY.md[TOPOLOGY.md] for the architecture topology.
+See link:../ROADMAP.adoc[ROADMAP.adoc] for the milestone plan.

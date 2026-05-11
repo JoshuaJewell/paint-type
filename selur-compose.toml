@@ -1,14 +1,14 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
-# Stapeln service definition for rsr-template-repo
+# Stapeln service definition for paint-type
 #
 # Usage:
 #   podman-compose -f selur-compose.toml up -d
 #   just stack-up
 
 [project]
-name = "rsr-template-repo"
+name = "paint-type"
 
 [services.app]
 build = { context = ".", dockerfile = "Containerfile" }

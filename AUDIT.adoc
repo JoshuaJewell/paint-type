@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
-// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+// Copyright (c) 2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me>
 
-= Audit Gate
-Codex
-v1.1, 2026-04-07
+= paint-type Audit Gate
+Joshua Jewell
+v1.0, 2026-05-11
 :toc:
 :toclevels: 2
 :sectnums:
@@ -11,10 +11,10 @@ v1.1, 2026-04-07
 == Purpose
 
 This root document exists so humans and bots can see the hard audit posture
-without having to discover the standards repository first.
+for paint-type without having to discover the standards repository first.
 
 Canonical source documents live in the `standards` repository. This file is a
-repo-local audit gate summary for template users and automated agents.
+repo-local audit gate summary for paint-type contributors and automated agents.
 
 == Hard Rules
 

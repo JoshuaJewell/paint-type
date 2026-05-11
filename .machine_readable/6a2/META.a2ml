@@ -1,28 +1,35 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
-# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+# Copyright (c) 2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me>
 #
 # META.a2ml — Project meta-level information
 # Architecture decisions, design rationale, governance.
 
 [metadata]
 version = "0.1.0"
-last-updated = "2026-04-11"
+last-updated = "2026-05-11"
 
 [project-info]
-type = "library"  # TODO: update type (library|binary|service|website|monorepo)  # library | binary | monorepo | service | website
-languages = []             # e.g. ["rust", "zig", "idris2"]
+type = "application"  # library | binary | monorepo | service | website
+languages = ["rust", "zig", "idris2", "affinescript"]
 license = "PMPL-1.0-or-later"
-author = "Jonathan D.A. Jewell (hyperpolymath)"
+author = "Joshua Jewell (JoshuaJewell)"
 
 [architecture-decisions]
 # ADR format: status = proposed | accepted | deprecated | superseded | rejected
-# - { id = "ADR-001", title = "Use Zig for FFI", status = "accepted", date = "2026-02-14" }
+adrs = [
+  { id = "ADR-001", title = "Use Idris2 for ABI definitions — dependent types prove interface correctness", status = "accepted", date = "2026-05-01" },
+  { id = "ADR-002", title = "Use Zig for FFI bridge — zero-cost C ABI compatibility", status = "accepted", date = "2026-05-01" },
+  { id = "ADR-003", title = "Use Rust with linear types for Ephapax — no aliased mutable tile access", status = "accepted", date = "2026-05-01" },
+  { id = "ADR-004", title = "Use Gossamer as desktop shell — linearly-typed webview, no Electron", status = "accepted", date = "2026-05-01" },
+  { id = "ADR-005", title = "Use AffineScript → typed-wasm for bridge — generated from Idris2 ABI", status = "accepted", date = "2026-05-01" },
+  { id = "ADR-006", title = "RGBA16F tile format — 64x64 tiles, HDR-capable, GPU-friendly", status = "accepted", date = "2026-05-01" },
+]
 
 [development-practices]
 build-tool = "just"
 container-runtime = "podman"
 ci-platform = "github-actions"
-package-manager = "guix"  # guix | nix | cargo | mix
+package-manager = "guix"
 
 [maintenance-axes]
 scoping-first = true
@@ -32,22 +39,12 @@ axis-2 = "corrective > adaptive > perfective"
 axis-3 = "systems > compliance > effects"
 
 [scoping]
-sources = "README, roadmap, status docs, maintenance checklist, CI/security docs"
+sources = "README, ROADMAP.adoc, READINESS.md, TEST-NEEDS.md, PROOF-NEEDS.md, TOPOLOGY.md"
 marker-scan = "TODO/FIXME/XXX/HACK/STUB/PARTIAL"
 idris-unsound-scan = "believe_me/assert_total"
 
-[axis-2-maintenance-rules]
-corrective-first = true
-adaptive-second = true
-adaptive-focus = "scope-change reconciliation, stale-reference removal, obsolete-work culling"
-perfective-third = true
-perfective-source = "axis-1 honest state after corrective/adaptive updates"
-
-[axis-3-audit-rules]
-audit-focus = "systems in place, documentation explains actual state, safety/security accounted for, observed effects reviewed"
-compliance-focus = "seams/compromises/exception register, bounded exceptions, anti-drift checks"
-drift-risk-example = "single exception broadening into policy violation (e.g. ReScript->TypeScript spread)"
-effects-evidence = "benchmark execution/results and maintainer status dialogue/review"
-
 [design-rationale]
-# Key design decisions and their reasoning
+tile-format = "RGBA16F tiles (64x64) allow GPU-friendly access patterns and HDR compositing without precision loss"
+abi-idris2 = "Dependent types in Idris2 let us prove pointer non-nullability, layout correctness, and FFI safety at compile time"
+zig-ffi = "Zig's C ABI compatibility is zero-cost and verifiable; no hidden allocations, no GC pauses at the FFI boundary"
+gossamer-shell = "Linear types in the shell prevent UI state corruption; webview avoids native widget toolkit lock-in"

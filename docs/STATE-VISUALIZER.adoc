@@ -1,128 +1,82 @@
-= Project State Visualizer
+// SPDX-License-Identifier: PMPL-1.0-or-later
+= paint-type — Project State Visualizer
+// Last updated: 2026-05-11
+
 [source]
 ----
-<!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
-<!-- TOPOLOGY.md — Project architecture map and completion dashboard -->
-<!-- Last updated: 2026-02-28 -->
-
-# RSR Template Repo — Project Topology
+# paint-type — Project Topology (v0.1.0)
 
 ## System Architecture
 
-```
-                        ┌─────────────────────────────────────────┐
-                        │              NEW REPOSITORY             │
-                        │        (Consumer of this Template)      │
-                        └───────────────────┬─────────────────────┘
-                                            │ Scaffolding
-                                            ▼
-                        ┌─────────────────────────────────────────┐
-                        │           RSR TEMPLATE HUB              │
-                        │                                         │
-                        │  ┌───────────┐  ┌───────────────────┐  │
-                        │  │ AI Gate-  │  │  ABI / FFI        │  │
-                        │  │ keeper    │  │  Standard         │  │
-                        │  │ (0-AI-M)  │  │ (Idris2/Zig)      │  │
-                        │  └─────┬─────┘  └────────┬──────────┘  │
-                        │        │                 │              │
-                        │  ┌─────▼─────┐  ┌────────▼──────────┐  │
-                        │  │ Topology  │  │  SCM / 6SCM       │  │
-                        │  │ Guide     │  │  Metadata         │  │
-                        │  │ (Visual)  │  │ (machine_read)    │  │
-                        │  └─────┬─────┘  └────────┬──────────┘  │
-                        │        │                 │              │
-                        │  ┌─────▼─────────────────▼──────────┐  │
-                        │  │      CONTAINER ECOSYSTEM         │  │
-                        │  │  ┌──────────┐ ┌───────────────┐  │  │
-                        │  │  │ Podman / │ │ selur-compose  │  │  │
-                        │  │  │ OCI      │ │ cerro-torre    │  │  │
-                        │  │  │ Build    │ │ svalinn/vordr  │  │  │
-                        │  │  └──────────┘ └───────────────┘  │  │
-                        │  │  ct-build.sh  deploy.k9.ncl      │  │
-                        │  └──────────────────────────────────┘  │
-                        └────────│─────────────────│──────────────┘
-                                 │                 │
-                                 ▼                 ▼
-                        ┌─────────────────────────────────────────┐
-                        │          PLATFORM INTEGRATION           │
-                        │  ┌───────────┐  ┌───────────┐  ┌───────┐│
-                        │  │ GitHub    │  │ GitLab    │  │ Nix / ││
-                        │  │ Workflows │  │ CI/CD     │  │ Guix  ││
-                        │  └───────────┘  └───────────┘  └───────┘│
-                        └─────────────────────────────────────────┘
-
-                        ┌─────────────────────────────────────────┐
-                        │          REPO INFRASTRUCTURE            │
-                        │  Justfile / Mustfile  .machine_readable/  │
-                        │  Codeowners / Reuse   0-AI-MANIFEST.a2ml  │
-                        └─────────────────────────────────────────┘
-```
+                    ┌─────────────────────────────────────────────────┐
+                    │              paint-type Application              │
+                    │  (Gossamer shell + Web UI chrome — v0.3.0)       │
+                    └──────────────────────┬──────────────────────────┘
+                                           │ AffineScript → typed-wasm
+                                           ▼
+                    ┌─────────────────────────────────────────────────┐
+                    │              ABI Bridge Layer                    │
+                    │  ┌───────────────┐  ┌──────────────────────┐   │
+                    │  │  Idris2 ABI   │  │  Zig FFI (libpt)     │   │
+                    │  │  (Types,      │  │  C ABI bridge        │   │
+                    │  │   Layout,     │  │  src/interface/ffi/  │   │
+                    │  │   Foreign)    │  └──────────────────────┘   │
+                    │  └───────────────┘                              │
+                    └──────────────────────┬──────────────────────────┘
+                                           │ C ABI (pt_*)
+                                           ▼
+                    ┌─────────────────────────────────────────────────┐
+                    │              Ephapax Image Core (Rust)           │
+                    │  RGBA16F tiles · compositing · undo graph        │
+                    │  linear types · no aliased mutable tile refs     │
+                    │  src/ephapax/                                    │
+                    └──────────────────────┬──────────────────────────┘
+                                           │
+                          ┌────────────────┼────────────────┐
+                          ▼                ▼                 ▼
+                    ┌───────────┐  ┌──────────────┐  ┌──────────────┐
+                    │  Burble   │  │    Groove    │  │  Plugin WASM  │
+                    │  WebRTC   │  │  Discovery   │  │   Sandbox    │
+                    │  (v0.5.0) │  │  (v0.5.0)   │  │  (v0.4.0)    │
+                    └───────────┘  └──────────────┘  └──────────────┘
 
 ## Completion Dashboard
 
-```
 COMPONENT                          STATUS              NOTES
-─────────────────────────────────  ──────────────────  ─────────────────────────────────
-CORE STANDARDS
-  ABI/FFI Standard (Idris2/Zig)     ██████████ 100%    Universal interface stable
-  AI Gatekeeper (0-AI-MANIFEST)     ██████████ 100%    Universal entry point active
-  TOPOLOGY.md Standard              ██████████ 100%    Visual summary guide active
-  6SCM Metadata Structure           ██████████ 100%    Machine-readable state stable
+─────────────────────────────────  ──────────────────  ──────────────────────────────
+FOUNDATION (v0.1.0) ✓
+  Idris2 ABI (Types/Layout/Foreign) ██████████ 100%   Proofs typecheck, FFI wrappers done
+  Zig FFI bridge (libpt)            ██████████ 100%   Integration tests pass
+  Rust Ephapax skeleton             ██████████ 100%   Crate builds, unit tests pass
+  CI/CD pipeline                    ██████████ 100%   GitHub Actions, OpenSSF, SPDX
+  Repository governance             ██████████ 100%   CRG Grade D, machine-readable complete
 
-INFRASTRUCTURE
-  Justfile Automation               ██████████ 100%    Standard build/verify tasks
-  CI/CD Workflow Templates          ██████████ 100%    GH/GL scaffolding verified
-  Multi-Forge Sync                  ██████████ 100%    Hub-and-spoke mirroring stable
+CORE IMAGE OPS (v0.2.0)
+  Ephapax brush engine              ░░░░░░░░░░   0%   Planned
+  Compositing (over, alpha)         ░░░░░░░░░░   0%   Planned
+  Undo graph                        ░░░░░░░░░░   0%   Planned
+  AffineScript bridge               ░░░░░░░░░░   0%   Stub only
 
-CONTAINER ECOSYSTEM (Phase 2)
-  Containerfile (OCI build)         ██████████ 100%    Multi-stage Chainguard base
-  selur-compose orchestration       ██████████ 100%    Template + concrete example
-  cerro-torre manifest              ██████████ 100%    Bundle metadata & signing
-  svalinn gateway policy            ██████████ 100%    .gatekeeper.yaml active
-  vordr runtime monitoring          ██████████ 100%    Runtime config template
-  k9-svc deployment (Nickel)        ██████████ 100%    Hunt-level deploy descriptor
-  ct-build.sh pipeline              ██████████ 100%    Build/sign/verify script
-  Justfile container-* recipes      ██████████ 100%    8 recipes integrated
-  Trustfile CONTAINER_SUPPLY_CHAIN  ██████████ 100%    Supply chain section added
+DESKTOP SHELL (v0.3.0)
+  Gossamer shell integration        ░░░░░░░░░░   0%   Not started
+  Web UI chrome (layer panel, etc.) ░░░░░░░░░░   0%   Not started
+  File I/O (PNG, native format)     ░░░░░░░░░░   0%   Not started
 
-REPO INFRASTRUCTURE
-  .machine_readable/                ██████████ 100%    STATE/META/ECOSYSTEM active
-  Governance & License              ██████████ 100%    PMPL & Ethical use verified
-  Development Shells (Nix/Guix)     ██████████ 100%    Reproducible env stable
+PLUGIN SYSTEM (v0.4.0)
+  WASM sandbox                      ░░░░░░░░░░   0%   Not started
+  Plugin signing                    ░░░░░░░░░░   0%   Not started
+
+COLLABORATION (v0.5.0)
+  Burble WebRTC session             ░░░░░░░░░░   0%   Not started
+  Groove service discovery          ░░░░░░░░░░   0%   Not started
+  CRDT tile merge                   ░░░░░░░░░░   0%   Not started
 
 ─────────────────────────────────────────────────────────────────────────────
-OVERALL:                            ██████████ 100%    RSR Template Stable & Certified
-```
-
-## Key Dependencies
-
-```
-Philosophy ──────► RSR Standard ──────► Template Scaffolding ──► New Repo
-     │                 │                      │                    │
-     ▼                 ▼                      ▼                    ▼
-CCCP Policy ─────► 0-AI-MANIFEST ────────► Justfile ──────────► Compliance
-                                              │
-                                              ▼
-                                      Container Ecosystem
-                                   ┌──────────┼──────────┐
-                                   ▼          ▼          ▼
-                              selur-compose  cerro-   svalinn/
-                              (orchestrate)  torre    vordr
-                                             (sign)   (monitor)
-                                              │
-                                              ▼
-                                         k9-svc deploy
-```
+OVERALL:                            █░░░░░░░░░  10%   v0.1.0 Foundation complete
 
 ## Update Protocol
 
-This file is maintained by both humans and AI agents. When updating:
-
-1. **After completing a component**: Change its bar and percentage
-2. **After adding a component**: Add a new row in the appropriate section
-3. **After architectural changes**: Update the ASCII diagram
-4. **Date**: Update the `Last updated` comment at the top of this file
-
-Progress bars use: `█` (filled) and `░` (empty), 10 characters wide.
-Percentages: 0%, 10%, 20%, ... 100% (in 10% increments).
+1. After completing a milestone: update status bars and percentages
+2. After architectural changes: update the ASCII diagram
+3. Date: update the `Last updated` comment at the top
 ----

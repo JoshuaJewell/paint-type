@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
-# Copyright (c) {{CURRENT_YEAR}} {{AUTHOR}} ({{OWNER}}) <{{AUTHOR_EMAIL}}>
+# Copyright (c) 2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me>
 #
 # methodology.a2ml — AI agent methodology configuration
 # Declares how agents should approach work in this repository.
@@ -9,7 +9,7 @@
 
 [metadata]
 version = "1.0.0"
-last-updated = "{{CURRENT_DATE}}"
+last-updated = "2026-05-11"
 spec = "https://github.com/hyperpolymath/standards/blob/main/agentic-a2ml/docs/ADR-002-methodology-layer.adoc"
 
 # ============================================================================
@@ -55,7 +55,7 @@ perfective = 10   # % for SPDX headers, doc updates, formatting, style
 # Customise this per project — the template default is generic.
 
 [methodology.unique-strength]
-description = "{{PROJECT_UNIQUE_STRENGTH}}"
+description = "Formally-verified ABI bridge (Idris2 dependent types proving tile layout correctness and pointer safety) combined with a linearly-typed image engine (Rust Ephapax). No other open-source image editor has a formally-verified FFI boundary."
 deepen-not-broaden = true
 
 # ============================================================================
@@ -71,10 +71,10 @@ deepen-not-broaden = true
 
 [methodology.divergent-invariants]
 rules = [
-  # Customise per project. Examples:
-  # "Idris2 only for formal verification — no Lean4, Coq, Agda",
-  # "believe_me count must remain zero",
-  # "FFI architecture: Idris2 → RefC → Zig → C ABI (no shortcuts)",
+  "Idris2 only for ABI definitions — the formally-verified boundary is the unique strength; do not replace with ad-hoc assertions",
+  "believe_me count must remain zero in all Idris2 files",
+  "FFI architecture: Idris2 ABI → Zig C bridge → Rust Ephapax (no shortcuts through this chain)",
+  "Tile linearity invariant: no aliased mutable tile references anywhere in the call stack",
 ]
 
 # Optional: language invariant for the core strength
@@ -89,9 +89,11 @@ rules = [
 
 [methodology.known-constraints]
 constraints = [
-  # Customise per project. Examples:
-  # "End-to-end build has never been verified",
-  # "libproject.so does not exist yet — all bindings call stubs",
+  "Ephapax brush engine not yet implemented — compositing, undo graph are v0.2.0 work",
+  "AffineScript bridge is stub-only — code generator not yet integrated",
+  "Gossamer shell integration not started — depends on Gossamer reaching usable API surface",
+  "Burble/Groove collaboration layers are v0.5.0 — not available to wire against yet",
+  "idris2 --check not yet wired into CI — ABI proofs verified locally only",
 ]
 
 # ============================================================================
@@ -101,7 +103,7 @@ constraints = [
 # These rules detect corrupt/template/stale state files.
 
 [methodology.state-validation]
-reject-if-contains = ["{{PLACEHOLDER}}", "{{PROJECT}}", "rsr-template-repo"]
+reject-if-contains = ["{{PLACEHOLDER}}", "{{PROJECT}}", "rsr-template-repo", "YOUR Template", "[YOUR-"]
 reject-if-project-name-mismatch = true
 staleness-threshold-days = 90
 fallback-files = ["TODO.md", "TODO.adoc", "ROADMAP.adoc", "README.adoc"]

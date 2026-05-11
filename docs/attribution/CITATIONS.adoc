@@ -1,34 +1,35 @@
-= {{PROJECT_NAME}} - Citation Guide
+// SPDX-License-Identifier: PMPL-1.0-or-later
+= paint-type - Citation Guide
 :toc:
 
 == BibTeX
 
 [source,bibtex]
 ----
-@software{{{PROJECT_NAME}}_{{CURRENT_YEAR}},
-  author = {{{AUTHOR_LAST}}, {{AUTHOR_FIRST}}},
-  title = {{{PROJECT_NAME}}},
-  year = {{{CURRENT_YEAR}}},
-  url = {https://github.com/{{OWNER}}/{{PROJECT_NAME}}},
+@software{paint-type_2026,
+  author = {Jewell, Joshua},
+  title = {paint-type},
+  year = {2026},
+  url = {https://github.com/JoshuaJewell/paint-type},
   license = {PMPL-1.0-or-later}
 }
 ----
 
 == Harvard Style
 
-{{AUTHOR_LAST}}, {{AUTHOR_INITIALS}} ({{CURRENT_YEAR}}) _{{PROJECT_NAME}}_ [Computer software]. Available at: https://github.com/{{OWNER}}/{{PROJECT_NAME}}
+Jewell, J. (2026) _paint-type_ [Computer software]. Available at: https://github.com/JoshuaJewell/paint-type
 
 == OSCOLA
 
-{{AUTHOR}}, '{{PROJECT_NAME}}' ({{CURRENT_YEAR}}) <https://github.com/{{OWNER}}/{{PROJECT_NAME}}>
+Joshua Jewell, 'paint-type' (2026) <https://github.com/JoshuaJewell/paint-type>
 
 == MLA
 
-{{AUTHOR_LAST}}, {{AUTHOR_FIRST}} "{{PROJECT_NAME}}." {{CURRENT_YEAR}}, github.com/{{OWNER}}/{{PROJECT_NAME}}.
+Jewell, Joshua. "paint-type." 2026, github.com/JoshuaJewell/paint-type.
 
 == APA 7
 
-{{AUTHOR_LAST}}, {{AUTHOR_INITIALS}} ({{CURRENT_YEAR}}). _{{PROJECT_NAME}}_ [Computer software]. GitHub. https://github.com/{{OWNER}}/{{PROJECT_NAME}}
+Jewell, J. (2026). _paint-type_ [Computer software]. GitHub. https://github.com/JoshuaJewell/paint-type
 
 == See Also
 

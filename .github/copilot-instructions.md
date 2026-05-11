@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
-<!-- Copyright (c) {{CURRENT_YEAR}} {{AUTHOR}} ({{OWNER}}) <{{AUTHOR_EMAIL}}> -->
+<!-- Copyright (c) 2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me> -->
 <!-- Authoritative source: docs/AI-CONVENTIONS.md -->
 
 # Copilot Instructions
@@ -13,7 +13,7 @@
 
 - SPDX: `PMPL-1.0-or-later` on all new files.
 - Never use AGPL-3.0.
-- Copyright: `{{AUTHOR}} ({{OWNER}}) <{{AUTHOR_EMAIL}}>`
+- Copyright: `Joshua Jewell (JoshuaJewell) <paint-type@pm.me>`
 
 ## Code Style
 

@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
-# Copyright (c) {{CURRENT_YEAR}} {{AUTHOR}} ({{OWNER}}) <{{AUTHOR_EMAIL}}>
+# Copyright (c) 2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me>
 #
 # git-cliff configuration for conventional commit changelog generation.
 # https://git-cliff.org/docs/configuration
 #
 # Placeholders — replace before first use:
-#   {{OWNER}} — GitHub organization or username
-#   {{REPO}}  — GitHub repository name
+#   JoshuaJewell — GitHub organization or username
+#   paint-type  — GitHub repository name
 
 [changelog]
 # Changelog header
@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # https://keats.github.io/tera/docs/#introduction
 body = """
 {%- macro remote_url() -%}
-  https://github.com/{{OWNER}}/{{REPO}}
+  https://github.com/JoshuaJewell/paint-type
 {%- endmacro -%}
 
 {% if version -%}
@@ -57,7 +57,7 @@ body = """
 # Template for the changelog footer
 footer = """
 {%- macro remote_url() -%}
-  https://github.com/{{OWNER}}/{{REPO}}
+  https://github.com/JoshuaJewell/paint-type
 {%- endmacro -%}
 
 {% for release in releases -%}

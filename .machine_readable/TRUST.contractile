@@ -35,7 +35,7 @@
 
 (trust-contractile
   (version "1.0.0")
-  (repo "rsr-template-repo")
+  (repo "paint-type")
 
   (trust-level "maximal")  ; maximal | standard | restricted | minimal
 

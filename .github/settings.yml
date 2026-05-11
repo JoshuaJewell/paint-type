@@ -7,14 +7,14 @@
 # applied by the probot/settings app when changes are pushed to the default
 # branch. Install the app at: https://github.com/apps/settings
 #
-# Template file — replace {{REPO}} and {{DESCRIPTION}} with actual values.
+# Repository settings — configured for paint-type.
 
 # ─── Repository Settings ───────────────────────────────────────────────────────
 
 repository:
-  name: "{{REPO}}"
-  description: "{{DESCRIPTION}}"
-  homepage: "https://github.com/hyperpolymath/{{REPO}}"
+  name: "paint-type"
+  description: "Cross-platform open-source image editor — capable enough for real work, simple enough to reach for without thinking"
+  homepage: "https://github.com/JoshuaJewell/paint-type"
   private: false
   has_issues: true
   has_projects: true

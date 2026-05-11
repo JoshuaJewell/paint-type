@@ -1,52 +1,57 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
-# Copyright (c) {{CURRENT_YEAR}} {{AUTHOR}} ({{OWNER}}) <{{AUTHOR_EMAIL}}>
+# Copyright (c) 2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me>
 #
-# ANCHOR.a2ml - authoritative anchor for this repository
+# ANCHOR.a2ml — authoritative anchor for paint-type
 
 [metadata]
 version = "1.0.0"
-last-updated = "{{CURRENT_DATE}}"
+last-updated = "2026-05-11"
 
 [anchor]
 schema = "hyperpolymath.anchor/1"
-repo = "{{OWNER}}/{{REPO}}"
+repo = "JoshuaJewell/paint-type"
 authority = "upstream-canonical"
 
 purpose = [
-  "Define canonical semantics and policy boundaries for this repository.",
+  "Define canonical semantics and policy boundaries for paint-type.",
   "Declare what downstream/satellite repos can extend but not redefine.",
   "Provide a stable golden path and invariant contract for release readiness.",
 ]
 
 [identity]
-project = "{{PROJECT_NAME}}"
-kind = "{{PROJECT_KIND}}"                # language | library | service | tool
-one-sentence = "{{PROJECT_PURPOSE}}"
-domain = "{{PROJECT_DOMAIN}}"
+project = "paint-type"
+kind = "application"
+one-sentence = "Cross-platform open-source image editor — capable enough for real work, simple enough to reach for without thinking."
+domain = "image-editing"
 
 [semantic-authority]
 policy = "canonical"
 
 owns = [
-  "Project semantics and specification",
+  "paint-type application semantics and specification",
+  "Ephapax image core API",
+  "Tile primitive format (RGBA16F, 64x64)",
+  "Idris2 ABI definitions and layout proofs",
   "Invariant definitions and contractiles",
-  "Reference implementation behavior",
 ]
 
 [implementation-policy]
-allowed = ["Rust", "Idris2", "Zig", "Scheme", "Shell", "Just", "AsciiDoc", "Markdown"]
-forbidden = ["Node.js", "npm"]
+allowed = ["Rust", "Idris2", "Zig", "AffineScript", "Shell", "Just", "AsciiDoc", "Markdown", "HTML", "CSS"]
+forbidden = ["Node.js", "npm", "TypeScript", "Python", "Go"]
 
 [golden-path]
 smoke-test-command = [
-  "just test",
+  "cd src/interface/ffi && zig build test",
+  "cd src/ephapax && cargo test",
   "just quality",
 ]
 
 success-criteria = [
-  "Core tests pass",
+  "Zig FFI integration tests pass",
+  "Rust Ephapax unit tests pass",
   "Quality gates pass",
   "No unresolved critical security findings",
+  "believe_me count is zero in all Idris2 files",
 ]
 
 [satellite-policy]
@@ -54,9 +59,3 @@ must-pin-upstream = true
 must-declare-authority = true
 must-have-anchor = true
 must-have-golden-path = true
-
-[semantic-authority-files]
-language-spec = "SPECIFICATION.md"
-formal-proofs = "docs/proofs/PROOFS.adoc"
-type-theory = "docs/theory/THEORY.adoc"
-algorithms = "docs/theory/ALGORITHMS.adoc"

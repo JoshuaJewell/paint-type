@@ -1,16 +1,16 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
-# stapeln.toml — Layer-based container build for rsr-template-repo
+# stapeln.toml — Layer-based container build for paint-type
 #
 # stapeln builds containers as composable layers (German: "to stack").
 # Each layer is independently cacheable, verifiable, and signable.
 
 [metadata]
-name = "rsr-template-repo"
+name = "paint-type"
 version = "0.1.0"
-description = "rsr-template-repo container service"
-author = "Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"
+description = "paint-type image editor container service"
+author = "Joshua Jewell <paint-type@pm.me>"
 license = "PMPL-1.0-or-later"
-registry = "ghcr.io/hyperpolymath"
+registry = "ghcr.io/JoshuaJewell"
 
 [build]
 containerfile = "Containerfile"
@@ -32,7 +32,7 @@ packages = []
 cache = true
 
 [layers.build]
-description = "rsr-template-repo build"
+description = "paint-type build"
 extends = "toolchain"
 commands = []
 
@@ -43,7 +43,7 @@ packages = ["ca-certificates", "curl"]
 copy-from = [
     { layer = "build", src = "/app/", dst = "/app/" },
 ]
-entrypoint = ["/app/rsr-template-repo"]
+entrypoint = ["/app/paint-type"]
 user = "nonroot"
 
 # ── Security ───────────────────────────────────────────────────

@@ -1,14 +1,12 @@
-# RSR Template AI Manifest (Read First)
+# paint-type AI Manifest (Read First)
 
-This is the root AI manifest for the template repository.
+This is the root AI manifest for paint-type.
 
-## Template Status
+## Project
 
-This repository intentionally contains template placeholders before bootstrap.
-Examples: `{{OWNER}}`, `{{REPO}}`, `{{PROJECT_NAME}}`, `[YOUR-REPO-NAME]`.
-
-Do not invent project-specific values unless the operator runs template
-initialization (for example `just init`) or explicitly provides values.
+paint-type is a cross-platform open-source image editor in the spirit of Paint.NET.
+Repo: JoshuaJewell/paint-type. License: PMPL-1.0-or-later.
+Contact: paint-type@pm.me. Status: early development — tile primitive landed.
 
 ## Authority Split
 
@@ -20,6 +18,24 @@ initialization (for example `just init`) or explicitly provides values.
   - `session/custom-checks.k9`
   - `session/local-hooks.sh`
   - `coordination.k9`
+
+## What Has Already Been Done (Do Not Redo)
+
+- `src/interface/Abi/Types.idr` — Idris2 ABI types for tile primitive
+- `src/interface/Abi/Layout.idr` — Idris2 layout proofs
+- `src/interface/Abi/Foreign.idr` — Idris2 pt_ FFI wrappers
+- `src/interface/ffi/src/main.zig` — Zig libpt implementation
+- `src/interface/ffi/build.zig` — Zig build file
+- `src/interface/ffi/test/integration_test.zig` — integration tests
+- `src/ephapax/` — Rust image core crate skeleton
+
+## Architecture
+
+- Desktop shell: Gossamer (linearly-typed webview)
+- UI: Web (HTML/CSS/JS) in Gossamer
+- Native image core: Ephapax (Rust, linear types, RGBA16F tiles)
+- Bridge: AffineScript + typed-wasm
+- Collaboration: Burble (WebRTC, sub-10ms), Groove (service discovery)
 
 ## Canonical Session Commands
 
@@ -42,13 +58,16 @@ initialization (for example `just init`) or explicitly provides values.
 2. Keep local policy and hook behavior local to this repo.
 3. Write runtime session artifacts in working repos (typically `.session/`).
 4. Keep README/AUDIT/manifest claims synchronized with actual files.
-5. Mark stubs and placeholders explicitly.
+5. All cross-language boundaries go through the Idris2 ABI + Zig FFI — no shortcuts.
+6. Tile memory is linearly typed — no aliased mutable references to tile data.
 
 ## Key Local Files
 
 - `AUDIT.adoc` (local audit gate summary)
-- `README.adoc` (template orientation)
-- `EXPLAINME.adoc` (claim-to-implementation map)
+- `README.adoc` (project overview)
+- `EXPLAINME.adoc` (directory structure guide)
+- `TOPOLOGY.md` (architecture topology)
+- `ROADMAP.adoc` (milestone plan)
 - `session/README.md` (session-binding usage)
 - `.machine_readable/` (machine-readable repo policy/state files)
 
@@ -56,6 +75,8 @@ initialization (for example `just init`) or explicitly provides values.
 
 1. Read `0-AI-MANIFEST.a2ml`.
 2. Read `AUDIT.adoc`.
-3. Confirm whether placeholders have been initialized.
-4. Use canonical session commands through `session/dispatch.sh` or Just aliases.
-5. Avoid claiming files/paths exist unless verified in this repository.
+3. Read `.machine_readable/STATE.a2ml` for current phase and blockers.
+4. Read `.machine_readable/MUST.contractile` before making any changes.
+5. Use canonical session commands through `session/dispatch.sh` or Just aliases.
+6. Do not touch `src/interface/Abi/`, `src/interface/ffi/`, or `src/ephapax/` without reviewing existing proofs and tests first.
+7. Avoid claiming files/paths exist unless verified in this repository.

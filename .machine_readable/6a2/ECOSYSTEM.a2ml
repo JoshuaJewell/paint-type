@@ -1,26 +1,38 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
-# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+# Copyright (c) 2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me>
 #
 # ECOSYSTEM.a2ml — Project ecosystem position
 # Relationships, dependencies, integration points.
 
 [metadata]
 version = "0.1.0"
-last-updated = "2026-04-11"
+last-updated = "2026-05-11"
 
 [project]
-name = "rsr-template-repo"
-purpose = ""  # TODO: describe project purpose
-role = ""  # TODO: describe project role  # e.g. ffi-infrastructure, cli-tool, library, service
+name = "paint-type"
+purpose = "Cross-platform open-source image editor — RGBA16F tile engine with formally-verified ABI, Gossamer shell, and Burble collaboration"
+role = "application"  # ffi-infrastructure | cli-tool | library | service | application
 
 [position-in-ecosystem]
-tier = "infrastructure"  # 1 | 2 | infrastructure
+tier = "1"  # 1 (core product) | 2 (tooling) | infrastructure
 
 [related-projects]
 # relationship types: sibling-standard, dependency, dependent, inspiration, potential-consumer
-# - { name = "language-bridges", relationship = "sibling-standard" }
-# - { name = "hypatia", relationship = "potential-consumer" }
+projects = [
+  { name = "gossamer", relationship = "dependency", role = "desktop shell — linearly-typed webview" },
+  { name = "ephapax", relationship = "dependency", role = "native image core (Rust, RGBA16F tiles)" },
+  { name = "burble", relationship = "dependency", role = "WebRTC collaboration layer" },
+  { name = "groove", relationship = "dependency", role = "service discovery protocol" },
+  { name = "proven", relationship = "dependency", role = "formally verified safety library" },
+  { name = "palimpsest", relationship = "sibling-standard", role = "hyperpolymath ecosystem umbrella" },
+  { name = "rsr-template-repo", relationship = "inspiration", role = "repository scaffold origin" },
+]
 
 [integration-points]
 # External systems this project connects to
-# - { system = "gitbot-fleet", direction = "outbound", protocol = "repository_dispatch" }
+points = [
+  { system = "gossamer-shell", direction = "inbound", protocol = "AffineScript typed-wasm API" },
+  { system = "burble-webrtc", direction = "bidirectional", protocol = "CRDT tile mutations" },
+  { system = "groove-discovery", direction = "outbound", protocol = ".well-known/groove/manifest.json" },
+  { system = "wasm-plugin-sandbox", direction = "inbound", protocol = "typed-wasm plugin API" },
+]

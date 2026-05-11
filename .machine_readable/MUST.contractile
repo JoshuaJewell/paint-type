@@ -33,7 +33,7 @@
 
 (must-contractile
   (version "1.0.0")
-  (repo "rsr-template-repo")
+  (repo "paint-type")
 
   ; === Universal Invariants (apply to ALL repos) ===
 
@@ -81,8 +81,13 @@
   )
 
   ; === Project-Specific Invariants ===
-  ; *REMINDER: Add invariants specific to this repo*
-  ; (must "# Add project-specific invariants here")
+  (invariants
+    (must "no aliased mutable tile references — linear type discipline must be preserved")
+    (must "all cross-language boundaries go through Idris2 ABI + Zig FFI — no direct Rust↔JS calls")
+    (must "plugin code never calls Ephapax directly — always through the typed-wasm API surface")
+    (must "tile compositing must preserve RGBA16F precision — no lossy intermediate formats")
+    (must "no new TypeScript or JavaScript files outside the Gossamer web UI context")
+  )
 
   (enforcement
     (k9-validator "contractiles/k9/must-check.k9.ncl")

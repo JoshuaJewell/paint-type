@@ -1,22 +1,67 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
-= YOUR Template Repo Roadmap
+= paint-type Roadmap
 
 == Current Status
 
-Initial development phase.
+Early development — tile primitive, Idris2 ABI, Zig FFI, and Rust Ephapax skeleton
+are in place. Architecture is locked; no user-visible functionality yet.
 
 == Milestones
 
-=== v0.1.0 - Foundation
-* [ ] Core functionality
-* [ ] Basic documentation
-* [ ] CI/CD pipeline
+=== v0.1.0 - Foundation (current)
+
+* [x] Tile primitive (RGBA16F, 64×64 tiles)
+* [x] Idris2 ABI definitions (`src/interface/Abi/Types.idr`, `Layout.idr`, `Foreign.idr`)
+* [x] Zig FFI bridge (`src/interface/ffi/`) with integration tests
+* [x] Rust Ephapax crate skeleton (`src/ephapax/`)
+* [x] CI/CD pipeline (GitHub Actions, OpenSSF scorecard, SPDX compliance)
+* [x] Repository governance and machine-readable metadata
+
+=== v0.2.0 - Core Image Operations
+
+* [ ] Ephapax brush engine — compositing, masking, layer blending (RGBA16F)
+* [ ] Non-destructive undo graph (persistent, O(1) branch)
+* [ ] Basic layer model — new, flatten, delete, reorder
+* [ ] AffineScript → typed-wasm bindings for the tile API
+* [ ] Formal proofs for ABI layout correctness in Idris2
+
+=== v0.3.0 - Desktop Shell
+
+* [ ] Gossamer integration — linearly-typed webview shell bootstrapped
+* [ ] Web UI chrome — layer panel, tool bar, canvas viewport
+* [ ] Tool primitives — brush, eraser, selection, fill
+* [ ] Platform integration — file open/save (PNG, RGBA16F native format)
+* [ ] Cross-platform build (Linux, macOS, Windows)
+
+=== v0.4.0 - Plugin System
+
+* [ ] WASM tier sandbox — plugins run in isolated typed-wasm environment
+* [ ] Plugin manifest and signing (cerro-torre, ML-DSA)
+* [ ] Plugin browser and package index
+* [ ] Effect plugin API — colour adjustments, filters
+* [ ] Tool plugin API — custom brush behaviours
+
+=== v0.5.0 - Collaboration
+
+* [ ] Burble WebRTC session layer — sub-10ms latency shared canvas
+* [ ] Groove service discovery — paint-type peers announce via `.well-known/groove/`
+* [ ] Conflict-free tile merging (CRDT-compatible compositing)
+* [ ] LLM channel — optional AI assistant integrated via boj-server MCP gateway
+* [ ] Permission model for collaborative sessions
 
 === v1.0.0 - Stable Release
-* [ ] Full feature set
-* [ ] Comprehensive tests
-* [ ] Production ready
+
+* [ ] All v0.x features stable and tested
+* [ ] Comprehensive test suite (unit, integration, E2E, fuzz)
+* [ ] Native file format spec published and versioned
+* [ ] Accessibility audit complete (WCAG 2.2 AA)
+* [ ] Performance targets met (60fps canvas on reference hardware)
+* [ ] OpenSSF Scorecard ≥ 8.0
+* [ ] CRG Grade B — external breadth confirmed
 
 == Future Directions
 
-_To be determined based on community feedback._
+* Wayland-native shell (bypass Gossamer for pure Linux setups)
+* Tablet/stylus pressure curves and tilt
+* Headless render server for batch image processing
+* Scripting surface for automation (AffineScript API)

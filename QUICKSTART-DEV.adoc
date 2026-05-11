@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
-// Template: QUICKSTART-DEV.adoc — clone → build → test → PR
-// Replace rsr-template-repo, {{BUILD_CMD}}, {{TEST_CMD}}, {{LANG_STACK}} with actuals
-= rsr-template-repo — Quick Start for Developers
+= paint-type — Quick Start for Developers
 :toc:
 :toclevels: 2
 
 == Tech Stack
 
-{{LANG_STACK}}
+* **Rust** (stable) — Ephapax image core (`src/ephapax/`)
+* **Idris2** — ABI type definitions and layout proofs (`src/interface/Abi/`)
+* **Zig** 0.15+ — FFI bridge to C ABI (`src/interface/ffi/`)
+* **AffineScript → typed-wasm** — bridge layer (stub, v0.2.0)
+* **Gossamer** — linearly-typed desktop shell (v0.3.0)
+* **just** — task runner
 
 == Set Up Development Environment
 
@@ -27,50 +30,96 @@ nix develop
 
 === Option C: Manual
 
+Prerequisites:
+
+* Rust stable toolchain (`rustup install stable`)
+* Zig 0.15+ (`zig version` to verify)
+* Idris2 (for ABI proof verification)
+* `just` task runner
+
 [source,bash]
 ----
-git clone https://github.com/hyperpolymath/rsr-template-repo.git
-cd rsr-template-repo
+git clone https://github.com/JoshuaJewell/paint-type.git
+cd paint-type
 just setup-dev
 ----
 
 == Build
 
+=== Zig FFI Bridge
+
 [source,bash]
 ----
-{{BUILD_CMD}}
+cd src/interface/ffi
+zig build
+----
+
+=== Rust Ephapax Core
+
+[source,bash]
+----
+cd src/ephapax
+cargo build
+----
+
+=== Everything
+
+[source,bash]
+----
+just build
 ----
 
 == Test
 
+=== Zig FFI Integration Tests
+
 [source,bash]
 ----
-{{TEST_CMD}}
+cd src/interface/ffi
+zig build test
+----
+
+=== Rust Ephapax Unit Tests
+
+[source,bash]
+----
+cd src/ephapax
+cargo test
+----
+
+=== All Tests
+
+[source,bash]
+----
+just test
 ----
 
 == Project Structure
 
 [source]
 ----
-rsr-template-repo/
-├── src/                  # Source code
-├── src/abi/              # Idris2 ABI definitions (if applicable)
-├── ffi/zig/              # Zig FFI bridge (if applicable)
-├── tests/                # Test suite
-├── docs/                 # Documentation
-├── .machine_readable/    # Checkpoint files (STATE, META, ECOSYSTEM)
-├── Justfile              # Task runner recipes
-├── guix.scm              # Guix environment
-├── flake.nix             # Nix environment (fallback)
-└── 0-AI-MANIFEST.a2ml    # AI agent entry point
+paint-type/
+├── src/
+│   ├── ephapax/            # Rust — RGBA16F tile engine (linear types)
+│   ├── interface/
+│   │   ├── Abi/            # Idris2 — ABI types, layout proofs, FFI wrappers
+│   │   └── ffi/            # Zig — libpt C ABI bridge + integration tests
+│   ├── bridges/            # AffineScript → typed-wasm bridge stubs
+│   └── aspects/            # Cross-cutting: integrity, observability, security
+├── verification/proofs/    # Formal proofs (Idris2, Lean4, Agda, Coq, TLA+)
+├── tests/                  # Test suite
+├── docs/                   # Documentation
+├── .machine_readable/      # Machine-readable state (STATE, META, contractiles)
+├── Justfile                # Task runner
+└── 0-AI-MANIFEST.a2ml      # AI agent entry point
 ----
 
 == Key Recipes
 
 [source,bash]
 ----
-just build          # Build the project
-just test           # Run tests
+just build          # Build everything
+just test           # Run all tests
 just doctor         # Self-diagnostic
 just lint           # Lint and format
 just panic-scan     # Security scan via panic-attacker
@@ -86,12 +135,17 @@ just test           # All tests pass
 just panic-scan     # No new security issues
 ----
 
-== Contractile Invariants
+== Key Invariants
 
 Read `.machine_readable/MUST.contractile` before making changes.
-Key invariants that must never be violated:
 
-{{MUST_INVARIANTS}}
+Critical invariants:
+
+* All cross-language boundaries go through the Idris2 ABI + Zig FFI — no shortcuts
+* Tile memory is linearly typed — no aliased mutable tile references
+* `believe_me` count must remain zero in all Idris2 files
+* SPDX-License-Identifier header required on every new file
+* No new TypeScript, Python, or Go files
 
 == LLM/AI Agent Development
 
@@ -102,10 +156,12 @@ If using an AI assistant, load the warmup context first:
 just llm-context    # Outputs role-appropriate context
 ----
 
-Or read `0-AI-MANIFEST.a2ml` and `.claude/CLAUDE.md` directly.
+Or read `0-AI-MANIFEST.a2ml` and `llm-warmup-dev.md` directly.
 
 == Get Help
 
 * **Architecture**: link:EXPLAINME.adoc[EXPLAINME.adoc]
-* **Wiki**: https://github.com/hyperpolymath/rsr-template-repo/wiki
-* **Report issue**: `just help-me`
+* **Topology**: link:TOPOLOGY.md[TOPOLOGY.md]
+* **Roadmap**: link:ROADMAP.adoc[ROADMAP.adoc]
+* **Report issue**: https://github.com/JoshuaJewell/paint-type/issues
+* **Contact**: paint-type@pm.me
