@@ -5,8 +5,10 @@
 paint-type is a cross-platform open-source image editor in the spirit of Paint.NET —
 capable enough for real work, simple enough to reach for without thinking.
 
-paint-type is in early development. There is no user-installable application yet.
-The first public release (v0.3.0) will provide a basic canvas with layers and tools
+paint-type is in pre-alpha (v0.2.0 closing as of 2026-06-01 — the in-repo
+image core is complete; only the AffineScript→typed-wasm bridge remains,
+gated upstream). There is no user-installable application yet. The first
+public release (v0.3.0) will provide a basic canvas with layers and tools
 running in the Gossamer desktop shell.
 
 ## Planned User Features

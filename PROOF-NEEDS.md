@@ -17,15 +17,15 @@
 | **ABI** | ABI/FFI Proofs (memory layout, pointer safety, platform compat) | Yes — primary |
 | **DOM** | Domain-Specific Proofs (bespoke to this project) | Yes (tile compositing correctness) |
 
-## ABI/FFI Boundary Proofs (Idris2) — Partially Complete
+## ABI/FFI Boundary Proofs (Idris2) — Complete
 
 | # | Proof | Status | File |
 |---|-------|--------|------|
 | ABI-1 | Non-null pointer proofs (`So (ptr /= 0)`) | **Done** | `src/interface/Abi/Types.idr` |
 | ABI-2 | Memory layout correctness (`HasSize`, `HasAlignment`) | **Done** | `src/interface/Abi/Layout.idr` |
-| ABI-3 | Platform type size proofs (per platform) | Needed | `verification/proofs/idris2/ABI/Platform.idr` |
+| ABI-3 | Platform type size proofs (per platform) | **Done** | `verification/proofs/idris2/ABI/Platform.idr` |
 | ABI-4 | FFI function return type proofs | **Done** | `src/interface/Abi/Foreign.idr` |
-| ABI-5 | C ABI compliance (`CABICompliant`, `FieldsAligned`) | Needed | `verification/proofs/idris2/ABI/Compliance.idr` |
+| ABI-5 | C ABI compliance (`CABICompliant`, `FieldsAligned`) | **Done** | `verification/proofs/idris2/ABI/Compliance.idr` |
 
 ## Typing Proofs
 
@@ -33,7 +33,7 @@
 |---|-------|--------|------|
 | TP-1 | Tile primitive type well-formedness | **Done** | `src/interface/Abi/Types.idr` |
 | TP-2 | Public API type safety (exported pt_ functions) | Needed | `verification/proofs/lean4/ApiTypes.lean` |
-| TP-3 | RGBA16F pixel format bounds (no overflow, no NaN propagation) | Needed | `verification/proofs/idris2/Pixel.idr` |
+| TP-3 | RGBA16F pixel format bounds (no overflow, no NaN propagation) | **Done** | `verification/proofs/idris2/Pixel.idr` |
 
 ## Invariant Proofs
 

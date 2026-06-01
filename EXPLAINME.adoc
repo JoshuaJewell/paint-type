@@ -110,6 +110,24 @@ entries for `hyperpolymath/typed-wasm#130` (round-trip soundness).
 
 Integrity, observability, and security cross-cuts. Scaffold in place; content planned for v0.2.0+.
 
+== Top-Level Test Suite (`tests/`)
+
+`tests/aspect_tests.sh`:: 7 aspects — SPDX, dangerous-pattern, ABI/FFI
+  contract (7 Idris2 imports ⊆ 23 Zig exports), Rust panic-safety,
+  RGBA16F constants, Idris2 ABI check, file-I/O deferred. All PASS.
+`tests/e2e.sh`:: 9-stage end-to-end pipeline orchestrator (preflight +
+  zig build + zig test + cargo `e2e_pipeline` (2 scenarios) + 2
+  scenario_*.sh probes). PR #33.
+`tests/coverage.sh`:: Local coverage entry point — `rust` / `zig` / `all`
+  (Rust `cargo-llvm-cov` hard; Zig `kcov` best-effort). PR #32 + #34.
+`tests/e2e/scenario_libpt_artifacts.sh`:: Symbol + artifact probe over
+  `src/interface/ffi/zig-out/`.
+`tests/e2e/scenario_pipeline_dogfood.sh`:: Verbose `cargo test --test
+  e2e_pipeline` replay for human inspection.
+`tests/e2e/template_instantiation_test.sh`:: Repo-structure validator.
+`tests/workflows/validate_workflows_test.sh`:: Workflow presence + SPDX +
+  `name:` field validation.
+
 == Verification (`verification/`)
 
 Formal proofs and safety cases:
@@ -159,8 +177,21 @@ Stapeln-based container definitions for running paint-type as a containerized se
 
 Key workflows:
 
-`rust-ci.yml`:: Rust build and test for Ephapax.
+`rust.yml`:: Rust build / clippy / test for Ephapax (builds libpt via Zig
+            first, then runs `cargo check/fmt/clippy/test` against
+            `src/ephapax/`). Green on main since 2026-06-01 (PRs #36/#37/#38).
 `idris-ci.yml`:: Idris2 ABI proof type-check (`idris2 --check`) on ABI module + `verification/proofs/idris2/` changes.
+`coverage.yml`:: `cargo-llvm-cov` LCOV + console summary for Rust (gated on
+                 `src/ephapax/`) plus best-effort `kcov` for the Zig
+                 integration-test binary. Reporting only — no threshold
+                 gate; uploads `rust-coverage-lcov` and `zig-coverage`
+                 artifacts each run. PR #32 + #34.
+`e2e.yml`:: Runs `bash tests/e2e.sh` end-to-end pipeline orchestrator
+            (9 stages: preflight + zig build + zig test + cargo
+            `e2e_pipeline` (2 scenarios) + 2 scenario_*.sh probes). PR #33.
+`fuzz-smoke.yml`:: 30 s `cargo-fuzz` smoke per FFI target
+                   (`pt_tile_blit`, `pt_tile_write_pixel`,
+                   `pt_layer_opacity`). PR #35.
 `dogfood-gate.yml`:: A2ML, K9, eclexiaiser, Groove compliance.
 `hypatia-scan.yml`:: Neurosymbolic CI/CD safety scan.
 `static-analysis-gate.yml`:: Security static analysis.
