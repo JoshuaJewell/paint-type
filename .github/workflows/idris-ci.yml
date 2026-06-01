@@ -1,0 +1,95 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# idris-ci.yml — Type-check the Idris2 ABI bridge.
+# Runs only when ABI modules or this workflow change to keep Actions budget tight.
+name: Idris 2 ABI Check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/interface/Abi/**'
+      - 'verification/proofs/idris2/**'
+      - '.github/workflows/idris-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/interface/Abi/**'
+      - 'verification/proofs/idris2/**'
+      - '.github/workflows/idris-ci.yml'
+  workflow_dispatch:
+
+# Idris2 bootstrap is ~10 min cold; cancel superseded runs to keep concurrency
+# headroom for other workflows.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  abi-check:
+    name: Type-check ABI bridge
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        idris2-version: ['0.8.0']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Install Idris 2 dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chezscheme libgmp-dev
+
+      - name: Cache Idris 2
+        id: cache-idris2
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ~/.idris2
+            ~/idris2-${{ matrix.idris2-version }}
+          key: idris2-${{ matrix.idris2-version }}-${{ runner.os }}
+
+      - name: Install Idris 2
+        if: steps.cache-idris2.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch v${{ matrix.idris2-version }} https://github.com/idris-lang/Idris2.git ~/idris2-${{ matrix.idris2-version }}
+          cd ~/idris2-${{ matrix.idris2-version }}
+          make bootstrap SCHEME=chezscheme
+          make install
+
+      - name: Add Idris 2 to PATH
+        run: echo "$HOME/.idris2/bin" >> $GITHUB_PATH
+
+      - name: Type-check ABI modules
+        run: |
+          cd src/interface
+          idris2 --check Abi/Types.idr
+          idris2 --check Abi/Layout.idr
+          idris2 --check Abi/Foreign.idr
+
+      - name: Type-check unblocked proof modules (if present)
+        run: |
+          if [ -d verification/proofs/idris2 ]; then
+            shopt -s globstar nullglob
+            for f in verification/proofs/idris2/**/*.idr; do
+              echo "  Checking $f"
+              idris2 --check "$f"
+            done
+          fi
+
+      - name: Write summary
+        if: always()
+        run: |
+          {
+            echo "## Idris 2 ABI Check Results"
+            echo ""
+            echo "- **ABI modules**: Types.idr, Layout.idr, Foreign.idr"
+            echo "- **Idris2 version**: ${{ matrix.idris2-version }}"
+          } >> "$GITHUB_STEP_SUMMARY"
