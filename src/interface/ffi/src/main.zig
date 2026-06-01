@@ -321,6 +321,384 @@ export fn pt_free_u16_slot(slot_ptr: u64) void {
 }
 
 //==============================================================================
+// PtLayerStack — cross-language layer metadata
+//==============================================================================
+//
+// Layer metadata (id, name, opacity, visibility) lives on the libpt side
+// so non-Rust consumers (AffineScript, Idris2 callers, future Gossamer
+// shell, etc.) can manage layer order through a single C ABI. Tile
+// storage stays on the caller side — this stack is metadata-only.
+//
+// Storage is a fixed-size in-struct array (no allocator gymnastics, no
+// growable buffer). Each stack is 256 slots × 272 B ≈ 68 KB, which
+// comfortably covers Photoshop-document-sized layer stacks (rarely
+// >100 layers) while staying small enough to allocate without thread-
+// stack pressure when test runners briefly carry a PtLayerStack through
+// a frame boundary.
+//
+// Identifiers are u32, monotonically issued from `next_id` starting at
+// 1 (0 is reserved as the "null layer id" return sentinel). Once an id
+// is deleted it is never reused — `pt_layer_get_name(..., dead_id)`
+// returns `not_found` rather than silently reading a recycled slot.
+
+/// Maximum bytes a layer name occupies on the stack (including no
+/// terminator — `name_len` carries the real length).
+pub const PT_LAYER_NAME_MAX: usize = 256;
+
+/// Maximum number of layers a single PtLayerStack can hold.
+pub const PT_LAYER_MAX_PER_STACK: usize = 256;
+
+/// Magic value for a live PtLayerStack.
+const PT_LAYER_STACK_MAGIC: u32 = 0x504C5354; // "PLST"
+
+/// Magic value written into a stack header when it has been freed.
+const PT_LAYER_STACK_DEAD_MAGIC: u32 = 0x44454144; // "DEAD"
+
+/// Sentinel "no such layer" value for u32 id returns.
+pub const PT_LAYER_ID_NONE: u32 = 0;
+
+pub const PtLayer = extern struct {
+    id: u32,
+    name_len: u32,
+    opacity_bits: u32, // raw bit pattern of an f32 (IEEE 754 binary32)
+    visible: u32,      // 0 or 1; u32 keeps the struct extern-stable
+    name_buf: [PT_LAYER_NAME_MAX]u8,
+};
+
+pub const PtLayerStack = extern struct {
+    magic: u32,
+    layer_count: u32,
+    next_id: u32,
+    _pad: u32,
+    layers: [PT_LAYER_MAX_PER_STACK]PtLayer,
+
+    fn isLive(self: *const PtLayerStack) bool {
+        return self.magic == PT_LAYER_STACK_MAGIC;
+    }
+};
+
+fn clamp_opacity(bits: u32) u32 {
+    const v: f32 = @bitCast(bits);
+    if (std.math.isNan(v)) return @bitCast(@as(f32, 1.0));
+    if (v < 0.0) return @bitCast(@as(f32, 0.0));
+    if (v > 1.0) return @bitCast(@as(f32, 1.0));
+    return bits;
+}
+
+fn find_layer_index(stack: *const PtLayerStack, id: u32) ?usize {
+    var i: usize = 0;
+    const count = stack.layer_count;
+    while (i < count) : (i += 1) {
+        if (stack.layers[i].id == id) return i;
+    }
+    return null;
+}
+
+/// Allocate an empty layer stack. Returns 0 on out-of-memory.
+export fn pt_layer_stack_new() callconv(.c) u64 {
+    const allocator = std.heap.c_allocator;
+    const stack = allocator.create(PtLayerStack) catch {
+        setError("pt_layer_stack_new: out of memory");
+        return 0;
+    };
+
+    stack.magic = PT_LAYER_STACK_MAGIC;
+    stack.layer_count = 0;
+    stack.next_id = 1;
+    stack._pad = 0;
+    // `layers` left uninitialised — `pt_layer_push` writes each slot
+    // before it is observable through layer_count.
+
+    clearError();
+    return @intFromPtr(stack);
+}
+
+/// Free a layer stack. Safe to call with 0. Refuses double-free via the
+/// magic word the same way `pt_tile_free` does.
+export fn pt_layer_stack_free(stack_ptr: u64) callconv(.c) void {
+    if (stack_ptr == 0) return;
+
+    const stack: *PtLayerStack = @ptrFromInt(stack_ptr);
+    if (stack.magic != PT_LAYER_STACK_MAGIC) {
+        setError("pt_layer_stack_free: invalid or already-freed stack");
+        return;
+    }
+
+    stack.magic = PT_LAYER_STACK_DEAD_MAGIC;
+    const allocator = std.heap.c_allocator;
+    allocator.destroy(stack);
+    clearError();
+}
+
+/// Push a new layer onto the top of the stack with `name` (UTF-8 bytes,
+/// up to `PT_LAYER_NAME_MAX` — longer names are truncated). Default
+/// opacity is 1.0; default visibility is true.
+///
+/// Returns the freshly-issued layer id, or `PT_LAYER_ID_NONE` on error.
+/// Errors: null stack, bad magic, stack full, null name pointer.
+export fn pt_layer_push(
+    stack_ptr: u64,
+    name_ptr: u64,
+    name_len: u32,
+) callconv(.c) u32 {
+    if (stack_ptr == 0) {
+        setError("pt_layer_push: null stack");
+        return PT_LAYER_ID_NONE;
+    }
+    const stack: *PtLayerStack = @ptrFromInt(stack_ptr);
+    if (!stack.isLive()) {
+        setError("pt_layer_push: invalid stack (bad magic)");
+        return PT_LAYER_ID_NONE;
+    }
+    if (stack.layer_count >= PT_LAYER_MAX_PER_STACK) {
+        setError("pt_layer_push: stack full");
+        return PT_LAYER_ID_NONE;
+    }
+
+    const slot_idx = stack.layer_count;
+    var slot = &stack.layers[slot_idx];
+    slot.id = stack.next_id;
+    slot.opacity_bits = @bitCast(@as(f32, 1.0));
+    slot.visible = 1;
+
+    // Truncate name to PT_LAYER_NAME_MAX; allow zero-length names and
+    // null pointer (treated as empty).
+    const effective_len: usize = if (name_ptr == 0)
+        0
+    else
+        @min(@as(usize, name_len), PT_LAYER_NAME_MAX);
+    slot.name_len = @intCast(effective_len);
+
+    if (effective_len > 0) {
+        const src: [*]const u8 = @ptrFromInt(name_ptr);
+        @memcpy(slot.name_buf[0..effective_len], src[0..effective_len]);
+    }
+
+    stack.layer_count += 1;
+    stack.next_id += 1;
+    clearError();
+    return slot.id;
+}
+
+/// Delete the layer with `id`. Returns RESULT_OK on success,
+/// RESULT_INVALID_PARAM on null/bad-magic, RESULT_ERROR on unknown id.
+export fn pt_layer_delete(stack_ptr: u64, id: u32) callconv(.c) u32 {
+    if (stack_ptr == 0) {
+        setError("pt_layer_delete: null stack");
+        return @intFromEnum(Result.invalid_param);
+    }
+    const stack: *PtLayerStack = @ptrFromInt(stack_ptr);
+    if (!stack.isLive()) {
+        setError("pt_layer_delete: invalid stack (bad magic)");
+        return @intFromEnum(Result.invalid_param);
+    }
+
+    const found = find_layer_index(stack, id) orelse {
+        setError("pt_layer_delete: unknown layer id");
+        return @intFromEnum(Result.@"error");
+    };
+
+    // Shift everything above `found` down by one. ids are NOT recycled
+    // — `next_id` keeps growing — so positions in `layers[0..count]`
+    // are dense and ids stay stable across deletes.
+    var i: usize = found;
+    const count = stack.layer_count;
+    while (i + 1 < count) : (i += 1) {
+        stack.layers[i] = stack.layers[i + 1];
+    }
+    stack.layer_count -= 1;
+    clearError();
+    return @intFromEnum(Result.ok);
+}
+
+/// Move the layer with `id` to position `new_position` (0 = bottom of
+/// stack). Returns RESULT_OK on success, RESULT_INVALID_PARAM on
+/// null/bad-magic/oob position, RESULT_ERROR on unknown id.
+export fn pt_layer_reorder_to(
+    stack_ptr: u64,
+    id: u32,
+    new_position: u32,
+) callconv(.c) u32 {
+    if (stack_ptr == 0) {
+        setError("pt_layer_reorder_to: null stack");
+        return @intFromEnum(Result.invalid_param);
+    }
+    const stack: *PtLayerStack = @ptrFromInt(stack_ptr);
+    if (!stack.isLive()) {
+        setError("pt_layer_reorder_to: invalid stack (bad magic)");
+        return @intFromEnum(Result.invalid_param);
+    }
+    if (new_position >= stack.layer_count) {
+        setError("pt_layer_reorder_to: position out of bounds");
+        return @intFromEnum(Result.invalid_param);
+    }
+
+    const from = find_layer_index(stack, id) orelse {
+        setError("pt_layer_reorder_to: unknown layer id");
+        return @intFromEnum(Result.@"error");
+    };
+
+    const target: usize = new_position;
+    if (from == target) {
+        clearError();
+        return @intFromEnum(Result.ok);
+    }
+
+    const moving = stack.layers[from];
+    if (from < target) {
+        // Shift left to fill, then insert.
+        var i: usize = from;
+        while (i < target) : (i += 1) {
+            stack.layers[i] = stack.layers[i + 1];
+        }
+    } else {
+        // Shift right to make room, then insert.
+        var i: usize = from;
+        while (i > target) : (i -= 1) {
+            stack.layers[i] = stack.layers[i - 1];
+        }
+    }
+    stack.layers[target] = moving;
+    clearError();
+    return @intFromEnum(Result.ok);
+}
+
+/// Return the number of layers currently in the stack, or 0 on error.
+export fn pt_layer_count(stack_ptr: u64) callconv(.c) u32 {
+    if (stack_ptr == 0) return 0;
+    const stack: *const PtLayerStack = @ptrFromInt(stack_ptr);
+    if (!stack.isLive()) return 0;
+    return stack.layer_count;
+}
+
+/// Return the layer id at `position` (0 = bottom). Returns
+/// `PT_LAYER_ID_NONE` if the position is out of range, null stack, or
+/// bad-magic stack.
+export fn pt_layer_get_id_at(stack_ptr: u64, position: u32) callconv(.c) u32 {
+    if (stack_ptr == 0) return PT_LAYER_ID_NONE;
+    const stack: *const PtLayerStack = @ptrFromInt(stack_ptr);
+    if (!stack.isLive()) return PT_LAYER_ID_NONE;
+    if (position >= stack.layer_count) return PT_LAYER_ID_NONE;
+    return stack.layers[position].id;
+}
+
+/// Copy the layer's name into the caller-provided buffer (UTF-8 bytes,
+/// no null terminator written — use `out_len` to know the byte count).
+/// `buf_size` is the buffer capacity; bytes beyond it are dropped.
+///
+/// Returns RESULT_OK on a clean copy, RESULT_INVALID_PARAM on
+/// null/bad-magic/null-out-pointers, RESULT_ERROR on unknown id.
+export fn pt_layer_get_name(
+    stack_ptr: u64,
+    id: u32,
+    out_buf: u64,
+    buf_size: u32,
+    out_len: u64,
+) callconv(.c) u32 {
+    if (stack_ptr == 0) {
+        setError("pt_layer_get_name: null stack");
+        return @intFromEnum(Result.invalid_param);
+    }
+    if (out_buf == 0 or out_len == 0) {
+        setError("pt_layer_get_name: null output pointer");
+        return @intFromEnum(Result.invalid_param);
+    }
+    const stack: *const PtLayerStack = @ptrFromInt(stack_ptr);
+    if (!stack.isLive()) {
+        setError("pt_layer_get_name: invalid stack (bad magic)");
+        return @intFromEnum(Result.invalid_param);
+    }
+
+    const idx = find_layer_index(stack, id) orelse {
+        setError("pt_layer_get_name: unknown layer id");
+        return @intFromEnum(Result.@"error");
+    };
+
+    const layer = &stack.layers[idx];
+    const want: usize = layer.name_len;
+    const len_ptr: *u32 = @ptrFromInt(out_len);
+    len_ptr.* = @intCast(want);
+
+    if (buf_size > 0 and want > 0) {
+        const dst: [*]u8 = @ptrFromInt(out_buf);
+        const copy_n = @min(want, @as(usize, buf_size));
+        @memcpy(dst[0..copy_n], layer.name_buf[0..copy_n]);
+    }
+
+    clearError();
+    return @intFromEnum(Result.ok);
+}
+
+/// Set the opacity of `id` to `opacity_bits` (raw IEEE 754 binary32 bit
+/// pattern). NaN is rewritten to 1.0; values outside [0, 1] are
+/// clamped. Returns RESULT_OK on success.
+export fn pt_layer_set_opacity(
+    stack_ptr: u64,
+    id: u32,
+    opacity_bits: u32,
+) callconv(.c) u32 {
+    if (stack_ptr == 0) {
+        setError("pt_layer_set_opacity: null stack");
+        return @intFromEnum(Result.invalid_param);
+    }
+    const stack: *PtLayerStack = @ptrFromInt(stack_ptr);
+    if (!stack.isLive()) {
+        setError("pt_layer_set_opacity: invalid stack (bad magic)");
+        return @intFromEnum(Result.invalid_param);
+    }
+    const idx = find_layer_index(stack, id) orelse {
+        setError("pt_layer_set_opacity: unknown layer id");
+        return @intFromEnum(Result.@"error");
+    };
+    stack.layers[idx].opacity_bits = clamp_opacity(opacity_bits);
+    clearError();
+    return @intFromEnum(Result.ok);
+}
+
+/// Get the opacity bit pattern of `id`, or `0xFFFFFFFF` on error.
+export fn pt_layer_get_opacity(stack_ptr: u64, id: u32) callconv(.c) u32 {
+    if (stack_ptr == 0) return 0xFFFFFFFF;
+    const stack: *const PtLayerStack = @ptrFromInt(stack_ptr);
+    if (!stack.isLive()) return 0xFFFFFFFF;
+    const idx = find_layer_index(stack, id) orelse return 0xFFFFFFFF;
+    return stack.layers[idx].opacity_bits;
+}
+
+/// Set the visibility of `id` (0 = hidden, anything else = visible).
+export fn pt_layer_set_visible(
+    stack_ptr: u64,
+    id: u32,
+    visible: u32,
+) callconv(.c) u32 {
+    if (stack_ptr == 0) {
+        setError("pt_layer_set_visible: null stack");
+        return @intFromEnum(Result.invalid_param);
+    }
+    const stack: *PtLayerStack = @ptrFromInt(stack_ptr);
+    if (!stack.isLive()) {
+        setError("pt_layer_set_visible: invalid stack (bad magic)");
+        return @intFromEnum(Result.invalid_param);
+    }
+    const idx = find_layer_index(stack, id) orelse {
+        setError("pt_layer_set_visible: unknown layer id");
+        return @intFromEnum(Result.@"error");
+    };
+    stack.layers[idx].visible = if (visible == 0) 0 else 1;
+    clearError();
+    return @intFromEnum(Result.ok);
+}
+
+/// Get the visibility flag of `id` (0 = hidden, 1 = visible, 0xFFFFFFFF
+/// on error).
+export fn pt_layer_get_visible(stack_ptr: u64, id: u32) callconv(.c) u32 {
+    if (stack_ptr == 0) return 0xFFFFFFFF;
+    const stack: *const PtLayerStack = @ptrFromInt(stack_ptr);
+    if (!stack.isLive()) return 0xFFFFFFFF;
+    const idx = find_layer_index(stack, id) orelse return 0xFFFFFFFF;
+    return stack.layers[idx].visible;
+}
+
+//==============================================================================
 // Library Status
 //==============================================================================
 

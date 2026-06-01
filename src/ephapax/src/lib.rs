@@ -61,7 +61,30 @@ unsafe extern "C" {
         a: u16,
     ) -> u32;
     fn pt_is_initialized(tile_ptr: u64) -> u32;
+
+    // pt_layer_* — cross-language layer-metadata stack.
+    pub fn pt_layer_stack_new() -> u64;
+    pub fn pt_layer_stack_free(stack_ptr: u64);
+    pub fn pt_layer_push(stack_ptr: u64, name_ptr: u64, name_len: u32) -> u32;
+    pub fn pt_layer_delete(stack_ptr: u64, id: u32) -> u32;
+    pub fn pt_layer_reorder_to(stack_ptr: u64, id: u32, new_position: u32) -> u32;
+    pub fn pt_layer_count(stack_ptr: u64) -> u32;
+    pub fn pt_layer_get_id_at(stack_ptr: u64, position: u32) -> u32;
+    pub fn pt_layer_get_name(
+        stack_ptr: u64,
+        id: u32,
+        out_buf: u64,
+        buf_size: u32,
+        out_len: u64,
+    ) -> u32;
+    pub fn pt_layer_set_opacity(stack_ptr: u64, id: u32, opacity_bits: u32) -> u32;
+    pub fn pt_layer_get_opacity(stack_ptr: u64, id: u32) -> u32;
+    pub fn pt_layer_set_visible(stack_ptr: u64, id: u32, visible: u32) -> u32;
+    pub fn pt_layer_get_visible(stack_ptr: u64, id: u32) -> u32;
 }
+
+/// Sentinel "no such layer" value for u32 id returns from pt_layer_*.
+pub const PT_LAYER_ID_NONE: u32 = 0;
 
 //==============================================================================
 // Constants (mirror Abi.Types and src/main.zig)
@@ -513,5 +536,79 @@ mod tests {
         tile.fill_f32(0.25, 0.5, 0.75, 1.0).expect("fill");
         let pixel = tile.read_pixel_f32(17, 41).expect("read");
         assert_eq!(pixel, [0.25, 0.5, 0.75, 1.0]);
+    }
+
+    // ─── pt_layer_* FFI smoke (full coverage lives Zig-side) ───────────
+
+    #[test]
+    fn pt_layer_stack_lifecycle_from_rust() {
+        // SAFETY: pt_layer_stack_new returns either 0 (OOM) or a valid
+        // PtLayerStack pointer that pt_layer_stack_free will accept. We
+        // check the non-null case and free unconditionally.
+        let stack = unsafe { pt_layer_stack_new() };
+        assert!(stack != 0, "pt_layer_stack_new returned 0");
+
+        // SAFETY: stack is a live PtLayerStack pointer we just obtained.
+        let count = unsafe { pt_layer_count(stack) };
+        assert_eq!(count, 0);
+
+        // SAFETY: stack is still live; freeing it once is the contract.
+        unsafe { pt_layer_stack_free(stack) };
+    }
+
+    #[test]
+    fn pt_layer_push_and_read_back_name_from_rust() {
+        // SAFETY: see pt_layer_stack_lifecycle_from_rust.
+        let stack = unsafe { pt_layer_stack_new() };
+        assert!(stack != 0);
+
+        let name = b"Background";
+        // SAFETY: name is a static byte slice; the pointer outlives the
+        // call. name.len() is a u32-sized small literal.
+        let id = unsafe {
+            pt_layer_push(stack, name.as_ptr() as u64, name.len() as u32)
+        };
+        assert_ne!(id, PT_LAYER_ID_NONE);
+
+        let mut buf = [0u8; 32];
+        let mut out_len: u32 = 0;
+        // SAFETY: buf and out_len live on this stack and are valid for
+        // the duration of the call.
+        let rc = unsafe {
+            pt_layer_get_name(
+                stack,
+                id,
+                buf.as_mut_ptr() as u64,
+                buf.len() as u32,
+                &mut out_len as *mut u32 as u64,
+            )
+        };
+        assert_eq!(rc, RESULT_OK);
+        assert_eq!(out_len as usize, name.len());
+        assert_eq!(&buf[..out_len as usize], name);
+
+        // SAFETY: stack still live; free once.
+        unsafe { pt_layer_stack_free(stack) };
+    }
+
+    #[test]
+    fn pt_layer_opacity_clamps_overshoot_from_rust() {
+        // SAFETY: standard pt_layer_stack lifecycle (see above).
+        let stack = unsafe { pt_layer_stack_new() };
+        assert!(stack != 0);
+        let id = unsafe { pt_layer_push(stack, 0, 0) };
+        assert_ne!(id, PT_LAYER_ID_NONE);
+
+        // 1.5 → 1.0.
+        let too_high_bits: u32 = 1.5_f32.to_bits();
+        // SAFETY: stack and id are live.
+        let rc = unsafe { pt_layer_set_opacity(stack, id, too_high_bits) };
+        assert_eq!(rc, RESULT_OK);
+        // SAFETY: stack and id are live.
+        let got = unsafe { pt_layer_get_opacity(stack, id) };
+        assert_eq!(f32::from_bits(got), 1.0_f32);
+
+        // SAFETY: standard free.
+        unsafe { pt_layer_stack_free(stack) };
     }
 }
