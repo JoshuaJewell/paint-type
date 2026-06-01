@@ -82,6 +82,7 @@ jobs:
         run: |
           cd verification/proofs/idris2
           idris2 --check ABI/Platform.idr
+          idris2 --check ABI/Compliance.idr
           idris2 --check Pixel.idr
 
       - name: Write summary

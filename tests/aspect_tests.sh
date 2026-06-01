@@ -54,7 +54,13 @@ while IFS= read -r -d '' f; do
         warn "Missing SPDX header: $f"
         MISSING_SPDX=$((MISSING_SPDX + 1))
     fi
-done < <(find src/ -type f \( -name "*.rs" -o -name "*.zig" -o -name "*.res" -o -name "*.ex" -o -name "*.exs" -o -name "*.gleam" -o -name "*.idr" -o -name "*.sh" \) -print0 2>/dev/null)
+done < <(find src/ -type f \
+    \( -name "*.rs" -o -name "*.zig" -o -name "*.res" -o -name "*.ex" \
+       -o -name "*.exs" -o -name "*.gleam" -o -name "*.idr" -o -name "*.sh" \) \
+    -not -path '*/.zig-cache/*' \
+    -not -path '*/zig-out/*' \
+    -not -path '*/target/*' \
+    -print0 2>/dev/null)
 
 if [ "$MISSING_SPDX" -eq 0 ]; then
     pass "All source files have SPDX headers"
