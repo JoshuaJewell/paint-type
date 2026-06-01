@@ -66,11 +66,14 @@ Three Idris2 modules prove correctness of the tile ABI:
 
 === `src/interface/ffi/` — Zig FFI Bridge
 
-`src/ffi/src/main.zig`:: C ABI implementation (`libpt`). Exports `pt_tile_alloc`,
-  `pt_tile_free`, `pt_tile_blit`, and related functions.
-`src/ffi/build.zig`:: Zig 0.15+ build file. Run `zig build test`.
-`src/ffi/test/integration_test.zig`:: Integration tests — lifecycle, blit operations,
-  memory safety, version checks. Run with `zig build test`.
+`src/interface/ffi/src/main.zig`:: Pure-Zig C-ABI implementation (`libpt`). Exports
+  `pt_tile_alloc`, `pt_tile_free`, `pt_tile_fill`, `pt_tile_blit`,
+  `pt_tile_read_pixel`, `pt_tile_write_pixel`, `pt_version`, and related
+  functions via `callconv(.C)`. No `.c` or `.h` files in the repository —
+  Rust links to the Zig-built shared library directly through `extern "C"`.
+`src/interface/ffi/build.zig`:: Zig 0.15+ build file. Run `zig build test`.
+`src/interface/ffi/test/integration_test.zig`:: Integration tests — lifecycle, blit
+  operations, memory safety, version checks. Run with `zig build test`.
 
 === `src/bridges/` — AffineScript → typed-wasm Bridge (stub)
 
@@ -84,7 +87,9 @@ Integrity, observability, and security cross-cuts. Scaffold in place; content pl
 
 Formal proofs and safety cases:
 
-`verification/proofs/idris2/`:: Idris2 ABI proofs (planned, see PROOF-NEEDS.md).
+`verification/proofs/idris2/ABI/Platform.idr`:: Per-platform pointer + int size proofs (ABI-3). DONE.
+`verification/proofs/idris2/ABI/Compliance.idr`:: C ABI compliance + tile-array packing (ABI-5). DONE.
+`verification/proofs/idris2/Pixel.idr`:: RGBA16F IEEE-754 binary16 classifier + finiteness carriers (TP-3). DONE.
 `verification/proofs/lean4/ApiTypes.lean`:: Lean4 type safety scaffold.
 `verification/proofs/agda/Properties.agda`:: Agda inductive properties scaffold.
 `verification/proofs/coq/TypeSafety.v`:: Coq type safety scaffold.

@@ -8,7 +8,7 @@ are in place. Architecture is locked; no user-visible functionality yet.
 
 == Milestones
 
-=== v0.1.0 - Foundation (current)
+=== v0.1.0 - Foundation (closed)
 
 * [x] Tile primitive (RGBA16F, 64×64 tiles)
 * [x] Idris2 ABI definitions (`src/interface/Abi/Types.idr`, `Layout.idr`, `Foreign.idr`)
@@ -17,7 +17,7 @@ are in place. Architecture is locked; no user-visible functionality yet.
 * [x] CI/CD pipeline (GitHub Actions, OpenSSF scorecard, SPDX compliance)
 * [x] Repository governance and machine-readable metadata
 
-=== v0.2.0 - Core Image Operations (tracked: #12)
+=== v0.2.0 - Core Image Operations (current; tracked: #12)
 
 * [-] Ephapax brush engine — compositing primitives **done** (PR #20: Porter-Duff over, masked blend, flatten_layer_stack); tile-level non-uniform composite **done** (PR #21); brush-stroke / kernel sampling remains
 * [x] Non-destructive undo graph (persistent, O(1) branch) — PR #21

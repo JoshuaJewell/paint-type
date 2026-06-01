@@ -2,16 +2,17 @@
 
 ## CRG Grade: D — current
 
-## Current State (Updated 2026-05-11)
+## Current State (Updated 2026-06-01)
 
 | Category | Count | Details |
 |----------|-------|---------|
-| **Source modules** | 7 | 3 Idris2 ABI (Foreign, Layout, Types), 2 Zig FFI (build, main), 1 Zig integration test, 1 Rust Ephapax crate |
-| **Unit tests** | ~12 | Zig inline tests in `src/interface/ffi/src/main.zig`; Rust unit tests in `src/ephapax/src/` |
+| **Source modules** | 10 | 3 Idris2 ABI (Foreign, Layout, Types) + 3 verification proof modules (ABI/Platform, ABI/Compliance, Pixel), 2 Zig FFI (build, main), 1 Zig integration test, 1 Rust Ephapax crate with 4 modules (lib, composite, undo, layer) |
+| **Unit tests** | 56 + 18 | 56 Rust unit tests across lib/composite/undo/layer; 18 Zig inline + integration tests |
 | **Integration tests** | 1 | `src/interface/ffi/test/integration_test.zig` — lifecycle, blit, memory safety, version checks |
 | **E2E tests** | 1 | `tests/e2e.sh` (scaffold); `tests/e2e/template_instantiation_test.sh` (structure validation) |
-| **Aspect tests** | 1 | `tests/aspect_tests.sh` (scaffold — not yet populated with paint-type assertions) |
+| **Aspect tests** | 1 | `tests/aspect_tests.sh` — 7 aspects, 0 fail (SPDX, dangerous-pattern, ABI/FFI contract, Rust panic-safety, RGBA16F constants, Idris2 ABI check, file-I/O deferred) |
 | **Workflow tests** | 1 | `tests/workflows/validate_workflows_test.sh` (validates CI workflow presence and structure) |
+| **Bench harnesses** | 1 | `src/ephapax/benches/undo.rs` — 88 ns/commit, 2 ns/checkout (hand-rolled `Instant` timer) |
 | **Fuzz tests** | 0 | `tests/fuzz/README.adoc` scaffold; harness not yet wired |
 
 ## What Exists and Passes
@@ -28,16 +29,20 @@
 
 Run with: `zig build test` from `src/interface/ffi/`
 
-### Rust Ephapax Unit Tests (PASSING)
+### Rust Ephapax Unit Tests (PASSING — 56/56 + 1 doctest)
 
-`src/ephapax/src/lib.rs` and submodules:
+`src/ephapax/src/{lib,composite,undo,layer}.rs`:
 
-- Tile header construction and field access
-- RGBA16F pixel arithmetic (add, multiply, clamp)
-- Tile buffer allocation and deallocation
-- Basic compositing: over operator, alpha premultiplication
+- `lib.rs` — Tile header construction, RGBA16F arithmetic (add, multiply, clamp),
+  tile buffer allocation/deallocation, f16↔f32 round-trip, `pt_tile_write_pixel`.
+- `composite.rs` — Porter-Duff `over_premultiplied` / `over_unpremultiplied`,
+  `masked_blend`, `flatten_layer_stack`, `Tile::composite_over`.
+- `undo.rs` — `UndoGraph<T>` commit / branch / checkout / parent_of / children_of
+  / is_ancestor / monotonic-RevId invariant.
+- `layer.rs` — `Layer`, `LayerStack`, `LayerId`, push/delete/reorder_to/get/
+  iter/flatten; stable IDs across reorderings.
 
-Run with: `cargo test` from `src/ephapax/`
+Run with: `cargo test` from `src/ephapax/`. Benches via `cargo bench`.
 
 ### Workflow Validation Tests (PASSING)
 
