@@ -63,9 +63,19 @@ jobs:
           tool: cargo-llvm-cov
 
       - name: Install kcov (best-effort, Zig coverage)
+        id: kcov_install
+        continue-on-error: true
         run: |
+          # kcov is not in Ubuntu 24.04 noble apt repos by default; try
+          # anyway, skip gracefully if unavailable. Zig coverage is
+          # reporting-only — the workflow must not block on this.
           sudo apt-get update
-          sudo apt-get install -y kcov
+          if ! sudo apt-get install -y kcov; then
+            echo "kcov not available; Zig kcov step will skip."
+            echo "kcov_available=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "kcov_available=true" >> "$GITHUB_OUTPUT"
 
       - name: Build libpt (Zig static library)
         run: |
@@ -113,6 +123,7 @@ jobs:
       - name: Run Zig integration tests under kcov (best-effort)
         id: zig_kcov
         continue-on-error: true
+        if: steps.kcov_install.outputs.kcov_available == 'true'
         run: |
           mkdir -p coverage/zig
           if [ -x src/interface/ffi/zig-out/test/integration_test ]; then
@@ -134,7 +145,11 @@ jobs:
             echo ""
             echo "## Zig coverage (kcov)"
             echo ""
-            if [ "${{ steps.zig_kcov.outcome }}" = "success" ]; then
+            if [ "${{ steps.kcov_install.outputs.kcov_available }}" != "true" ]; then
+              echo "kcov was not installable on this runner (not in apt"
+              echo "for Ubuntu 24.04 noble). This step is intentionally"
+              echo "non-blocking; follow-up is tracked in TEST-NEEDS.md."
+            elif [ "${{ steps.zig_kcov.outcome }}" = "success" ]; then
               echo "kcov run completed; see uploaded artifact \`zig-coverage\`."
             else
               echo "kcov run did not complete cleanly (Zig 0.15 test runners"
