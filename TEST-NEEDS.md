@@ -6,8 +6,8 @@
 
 | Category | Count | Details |
 |----------|-------|---------|
-| **Source modules** | 10 | 3 Idris2 ABI (Foreign, Layout, Types) + 3 verification proof modules (ABI/Platform, ABI/Compliance, Pixel), 2 Zig FFI (build, main), 1 Zig integration test, 1 Rust Ephapax crate with 4 modules (lib, composite, undo, layer) |
-| **Unit tests** | 56 + 18 | 56 Rust unit tests across lib/composite/undo/layer; 18 Zig inline + integration tests |
+| **Source modules** | 11 | 3 Idris2 ABI (Foreign, Layout, Types) + 3 verification proof modules (ABI/Platform, ABI/Compliance, Pixel), 2 Zig FFI (build, main), 1 Zig integration test, 1 Rust Ephapax crate with 5 modules (lib, composite, undo, layer, brush) |
+| **Unit tests** | 98 + 29 | 98 Rust unit tests across lib/composite/undo/layer/brush; 29 Zig inline + integration tests (incl. 11 pt_layer_* integration tests) |
 | **Integration tests** | 1 | `src/interface/ffi/test/integration_test.zig` — lifecycle, blit, memory safety, version checks |
 | **E2E tests** | 1 | `tests/e2e.sh` (scaffold); `tests/e2e/template_instantiation_test.sh` (structure validation) |
 | **Aspect tests** | 1 | `tests/aspect_tests.sh` — 7 aspects, 0 fail (SPDX, dangerous-pattern, ABI/FFI contract, Rust panic-safety, RGBA16F constants, Idris2 ABI check, file-I/O deferred) |
@@ -29,18 +29,34 @@
 
 Run with: `zig build test` from `src/interface/ffi/`
 
-### Rust Ephapax Unit Tests (PASSING — 56/56 + 1 doctest)
+### Rust Ephapax Unit Tests (PASSING — 98/98 + 1 doctest)
 
-`src/ephapax/src/{lib,composite,undo,layer}.rs`:
+`src/ephapax/src/{lib,composite,undo,layer,brush}.rs`:
 
-- `lib.rs` — Tile header construction, RGBA16F arithmetic (add, multiply, clamp),
-  tile buffer allocation/deallocation, f16↔f32 round-trip, `pt_tile_write_pixel`.
+- `lib.rs` — Tile header construction, RGBA16F arithmetic, tile buffer
+  alloc/dealloc, f16↔f32 round-trip, `pt_tile_write_pixel`, pt_layer_*
+  FFI smoke (3 tests with /// SAFETY: comments).
 - `composite.rs` — Porter-Duff `over_premultiplied` / `over_unpremultiplied`,
-  `masked_blend`, `flatten_layer_stack`, `Tile::composite_over`.
-- `undo.rs` — `UndoGraph<T>` commit / branch / checkout / parent_of / children_of
-  / is_ancestor / monotonic-RevId invariant.
-- `layer.rs` — `Layer`, `LayerStack`, `LayerId`, push/delete/reorder_to/get/
-  iter/flatten; stable IDs across reorderings.
+  `masked_blend`, `flatten_layer_stack`, `Tile::composite_over`, plus
+  `lerp`, `multiply`, `screen`, `in_op`, `out_op`, `atop`, `xor`.
+- `undo.rs` — `UndoGraph<T>` commit / branch / checkout / parent_of /
+  children_of / is_ancestor / monotonic-RevId invariant.
+- `layer.rs` — `Layer`, `LayerStack`, `LayerId`, push/delete/reorder_to/
+  get/iter/flatten; stable IDs across reorderings.
+- `brush.rs` — `BrushTip` (soft_round, hard_round), `Brush::stamp` with
+  mask-modulated blend + tile-boundary clipping, `Stroke` point
+  interpolation with spacing carry-over.
+
+### Zig FFI Tests (PASSING — 29/29)
+
+`src/interface/ffi/src/main.zig` + `test/integration_test.zig`:
+
+- pt_tile_* — lifecycle, fill, read, write, version, double-free
+  detection, magic-word safety, null-pointer safety, blit operations.
+- pt_layer_* — stack lifecycle, push id-issuance + dense ordering,
+  delete-then-stable-siblings, reorder top↔bottom, opacity clamp +
+  NaN handling, visibility round-trip, post-free safety, null-stack
+  uniform errors.
 
 Run with: `cargo test` from `src/ephapax/`. Benches via `cargo bench`.
 
@@ -77,14 +93,14 @@ Run with: `cargo test` from `src/ephapax/`. Benches via `cargo bench`.
 ## Test Results Summary
 
 ```
-Zig FFI Integration Tests:    PASS (zig build test — 18/18)
-Rust Ephapax Unit Tests:      PASS (cargo test — 56/56 + 1 doctest)
+Zig FFI Integration Tests:    PASS (zig build test — 29/29)
+Rust Ephapax Unit Tests:      PASS (cargo test — 98/98 + 1 doctest)
 Workflow Validation:          PASS (validate_workflows_test.sh)
-Aspect Tests:                 PASS (7 aspects, 0 fail)
+Aspect Tests:                 PASS (7 aspects, 0 fail; 7 Idris2 imports ⊆ 23 Zig exports)
 Idris2 ABI Check (CI):        WIRED (.github/workflows/idris-ci.yml; 3 modules + 3 verification modules)
 Undo-graph benches:           PASS (88 ns/commit, 2 ns/checkout)
 panic-attack scan:            3 weak points, all pre-existing false-positive heuristics
-E2E Tests:                    STUB (compositing primitive E2E available now via Tile::composite_over)
+E2E Tests:                    STUB (compositing + brush primitive E2E available now via brush::Brush::stamp + Tile::composite_over)
 Fuzz Tests:                   NOT STARTED
 ```
 
