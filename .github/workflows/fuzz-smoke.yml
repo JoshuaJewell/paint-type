@@ -1,0 +1,97 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# fuzz-smoke.yml — 30-second per-target cargo-fuzz smoke run.
+#
+# Catches regressions in the pt_tile_* / pt_layer_* FFI surface
+# (TEST-NEEDS P2). Not exhaustive; the long-form corpus lives off-CI.
+name: Fuzz Smoke
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fuzz-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fuzz-smoke:
+    name: cargo-fuzz 30s per target
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install Zig (for libpt)
+        uses: goto-bus-stop/setup-zig@abea47f85e598557f500fa1fd2ab7464fcb39406 # v2.2.1
+        with:
+          version: 0.15.0
+
+      - name: Build libpt static library
+        # ReleaseFast (rather than the build.rs default ReleaseSafe)
+        # strips Zig's debug-self-info path, which would otherwise drag in
+        # an undefined `__zig_probe_stack` reference when libfuzzer-sys
+        # links against libpt.a under ASan. See PT_LIB_DIR below for the
+        # path the ephapax build.rs reads.
+        run: |
+          cd src/interface/ffi
+          zig build -Doptimize=ReleaseFast
+
+      - name: Install Rust nightly toolchain
+        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
+        with:
+          toolchain: nightly
+          components: rust-src
+
+      - name: Cache cargo registry and build
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
+        with:
+          workspaces: |
+            src/ephapax
+            src/ephapax/fuzz
+
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz --locked
+
+      - name: Compile-check fuzz targets
+        working-directory: src/ephapax
+        run: cargo +nightly fuzz check
+
+      - name: Fuzz — pt_tile_blit (30s)
+        working-directory: src/ephapax
+        run: cargo +nightly fuzz run pt_tile_blit -- -max_total_time=30 -timeout=10
+
+      - name: Fuzz — pt_tile_write_pixel (30s)
+        working-directory: src/ephapax
+        run: cargo +nightly fuzz run pt_tile_write_pixel -- -max_total_time=30 -timeout=10
+
+      - name: Fuzz — pt_layer_opacity (30s)
+        working-directory: src/ephapax
+        run: cargo +nightly fuzz run pt_layer_opacity -- -max_total_time=30 -timeout=10
+
+      - name: Upload crash artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: fuzz-artifacts
+          path: src/ephapax/fuzz/artifacts/
+          retention-days: 7
+
+      - name: Write summary
+        if: always()
+        run: |
+          {
+            echo "## Fuzz Smoke Results"
+            echo
+            echo "- pt_tile_blit: 30 s"
+            echo "- pt_tile_write_pixel: 30 s"
+            echo "- pt_layer_opacity: 30 s"
+          } >> "$GITHUB_STEP_SUMMARY"

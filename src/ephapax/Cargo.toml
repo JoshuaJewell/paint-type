@@ -16,6 +16,13 @@ build = "build.rs"
 name = "ephapax"
 crate-type = ["rlib"]
 
+# Exclude the cargo-fuzz scaffold from the parent crate's build. The
+# fuzz/ directory contains a standalone workspace-of-one (see
+# fuzz/Cargo.toml) that requires nightly Rust + libfuzzer-sys; we
+# don't want `cargo check`/`cargo test` in this crate to pull it in.
+[workspace]
+exclude = ["fuzz"]
+
 [[bench]]
 name = "undo"
 harness = false

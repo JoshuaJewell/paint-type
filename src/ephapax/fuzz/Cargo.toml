@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+#
+# cargo-fuzz crate for ephapax — exercises the pure-Zig libpt FFI surface
+# (pt_tile_* and pt_layer_*) declared in ../src/lib.rs.
+#
+# Layout follows the standard cargo-fuzz scaffold; this crate is excluded
+# from the parent ephapax build (see [workspace] below) so `cargo check`
+# / `cargo test` in src/ephapax/ remain on stable Rust while the fuzz
+# targets compile only under `cargo fuzz` (which requires nightly +
+# libfuzzer-sys).
+
+[package]
+name = "ephapax-fuzz"
+version = "0.0.0"
+edition = "2021"
+publish = false
+license = "PMPL-1.0-or-later"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+arbitrary = { version = "1", features = ["derive"] }
+
+[dependencies.ephapax]
+path = ".."
+
+# cargo-fuzz crates live as a standalone workspace-of-one so the fuzz
+# build doesn't pollute the parent crate's lockfile or dependency graph.
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+# `cargo fuzz` synthesises a `[[bin]]` per target file in `fuzz_targets/`
+# at build time; we list them explicitly so `cargo check` from this
+# directory exercises each one. `test = false` / `doc = false` /
+# `bench = false` mirror the cargo-fuzz template.
+
+[[bin]]
+name = "pt_tile_blit"
+path = "fuzz_targets/pt_tile_blit.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pt_tile_write_pixel"
+path = "fuzz_targets/pt_tile_write_pixel.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pt_layer_opacity"
+path = "fuzz_targets/pt_layer_opacity.rs"
+test = false
+doc = false
+bench = false

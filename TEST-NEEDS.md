@@ -14,7 +14,7 @@
 | **Workflow tests** | 1 | `tests/workflows/validate_workflows_test.sh` (validates CI workflow presence and structure) |
 | **Coverage tooling** | 1 | `.github/workflows/coverage.yml` + `tests/coverage.sh` — Rust `cargo-llvm-cov` (LCOV + console report, gated on `src/ephapax/`); Zig `kcov` over the integration-test binary (best-effort, non-blocking). Reporting only — no threshold gate. |
 | **Bench harnesses** | 1 | `src/ephapax/benches/undo.rs` — 88 ns/commit, 2 ns/checkout (hand-rolled `Instant` timer) |
-| **Fuzz tests** | 0 | `tests/fuzz/README.adoc` scaffold; harness not yet wired |
+| **Fuzz tests** | 3 | `src/ephapax/fuzz/fuzz_targets/{pt_tile_blit,pt_tile_write_pixel,pt_layer_opacity}.rs` — WIRED; 30 s smoke-test per target in CI (`.github/workflows/fuzz-smoke.yml`) |
 
 ## What Exists and Passes
 
@@ -98,7 +98,7 @@ Run with: `cargo test` from `src/ephapax/`. Benches via `cargo bench`.
 
 ### P2 — Required for CRG Grade B
 
-- [ ] Fuzz harness for `pt_tile_blit` (inputs: arbitrary src/dst dimensions, offsets)
+- [x] Fuzz harness for `pt_tile_blit` (inputs: arbitrary src/dst dimensions, offsets) — `src/ephapax/fuzz/fuzz_targets/pt_tile_blit.rs` plus `pt_tile_write_pixel.rs` and `pt_layer_opacity.rs`; 30 s smoke per target in CI via `.github/workflows/fuzz-smoke.yml` (PR: feat/fuzz-harness-pt-tile).
 - [ ] Property-based tests for RGBA16F arithmetic (Rust + `proptest`)
 - [ ] Performance regression tests: tile alloc throughput baseline, blit throughput baseline
 
@@ -120,12 +120,12 @@ Coverage Reporting (CI):      WIRED (.github/workflows/coverage.yml — Rust car
 Undo-graph benches:           PASS (88 ns/commit, 2 ns/checkout)
 panic-attack scan:            3 weak points, all pre-existing false-positive heuristics
 E2E Tests:                    PASS (`bash tests/e2e.sh` — 9 stages: zig build + zig test + cargo e2e_pipeline (2 scenarios) + 2 scenario_*.sh probes)
-Fuzz Tests:                   NOT STARTED
+Fuzz Tests:                   WIRED (3 targets — pt_tile_blit / pt_tile_write_pixel / pt_layer_opacity; 30 s smoke per target in CI)
 ```
 
 ## Next Steps
 
-- [ ] Add fuzz harness for `pt_tile_blit` / `pt_tile_write_pixel` (TEST-NEEDS P2)
-- [x] Set up coverage reporting for Zig (kcov) and Rust (cargo-llvm-cov) — `.github/workflows/coverage.yml` + `tests/coverage.sh`; reporting only (no threshold). Zig side is best-effort and a follow-up may switch from kcov to Zig 0.15 native `-fprofile-instr-generate` once stable.
+- [x] Add fuzz harness for `pt_tile_blit` / `pt_tile_write_pixel` — 3 cargo-fuzz targets wired with 30 s CI smoke (PR #35).
+- [x] Set up coverage reporting for Zig (kcov) and Rust (cargo-llvm-cov) — `.github/workflows/coverage.yml` + `tests/coverage.sh`; reporting only (no threshold). Zig side is best-effort and a follow-up may switch from kcov to Zig 0.15 native `-fprofile-instr-generate` once stable. (PR #32 + #34)
 - [x] Populate E2E test with a real tile-alloc → composite_over → free flow now that compositing has landed — DONE in PR #33 (extends to Tile→composite→UndoGraph→pt_layer_*→Brush::stamp).
 - [ ] Layer-model property tests (e.g. proptest for reorder commutativity)

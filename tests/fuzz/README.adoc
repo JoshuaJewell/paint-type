@@ -5,108 +5,92 @@
 
 == Status
 
-This directory is a scaffold for fuzz tests.
-**No fuzz harness is configured yet.** Add one when your project has parsers,
-deserializers, protocol handlers, or other input-processing code worth fuzzing.
+Three `cargo-fuzz` (libFuzzer) targets are wired under
+`src/ephapax/fuzz/fuzz_targets/`, exercising the pure-Zig libpt FFI
+surface (`pt_tile_*` and `pt_layer_*`):
 
-== Adding Fuzz Tests
+[cols="1,3"]
+|===
+| Target | What it exercises
 
-Choose the harness that matches your project's primary language:
+| `pt_tile_blit`
+| Source-tile → destination-tile pixel copy across arbitrary start
+  offsets and (w, h) extents, asserting OOB reads/writes error and
+  successful writes round-trip via subsequent reads.
 
-=== Rust (cargo-fuzz / libFuzzer)
+| `pt_tile_write_pixel`
+| Single-pixel writes with arbitrary (px, py) coordinates and four u16
+  channel bit patterns (every u16 IS a valid IEEE 754 binary16, so NaN
+  / ±Inf / subnormals are all covered). Asserts OOB errors and
+  round-trip on success.
 
-[source,bash]
-----
-# Install cargo-fuzz (one-time)
-cargo install cargo-fuzz
+| `pt_layer_opacity`
+| `pt_layer_push` + `pt_layer_set_opacity` with arbitrary u32 opacity
+  bit patterns (NaN / ±Inf / overshoot). Asserts the documented
+  clamp semantics in `clamp_opacity` (NaN → 1.0, < 0 → 0, > 1 → 1).
+|===
 
-# Initialise fuzz targets in this repo
-cargo fuzz init
+A 30-second smoke run per target executes in CI via
+`.github/workflows/fuzz-smoke.yml` on push to main and on every PR to
+main.
 
-# Create a target
-cargo fuzz add my_target
+== Running Locally
 
-# Run
-cargo fuzz run my_target -- -max_total_time=300
-----
+Prerequisites:
 
-The `cargo fuzz init` command creates `fuzz/Cargo.toml` and `fuzz/fuzz_targets/`.
-Move or symlink those into `tests/fuzz/` to keep the RSR directory layout.
+* Rust nightly (cargo-fuzz / libFuzzer requires nightly)
+* `cargo install cargo-fuzz --locked`
+* `zig` 0.15.x on PATH (so the `ephapax` build script can locate / build libpt)
 
-=== Zig (built-in fuzzing, Zig 0.14+)
-
-[source,zig]
-----
-// tests/fuzz/fuzz_parser.zig
-const std = @import("std");
-
-test "fuzz parser" {
-    // Zig's built-in fuzz testing
-    const input = std.testing.fuzzInput(.{});
-    // Call your parser with arbitrary input
-    _ = mylib.parse(input) catch {};
-}
-----
+From `src/ephapax/`:
 
 [source,bash]
 ----
-zig build test --fuzz
+# Build libpt first so cargo can link against it. Use ReleaseFast
+# (not the build.rs default ReleaseSafe) so Zig's debug-self-info path
+# is dropped — otherwise libfuzzer-sys + ASan pulls in an undefined
+# `__zig_probe_stack` reference at link time.
+(cd ../interface/ffi && zig build -Doptimize=ReleaseFast)
+
+# Compile-check every target (no fuzzing).
+cargo +nightly fuzz check
+
+# Run one target for a bounded time (30 s mirrors CI).
+cargo +nightly fuzz run pt_tile_blit -- -max_total_time=30 -timeout=10
+cargo +nightly fuzz run pt_tile_write_pixel -- -max_total_time=30 -timeout=10
+cargo +nightly fuzz run pt_layer_opacity -- -max_total_time=30 -timeout=10
+
+# Longer run (5 minutes) for local pre-merge confidence.
+cargo +nightly fuzz run pt_tile_write_pixel -- -max_total_time=300 -timeout=10
 ----
 
-=== Elixir (stream_data property-based testing)
+Crashes land in `src/ephapax/fuzz/artifacts/<target>/`; re-run a single
+input via `cargo +nightly fuzz run <target> artifacts/<target>/crash-<hash>`.
 
-[source,elixir]
-----
-# mix.exs — add {:stream_data, "~> 1.0", only: :test}
+== Why cargo-fuzz Lives Under `src/ephapax/fuzz/`
 
-# tests/fuzz/my_property_test.exs
-defmodule MyPropertyTest do
-  use ExUnit.Case
-  use ExUnitProperties
-
-  property "parser never crashes on arbitrary input" do
-    check all input <- binary() do
-      # Should not raise
-      MyApp.Parser.parse(input)
-    end
-  end
-end
-----
-
-=== ReScript / Deno (fast-check)
-
-[source,javascript]
-----
-// tests/fuzz/fuzz_parser.test.mjs
-import fc from "npm:fast-check";
-import { parse } from "../../src/parser.mjs";
-
-Deno.test("parser handles arbitrary strings", () => {
-  fc.assert(
-    fc.property(fc.string(), (input) => {
-      // Should not throw
-      try { parse(input); } catch (_) { /* parse errors OK */ }
-    }),
-    { numRuns: 10000 }
-  );
-});
-----
+`cargo-fuzz` expects the `fuzz/` directory to sit next to the crate it
+exercises (it reads the parent `Cargo.toml` to discover the crate
+under test). Keeping the harness under `src/ephapax/fuzz/` follows that
+convention; this `tests/fuzz/` README is the discoverable pointer for
+the RSR directory layout.
 
 == When to Add Fuzzing
 
 Fuzz testing is most valuable for code that:
 
 * Parses untrusted input (file formats, network protocols, user data)
-* Deserializes structured data (JSON, binary formats, ASN.1)
+* Deserialises structured data (JSON, binary formats, ASN.1)
 * Performs complex string/byte manipulation
-* Has safety-critical invariants
+* Has safety-critical invariants (FFI boundaries, ABI layout, etc.)
 
-If your project is purely a library of pure functions with typed inputs,
-property-based testing (see `tests/property/`) may be more appropriate than
-byte-level fuzzing.
+If your project is purely a library of pure functions with typed
+inputs, property-based testing (see `tests/property/`) may be more
+appropriate than byte-level fuzzing.
 
 == CI Integration
 
-Once you have a fuzz harness, add a CI job that runs it for a bounded time
-(e.g., 5 minutes) on each PR. This catches regressions without blocking merges
-for hours.
+`.github/workflows/fuzz-smoke.yml` runs each target for 30 seconds on
+push to main and on every PR. Crash artifacts upload automatically on
+failure. The smoke run is intentionally short; longer-form fuzzing
+lives off-CI (see the local-run snippet above).
