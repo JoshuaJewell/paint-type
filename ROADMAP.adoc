@@ -17,15 +17,15 @@ are in place. Architecture is locked; no user-visible functionality yet.
 * [x] CI/CD pipeline (GitHub Actions, OpenSSF scorecard, SPDX compliance)
 * [x] Repository governance and machine-readable metadata
 
-=== v0.2.0 - Core Image Operations
+=== v0.2.0 - Core Image Operations (tracked: #12)
 
 * [ ] Ephapax brush engine — compositing, masking, layer blending (RGBA16F)
 * [ ] Non-destructive undo graph (persistent, O(1) branch)
 * [ ] Basic layer model — new, flatten, delete, reorder
 * [ ] AffineScript → typed-wasm bindings for the tile API
-* [ ] Formal proofs for ABI layout correctness in Idris2
+* [x] Formal proofs for ABI layout correctness in Idris2 — ABI-1/2/3/4 + TP-1/3 done (PR #10); ABI-5 remains
 
-=== v0.3.0 - Desktop Shell
+=== v0.3.0 - Desktop Shell (tracked: #13)
 
 * [ ] Gossamer integration — linearly-typed webview shell bootstrapped
 * [ ] Web UI chrome — layer panel, tool bar, canvas viewport
@@ -33,7 +33,7 @@ are in place. Architecture is locked; no user-visible functionality yet.
 * [ ] Platform integration — file open/save (PNG, RGBA16F native format)
 * [ ] Cross-platform build (Linux, macOS, Windows)
 
-=== v0.4.0 - Plugin System
+=== v0.4.0 - Plugin System (tracked: #14)
 
 * [ ] WASM tier sandbox — plugins run in isolated typed-wasm environment
 * [ ] Plugin manifest and signing (cerro-torre, ML-DSA)
@@ -41,7 +41,7 @@ are in place. Architecture is locked; no user-visible functionality yet.
 * [ ] Effect plugin API — colour adjustments, filters
 * [ ] Tool plugin API — custom brush behaviours
 
-=== v0.5.0 - Collaboration
+=== v0.5.0 - Collaboration (tracked: #15)
 
 * [ ] Burble WebRTC session layer — sub-10ms latency shared canvas
 * [ ] Groove service discovery — paint-type peers announce via `.well-known/groove/`
@@ -49,7 +49,7 @@ are in place. Architecture is locked; no user-visible functionality yet.
 * [ ] LLM channel — optional AI assistant integrated via boj-server MCP gateway
 * [ ] Permission model for collaborative sessions
 
-=== v1.0.0 - Stable Release
+=== v1.0.0 - Stable Release (tracked: #16)
 
 * [ ] All v0.x features stable and tested
 * [ ] Comprehensive test suite (unit, integration, E2E, fuzz)

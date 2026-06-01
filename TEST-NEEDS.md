@@ -51,9 +51,9 @@ Run with: `cargo test` from `src/ephapax/`
 
 ### P1 — Required for CRG Grade C
 
-- [ ] Aspect tests with real paint-type assertions — `tests/aspect_tests.sh` needs population
-  - File I/O round-trip: create a tile, save, reload, verify bytes identical
-  - Idris2 ABI proof check integrated into CI (`idris2 --check` on ABI modules)
+- [x] Aspect tests populated — `tests/aspect_tests.sh` covers 7 aspects (SPDX, dangerous-pattern, ABI/FFI contract, Rust panic-safety, RGBA16F constants, Idris2 ABI check, file-I/O deferred). PR #9 (2026-06-01).
+- [x] Idris2 ABI proof check integrated into CI — `.github/workflows/idris-ci.yml`. PR #8 (2026-06-01). Verified modules: `src/interface/Abi/{Types,Layout,Foreign}.idr` + `verification/proofs/idris2/{ABI/Platform.idr, Pixel.idr}`.
+- [ ] File I/O round-trip aspect — deferred to v0.3.0 (native RGBA16F save/load surface needed first).
 - [ ] E2E test: end-to-end tile alloc → composite → free pipeline via the Zig FFI
 - [ ] Coverage reporting wired into CI for both Zig and Rust
 
@@ -73,16 +73,16 @@ Run with: `cargo test` from `src/ephapax/`
 
 ```
 Zig FFI Integration Tests:    PASS (zig build test)
-Rust Ephapax Unit Tests:      PASS (cargo test)
+Rust Ephapax Unit Tests:      PASS (cargo test — 10/10)
 Workflow Validation:          PASS (validate_workflows_test.sh)
-Aspect Tests:                 STUB (not yet populated)
+Aspect Tests:                 PASS (7 aspects, 0 fail)
+Idris2 ABI Check (CI):        WIRED (.github/workflows/idris-ci.yml)
 E2E Tests:                    STUB (structure test only)
 Fuzz Tests:                   NOT STARTED
 ```
 
 ## Next Steps
 
-- [ ] Populate `tests/aspect_tests.sh` with real paint-type assertions
-- [ ] Wire `idris2 --check src/interface/Abi/*.idr` into CI
 - [ ] Add fuzz harness for `pt_tile_blit`
 - [ ] Set up coverage reporting for Zig (kcov) and Rust (cargo-llvm-cov)
+- [ ] Populate E2E test with a real tile-alloc → composite → free flow once compositing lands (v0.2.0)

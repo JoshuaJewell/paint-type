@@ -1,11 +1,11 @@
 <!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
-<!-- Last updated: 2026-05-11 -->
+<!-- Last updated: 2026-06-01 -->
 
 # paint-type Component Readiness Assessment
 
 **Standard:** [Component Readiness Grades (CRG) v2.2](https://github.com/hyperpolymath/standards/tree/main/component-readiness-grades)
-**Current Grade:** D
-**Assessed:** 2026-05-11
+**Current Grade:** D (approaching C — proof + test prerequisites mostly closed; see Promotion Path)
+**Assessed:** 2026-06-01
 **Assessor:** Joshua Jewell
 
 ---
@@ -41,11 +41,18 @@
 Grade C requires: **deep code and folder annotation; CI passing; dogfooded on own project**.
 
 To reach C:
-1. Complete Ephapax brush engine and tile compositing (v0.2.0 milestone)
-2. Generate AffineScript → typed-wasm bridge from Idris2 ABI
-3. Integrate with Gossamer shell for a runnable application
-4. Wire integration tests into CI
+1. Complete Ephapax brush engine and tile compositing (v0.2.0 milestone, tracked as issue #12)
+2. Generate AffineScript → typed-wasm bridge from Idris2 ABI (v0.2.0)
+3. Integrate with Gossamer shell for a runnable application (v0.3.0, issue #13)
+4. ~~Wire integration tests into CI~~ — DONE (`.github/workflows/idris-ci.yml` PR #8, aspect tests PR #9, both 2026-06-01)
 5. Update this file with evidence
+
+### Closed prerequisites (2026-06-01)
+- Idris2 `--check` runs in CI for the ABI bridge + verified proof modules.
+- Aspect tests cover 7 cross-cutting concerns and pass locally + CI.
+- ABI-3 (platform sizes) + TP-3 (RGBA16F pixel bounds) Idris2 proofs landed.
+- `cargo test` is green (10/10) after the f16→f32 underflow fix (PR #11).
+- `zig build && zig build test` is green after the libc-linking fix (PR #11).
 
 ---
 
