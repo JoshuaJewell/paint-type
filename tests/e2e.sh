@@ -128,21 +128,6 @@ else
     yellow "    ------------------------------------------"
     exit 1
 fi
-
-# `zig build test` rebuilds the static library at default (Debug) optimize,
-# which emits `__zig_probe_stack` references that Rust's lld cannot resolve
-# when linking the cargo test binary. Re-emit the static artifact at
-# ReleaseSafe so Stage 3's cargo link finds a stripped libpt.a.
-if (cd "$PROJECT_DIR/src/interface/ffi" && zig build -Doptimize=ReleaseSafe) \
-        >>/tmp/pt-e2e-zig-build.log 2>&1; then
-    :  # silent — Stage 1 already announced "zig build (static + shared)"
-else
-    stage_fail "zig build (rebuild ReleaseSafe after zig test)"
-    yellow "    --- zig build log (last 40 lines) ---"
-    tail -40 /tmp/pt-e2e-zig-build.log || true
-    yellow "    ------------------------------------------"
-    exit 1
-fi
 echo ""
 
 # ─── Stage 3: Rust e2e_pipeline integration test ─────────────────────

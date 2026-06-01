@@ -48,11 +48,19 @@ pub fn build(b: *std.Build) void {
     // Static library: libpt.a (for the Rust crate)
     //--------------------------------------------------------------------------
 
+    // `stack_check = false` is load-bearing for Rust integration: Zig's
+    // default stack-probe inserts `__zig_probe_stack` references for
+    // functions with >4KB frames. Rust's lld cannot resolve that symbol
+    // when statically linking libpt.a from cargo, producing
+    //   rust-lld: error: undefined symbol: __zig_probe_stack
+    // The shared/test/unit builds keep defaults; only the static archive
+    // consumed by Rust needs the probe disabled.
     const static_module = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
         .link_libc = true,
+        .stack_check = false,
     });
     const static = b.addLibrary(.{
         .name = "pt",

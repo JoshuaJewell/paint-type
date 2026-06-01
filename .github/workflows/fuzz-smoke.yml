@@ -59,7 +59,11 @@ jobs:
             src/ephapax/fuzz
 
       - name: Install cargo-fuzz
-        run: cargo install cargo-fuzz --locked
+        # `--locked` would pin cargo-fuzz's bundled Cargo.lock which
+        # captures a too-old `rustix 0.36.x` that does not build on
+        # current Rust nightly (uses internal `rustc_attrs` cfg flags
+        # that the compiler now rejects). Let cargo resolve fresh.
+        run: cargo install cargo-fuzz
 
       - name: Compile-check fuzz targets
         working-directory: src/ephapax
