@@ -81,9 +81,30 @@ Three Idris2 modules prove correctness of the tile ABI:
 `src/interface/ffi/test/integration_test.zig`:: Integration tests — lifecycle, blit
   operations, memory safety, version checks. Run with `zig build test`.
 
-=== `src/bridges/` — AffineScript → typed-wasm Bridge (stub)
+=== `src/bridges/` — AffineScript → typed-wasm Bridge (draft)
 
-Future: generated from the Idris2 ABI definitions. Not yet populated.
+`paint-type-tile.twasm`:: Draft typed-wasm schema for the `pt_tile_*`
+  RGBA16F tile region — `region RGBA16F` + `region TileHeader` +
+  `region Tile` + `memory tile_memory` + functions `alloc_tile`,
+  `free_tile` (linear ownership), `fill_tile`, `read_pixel`,
+  `write_pixel`, `blit_tile`. Covers L1-L10. Mirrors
+  `src/interface/ffi/src/main.zig` `pt_tile_*` exports.
+`paint-type-layer.twasm`:: Draft schema for the `pt_layer_*` metadata
+  stack — `region Layer` + `region LayerStack` (bounded 256-entry array)
+  + functions `stack_new`, `stack_free`, `push_layer`, `get_id_at`,
+  `set_opacity`. Covers L1-L8.
+`0.2-AI-MANIFEST.a2ml`:: A2ML manifest pointing at both drafts and the
+  upstream gates.
+
+Both `.twasm` files are **DRAFT as of 2026-06-01**: cannot yet be
+compiled by `tw build` because typed-wasm codegen v0 only accepts the
+example-01 schema via a structural string-match (see
+`crates/typed-wasm-codegen/src/bin/tw.rs` in
+`hyperpolymath/typed-wasm`). General `.twasm` front-end → IR lowering
+is tracked upstream in `hyperpolymath/typed-wasm#127`, and paint-type's
+side is `#39`. When #127 lands these become the source the bridge
+generator emits (from AffineScript ABI declarations) plus corpus
+entries for `hyperpolymath/typed-wasm#130` (round-trip soundness).
 
 === `src/aspects/` — Cross-Cutting Concerns
 
