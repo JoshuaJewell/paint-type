@@ -96,3 +96,4 @@ just proof-check-all
 | 2026-05-11 | Initial proof status for paint-type — ABI bridge proofs marked done | Joshua Jewell |
 | 2026-06-01 | ABI-3 + TP-3 landed (PR #10); CI proof-check wired (PR #8); 38% proven | hyperpolymath |
 | 2026-06-01 | ABI-5 landed (PR #19); ABI category fully closed; 44% proven | hyperpolymath |
+| 2026-06-01 | INV-3 surface grew by 7 ops (PR #27: lerp/multiply/screen/in/out/atop/xor) + brush engine (PR #29). No new proofs — Rust ground-truth for the Agda mechanisation expanded. | hyperpolymath |

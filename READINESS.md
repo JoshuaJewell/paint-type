@@ -15,13 +15,13 @@
 | Component           | Grade | Release Stage | Evidence Summary                                          |
 |---------------------|-------|---------------|-----------------------------------------------------------|
 | Idris2 ABI (Types, Layout, Foreign) | C | Pre-alpha | Compiles + CI-checked; ABI category fully proven (ABI-1..5 done) |
-| Zig FFI (libpt)     | C-    | Pre-alpha     | 18/18 tests pass; 11 exports (alloc/free/fill/read/write/version/…) |
-| Ephapax (Rust core) | C-    | Pre-alpha     | Tile API + Porter-Duff compositing + UndoGraph + layer model + benches (cargo test 56/56) |
+| Zig FFI (libpt)     | C     | Pre-alpha     | 29/29 tests pass; 23 exports (pt_tile_* + pt_layer_* + slot helpers) |
+| Ephapax (Rust core) | C     | Pre-alpha     | Tile API + 11 compositing ops + UndoGraph + layer model + brush engine + benches (cargo test 98/98 + 1 doctest) |
 | AffineScript bridge | D     | Pre-alpha     | Stubs only; gated on typed-wasm emitter stability         |
 | Gossamer shell integration | D | Pre-alpha  | Not started; architecture specified                       |
 | Burble / Groove     | D     | Pre-alpha     | Not started; architecture specified                       |
 
-**Overall:** Grade D (approaching C) — substantial v0.2.0 work landed in 6 PRs on 2026-06-01: compositing primitives, non-uniform `Tile::composite_over`, persistent UndoGraph + benches, basic Layer / LayerStack model, ABI-3/ABI-5/TP-3 proofs. ABI category is now fully proven; cargo test 56/56; zig build test 18/18; aspect tests 7 PASS. Outstanding for Grade C: brush engine wired into stroke handling, AffineScript bridge generated, Gossamer integration.
+**Overall:** Grade D (closing on C) — 10 PRs of v0.2.0 work landed on 2026-06-01: compositing primitives + 7 more operators (lerp/multiply/screen/in/out/atop/xor), non-uniform `Tile::composite_over`, persistent UndoGraph + benches, basic Layer / LayerStack model, brush engine (tip masks + stroke sampling + tile-local stamping), pt_layer_* cross-language FFI, ABI-3/ABI-5/TP-3 proofs. ABI category fully proven; cargo test 98/98 + 1 doctest; zig build test 29/29; aspect tests 7 PASS. Remaining v0.2.0 work: AffineScript → typed-wasm bridge (still gated on typed-wasm emitter stability). Outstanding for Grade C: AffineScript bridge generated, Gossamer integration started.
 
 ---
 
@@ -45,7 +45,7 @@ To reach C:
 2. ~~Tile-level non-uniform composite~~ — DONE (PR #21)
 3. ~~Non-destructive undo graph~~ — DONE (PR #21)
 4. ~~Basic layer model~~ — DONE (PR #23)
-5. Wire compositing into a real brush engine (stroke handling, kernel sampling) — v0.2.0 remaining
+5. ~~Wire compositing into a real brush engine (stroke handling, kernel sampling)~~ — DONE (PR #29)
 6. Generate AffineScript → typed-wasm bridge from Idris2 ABI (gated on typed-wasm emitter stability)
 7. Integrate with Gossamer shell for a runnable application (v0.3.0, issue #13)
 8. ~~Wire integration tests into CI~~ — DONE (idris-ci.yml + aspect tests + reused tile tests)
@@ -54,15 +54,23 @@ To reach C:
 ### Closed prerequisites (2026-06-01)
 - Idris2 `--check` runs in CI for the ABI bridge + the 3 verified proof modules
   (`ABI/Platform.idr`, `ABI/Compliance.idr`, `Pixel.idr`).
-- Aspect tests cover 7 cross-cutting concerns and pass locally + CI.
+- Aspect tests cover 7 cross-cutting concerns and pass locally + CI. The
+  ABI/FFI subset relation is now 7 Idris2 imports ⊆ **23** Zig exports
+  (pt_tile_* + pt_layer_* + slot helpers).
 - **ABI category fully proven**: ABI-1/2/3/4/5 all done. TP-1/TP-3 done.
-- `cargo test` 56/56 + 1 doctest pass (lib + composite + undo + layer
-  modules) after the f16→f32 underflow fix (PR #11).
-- `zig build && zig build test` 18/18 pass after the libc-linking fix
-  (PR #11) and the `pt_tile_write_pixel` addition (PR #21).
+- `cargo test` **98/98** + 1 doctest pass (lib + composite + undo +
+  layer + brush modules) after the f16→f32 underflow fix (PR #11).
+- `zig build && zig build test` **29/29** pass — pt_tile_* lifecycle/fill/
+  read/write/bounds/version/null-safety plus 11 pt_layer_* integration
+  tests (lifecycle/push/delete/reorder/opacity-clamp/visibility/safety).
 - Undo-graph benchmark baseline: 88 ns/commit, 2 ns/checkout.
 - panic-attack scan: 3 weak points, all pre-existing false-positive
   heuristics (5 audited `unsafe` blocks + 1 commented-out `/tmp` ref).
+- Brush engine landed (BrushTip soft/hard round, Brush::stamp with
+  mask-modulated blend, Stroke point interpolation) — PR #29.
+- 7 additional compositing operators landed (lerp, multiply, screen,
+  in_op, out_op, atop, xor) — PR #27.
+- pt_layer_* cross-language FFI surface landed — PR #28 (closes #25).
 
 ---
 

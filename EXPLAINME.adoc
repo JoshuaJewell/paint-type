@@ -41,15 +41,21 @@ crate is neither).
 Modules:
 
 `lib.rs`:: Tile API (`Tile::alloc/fill/read_pixel/write_pixel/drop`),
-           f16↔f32 helpers, FFI declarations against libpt.
-`composite.rs`:: Porter-Duff compositing operators (`over_premultiplied`,
-           `over_unpremultiplied`, `masked_blend`, `flatten_layer_stack`,
-           `Tile::composite_over`).
+           f16↔f32 helpers, FFI declarations against libpt for both
+           `pt_tile_*` and `pt_layer_*`.
+`composite.rs`:: Porter-Duff and W3C blend operators —
+           `over_premultiplied`, `over_unpremultiplied`,
+           `masked_blend`, `flatten_layer_stack`, `Tile::composite_over`,
+           plus `lerp`, `multiply`, `screen`, `in_op`, `out_op`, `atop`,
+           `xor`.
 `undo.rs`:: Persistent branching undo graph (`UndoGraph<T>`, `RevId`)
            with the monotonicity invariant documented as a 4-clause
            contract for the eventual INV-2 Lean4 mechanisation.
 `layer.rs`:: Layer model (`Layer`, `LayerStack`, `LayerId`) with stable
            IDs across reorderings and a `flatten(name)` builder.
+`brush.rs`:: Brush engine (`BrushTip` with `soft_round` / `hard_round`
+           constructors, `Brush` with `stamp(tile, cx, cy)` mask-modulated
+           blending, `Stroke` point interpolation with spacing carry-over).
 
 Linear types enforce no aliased mutable tile access — `Tile` is `!Copy
 + !Clone`. Build with `cargo test` from `src/ephapax/`. Benches in
