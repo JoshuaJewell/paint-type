@@ -9,7 +9,7 @@
 | **Source modules** | 11 | 3 Idris2 ABI (Foreign, Layout, Types) + 3 verification proof modules (ABI/Platform, ABI/Compliance, Pixel), 2 Zig FFI (build, main), 1 Zig integration test, 1 Rust Ephapax crate with 5 modules (lib, composite, undo, layer, brush) |
 | **Unit tests** | 98 + 29 | 98 Rust unit tests across lib/composite/undo/layer/brush; 29 Zig inline + integration tests (incl. 11 pt_layer_* integration tests) |
 | **Integration tests** | 1 | `src/interface/ffi/test/integration_test.zig` — lifecycle, blit, memory safety, version checks |
-| **E2E tests** | 1 | `tests/e2e.sh` (scaffold); `tests/e2e/template_instantiation_test.sh` (structure validation) |
+| **E2E tests** | 4 | `tests/e2e.sh` (full pipeline orchestrator); `src/ephapax/tests/e2e_pipeline.rs` (2 Rust scenarios driving the full Tile→composite→UndoGraph→pt_layer_*→Brush stack); `tests/e2e/scenario_libpt_artifacts.sh` (artifact + symbol probe); `tests/e2e/scenario_pipeline_dogfood.sh` (verbose cargo replay); `tests/e2e/template_instantiation_test.sh` (structure validation) |
 | **Aspect tests** | 1 | `tests/aspect_tests.sh` — 7 aspects, 0 fail (SPDX, dangerous-pattern, ABI/FFI contract, Rust panic-safety, RGBA16F constants, Idris2 ABI check, file-I/O deferred) |
 | **Workflow tests** | 1 | `tests/workflows/validate_workflows_test.sh` (validates CI workflow presence and structure) |
 | **Coverage tooling** | 1 | `.github/workflows/coverage.yml` + `tests/coverage.sh` — Rust `cargo-llvm-cov` (LCOV + console report, gated on `src/ephapax/`); Zig `kcov` over the integration-test binary (best-effort, non-blocking). Reporting only — no threshold gate. |
@@ -93,8 +93,8 @@ Run with: `cargo test` from `src/ephapax/`. Benches via `cargo bench`.
 - [x] Aspect tests populated — `tests/aspect_tests.sh` covers 7 aspects (SPDX, dangerous-pattern, ABI/FFI contract, Rust panic-safety, RGBA16F constants, Idris2 ABI check, file-I/O deferred). PR #9 (2026-06-01).
 - [x] Idris2 ABI proof check integrated into CI — `.github/workflows/idris-ci.yml`. PR #8 (2026-06-01). Verified modules: `src/interface/Abi/{Types,Layout,Foreign}.idr` + `verification/proofs/idris2/{ABI/Platform.idr, Pixel.idr}`.
 - [ ] File I/O round-trip aspect — deferred to v0.3.0 (native RGBA16F save/load surface needed first).
-- [ ] E2E test: end-to-end tile alloc → composite → free pipeline via the Zig FFI
-- [x] Coverage reporting wired into CI for both Zig and Rust — `.github/workflows/coverage.yml` + `tests/coverage.sh` land Rust LCOV via `cargo-llvm-cov` (hard requirement) plus best-effort Zig kcov; both artifacts uploaded each run. Reporting only — no threshold gate. PR for issue #12.
+- [x] E2E test: end-to-end tile alloc → composite → free pipeline via the Zig FFI — `tests/e2e.sh` orchestrates `zig build` + `zig build test` + `cargo test --test e2e_pipeline` (Rust integration scenarios driving Tile lifecycle + `Tile::composite_over` + `UndoGraph` snapshots + `pt_layer_*` push/reorder + `Brush::stamp`) + `tests/e2e/scenario_*.sh`. CI wired via `.github/workflows/e2e.yml`. PR #33 (2026-06-01).
+- [x] Coverage reporting wired into CI for both Zig and Rust — `.github/workflows/coverage.yml` + `tests/coverage.sh` land Rust LCOV via `cargo-llvm-cov` (hard requirement) plus best-effort Zig kcov; both artifacts uploaded each run. Reporting only — no threshold gate. PR #32 (2026-06-01).
 
 ### P2 — Required for CRG Grade B
 
@@ -119,7 +119,7 @@ Idris2 ABI Check (CI):        WIRED (.github/workflows/idris-ci.yml; 3 modules +
 Coverage Reporting (CI):      WIRED (.github/workflows/coverage.yml — Rust cargo-llvm-cov LCOV + Zig kcov best-effort; artifacts uploaded; reporting only, no gate)
 Undo-graph benches:           PASS (88 ns/commit, 2 ns/checkout)
 panic-attack scan:            3 weak points, all pre-existing false-positive heuristics
-E2E Tests:                    STUB (compositing + brush primitive E2E available now via brush::Brush::stamp + Tile::composite_over)
+E2E Tests:                    PASS (`bash tests/e2e.sh` — 9 stages: zig build + zig test + cargo e2e_pipeline (2 scenarios) + 2 scenario_*.sh probes)
 Fuzz Tests:                   NOT STARTED
 ```
 
@@ -127,5 +127,5 @@ Fuzz Tests:                   NOT STARTED
 
 - [ ] Add fuzz harness for `pt_tile_blit` / `pt_tile_write_pixel` (TEST-NEEDS P2)
 - [x] Set up coverage reporting for Zig (kcov) and Rust (cargo-llvm-cov) — `.github/workflows/coverage.yml` + `tests/coverage.sh`; reporting only (no threshold). Zig side is best-effort and a follow-up may switch from kcov to Zig 0.15 native `-fprofile-instr-generate` once stable.
-- [ ] Populate E2E test with a real tile-alloc → composite_over → free flow now that compositing has landed (PR #20/#21)
+- [x] Populate E2E test with a real tile-alloc → composite_over → free flow now that compositing has landed — DONE in PR #33 (extends to Tile→composite→UndoGraph→pt_layer_*→Brush::stamp).
 - [ ] Layer-model property tests (e.g. proptest for reorder commutativity)

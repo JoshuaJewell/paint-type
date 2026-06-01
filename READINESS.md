@@ -49,7 +49,8 @@ To reach C:
 6. Generate AffineScript → typed-wasm bridge from Idris2 ABI (gated on typed-wasm emitter stability)
 7. Integrate with Gossamer shell for a runnable application (v0.3.0, issue #13)
 8. ~~Wire integration tests into CI~~ — DONE (idris-ci.yml + aspect tests + reused tile tests)
-9. Update this file with evidence
+9. ~~Populate E2E test with the full pipeline scenario~~ — DONE (PR #33): `tests/e2e.sh` orchestrator + `src/ephapax/tests/e2e_pipeline.rs` (2 Rust scenarios driving Tile lifecycle + composite_over + UndoGraph + pt_layer_* + Brush::stamp) + `tests/e2e/scenario_*.sh` probes + `.github/workflows/e2e.yml`.
+10. Update this file with evidence
 
 ### Closed prerequisites (2026-06-01)
 - Idris2 `--check` runs in CI for the ABI bridge + the 3 verified proof modules
@@ -78,7 +79,11 @@ To reach C:
   binary as a best-effort, non-blocking step (Zig 0.15 test runners
   are not always kcov-friendly). Both outputs upload as artifacts
   every run; Codecov upload is opt-in via a `CODECOV_TOKEN` secret.
-  Reporting only — no threshold gate.
+  Reporting only — no threshold gate. PR #32.
+- E2E test populated (PR #33): `bash tests/e2e.sh` runs 9 stages
+  (preflight + zig build + zig test + cargo `e2e_pipeline` integration
+  test with 2 scenarios + 2 `scenario_*.sh` artifact / dogfood probes)
+  and exits 0 on the v0.2.0 pipeline. CI wired via `e2e.yml`.
 
 ---
 
