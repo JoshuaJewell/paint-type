@@ -67,6 +67,17 @@ jobs:
       - name: Add Idris 2 to PATH
         run: echo "$HOME/.idris2/bin" >> $GITHUB_PATH
 
+      - name: Purge stale .ttc cache (source-of-truth-aware)
+        # actions/cache restores the entire ~/.idris2 tree including
+        # compiled .ttc/.ttm files from previous CI runs. When source
+        # changes (e.g. a new public-export name) but the cache key
+        # (version+OS only) does not, the stale .ttc hides the change
+        # at link time. Drop the compiled-module cache; keep the
+        # toolchain binary.
+        run: |
+          find "$HOME/.idris2" -type d \( -name build -o -name ttc \) -exec rm -rf {} + 2>/dev/null || true
+          find . -type d \( -name build -o -name ttc \) -exec rm -rf {} + 2>/dev/null || true
+
       - name: Type-check ABI modules
         run: |
           cd src/interface
