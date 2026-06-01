@@ -251,6 +251,44 @@ export fn pt_tile_read_pixel(
     return @intFromEnum(Result.ok);
 }
 
+/// Write a single pixel (px, py) on the tile with RGBA16F bit patterns.
+/// Channel arguments carry the bit patterns of f16 values.
+/// Returns RESULT_OK on success, RESULT_INVALID_PARAM on null / OOB / bad magic.
+export fn pt_tile_write_pixel(
+    tile_ptr: u64,
+    px: u32,
+    py: u32,
+    r: u16,
+    g: u16,
+    b: u16,
+    a: u16,
+) u32 {
+    if (tile_ptr == 0) {
+        setError("pt_tile_write_pixel: null tile");
+        return @intFromEnum(Result.invalid_param);
+    }
+    if (px >= TILE_SIZE or py >= TILE_SIZE) {
+        setError("pt_tile_write_pixel: pixel out of bounds");
+        return @intFromEnum(Result.invalid_param);
+    }
+
+    const tile: *PtTile = @ptrFromInt(tile_ptr);
+    if (!tile.isLive()) {
+        setError("pt_tile_write_pixel: invalid tile (bad magic)");
+        return @intFromEnum(Result.invalid_param);
+    }
+
+    const base: usize = (@as(usize, py) * TILE_SIZE + @as(usize, px)) * TILE_CHANNELS;
+
+    tile.pixels[base + 0] = @bitCast(r);
+    tile.pixels[base + 1] = @bitCast(g);
+    tile.pixels[base + 2] = @bitCast(b);
+    tile.pixels[base + 3] = @bitCast(a);
+
+    clearError();
+    return @intFromEnum(Result.ok);
+}
+
 //==============================================================================
 // Idris2 Out-Parameter Slot Helpers
 //==============================================================================
@@ -434,6 +472,96 @@ test "version string is non-empty" {
     const ver_str = std.mem.span(ver);
     try std.testing.expect(ver_str.len > 0);
     try std.testing.expectEqualStrings("0.1.0", ver_str);
+}
+
+test "tile write pixel round-trips" {
+    const tile_ptr = pt_tile_alloc(0, 0);
+    try std.testing.expect(tile_ptr != 0);
+    defer pt_tile_free(tile_ptr);
+
+    // Known RGBA pattern: r=0.25, g=0.5, b=0.75, a=1.0.
+    const r_in: u16 = @bitCast(@as(f16, 0.25));
+    const g_in: u16 = @bitCast(@as(f16, 0.5));
+    const b_in: u16 = @bitCast(@as(f16, 0.75));
+    const a_in: u16 = @bitCast(@as(f16, 1.0));
+
+    const write_rc = pt_tile_write_pixel(tile_ptr, 3, 7, r_in, g_in, b_in, a_in);
+    try std.testing.expectEqual(@intFromEnum(Result.ok), write_rc);
+
+    // Every OTHER pixel must still be zero (alloc zero-fills, and write
+    // only touched (3, 7)).
+    const other_probes = [_][2]u32{
+        .{ 0, 0 },
+        .{ 3, 6 },
+        .{ 4, 7 },
+        .{ 2, 7 },
+        .{ 3, 8 },
+        .{ TILE_SIZE - 1, TILE_SIZE - 1 },
+    };
+    for (other_probes) |p| {
+        var r: u16 = 0xFFFF;
+        var g: u16 = 0xFFFF;
+        var b: u16 = 0xFFFF;
+        var a: u16 = 0xFFFF;
+        const rc = pt_tile_read_pixel(
+            tile_ptr,
+            p[0],
+            p[1],
+            @intFromPtr(&r),
+            @intFromPtr(&g),
+            @intFromPtr(&b),
+            @intFromPtr(&a),
+        );
+        try std.testing.expectEqual(@intFromEnum(Result.ok), rc);
+        try std.testing.expectEqual(@as(u16, 0), r);
+        try std.testing.expectEqual(@as(u16, 0), g);
+        try std.testing.expectEqual(@as(u16, 0), b);
+        try std.testing.expectEqual(@as(u16, 0), a);
+    }
+
+    // Read (3, 7) back and verify the round-trip.
+    var r_out: u16 = 0;
+    var g_out: u16 = 0;
+    var b_out: u16 = 0;
+    var a_out: u16 = 0;
+    const read_rc = pt_tile_read_pixel(
+        tile_ptr,
+        3,
+        7,
+        @intFromPtr(&r_out),
+        @intFromPtr(&g_out),
+        @intFromPtr(&b_out),
+        @intFromPtr(&a_out),
+    );
+    try std.testing.expectEqual(@intFromEnum(Result.ok), read_rc);
+    try std.testing.expectEqual(r_in, r_out);
+    try std.testing.expectEqual(g_in, g_out);
+    try std.testing.expectEqual(b_in, b_out);
+    try std.testing.expectEqual(a_in, a_out);
+
+    // Value-level f16 round-trip too.
+    try std.testing.expectEqual(@as(f16, 0.25), @as(f16, @bitCast(r_out)));
+    try std.testing.expectEqual(@as(f16, 0.5), @as(f16, @bitCast(g_out)));
+    try std.testing.expectEqual(@as(f16, 0.75), @as(f16, @bitCast(b_out)));
+    try std.testing.expectEqual(@as(f16, 1.0), @as(f16, @bitCast(a_out)));
+}
+
+test "tile write pixel bounds + null checks" {
+    // Null tile is rejected.
+    const rc_null = pt_tile_write_pixel(0, 0, 0, 0, 0, 0, 0);
+    try std.testing.expectEqual(@intFromEnum(Result.invalid_param), rc_null);
+
+    const tile_ptr = pt_tile_alloc(0, 0);
+    try std.testing.expect(tile_ptr != 0);
+    defer pt_tile_free(tile_ptr);
+
+    // px == TILE_SIZE is out of bounds.
+    const rc_px = pt_tile_write_pixel(tile_ptr, TILE_SIZE, 0, 0, 0, 0, 0);
+    try std.testing.expectEqual(@intFromEnum(Result.invalid_param), rc_px);
+
+    // py far out of range is out of bounds.
+    const rc_py = pt_tile_write_pixel(tile_ptr, 0, 9999, 0, 0, 0, 0);
+    try std.testing.expectEqual(@intFromEnum(Result.invalid_param), rc_py);
 }
 
 test "u16 slot helpers round-trip" {

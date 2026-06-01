@@ -145,10 +145,7 @@ pub fn flatten_layer_stack(
 impl Tile {
     /// Composite `src` over `self` and return a fresh tile holding the
     /// result. Reads both tiles pixel by pixel through the existing safe
-    /// API; a future revision can swap in bulk buffer access without
-    /// changing this signature.
-    ///
-    /// The new tile's grid coordinates are inherited from `self`.
+    /// API and writes each composited pixel via `write_pixel_bits`.
     ///
     /// Note: the FFI surface does not expose `(x, y)` on a live tile, so
     /// the returned tile is allocated at `(0, 0)`. Callers who need the
@@ -157,39 +154,22 @@ impl Tile {
     pub fn composite_over(&self, src: &Tile) -> Result<Tile, TileError> {
         let out = Tile::alloc(0, 0).ok_or(TileError::LibError)?;
 
-        // We can't compose a per-pixel write without a bulk write path,
-        // so for now we walk the tile and rebuild the result via repeated
-        // fill_bits on a scratch tile is too expensive. Instead, walk
-        // both inputs, composite into a stack buffer, then fill the
-        // output with a single colour where possible. If the composite
-        // is non-uniform we fall back to filling pixel-by-pixel via the
-        // same FFI (currently fill is whole-tile only) — so this method
-        // is intentionally limited to the uniform case until libpt grows
-        // a per-pixel write. We detect non-uniformity and return a
-        // LibError rather than silently producing the wrong image.
-        //
-        // (This matches the "proof-of-life" framing in the module docs;
-        // see ROADMAP for the bulk-write upgrade.)
-        let mut composed: [[u16; 4]; TILE_PIXEL_COUNT] = [[0u16; 4]; TILE_PIXEL_COUNT];
         for py in 0..TILE_SIZE {
             for px in 0..TILE_SIZE {
                 let s = src.read_pixel_bits(px, py)?;
                 let d = self.read_pixel_bits(px, py)?;
-                let idx = (py as usize) * (TILE_SIZE as usize) + (px as usize);
-                composed[idx] = over_premultiplied(s, d);
+                let composed = over_premultiplied(s, d);
+                out.write_pixel_bits(
+                    px,
+                    py,
+                    composed[0],
+                    composed[1],
+                    composed[2],
+                    composed[3],
+                )?;
             }
         }
 
-        // Verify uniformity. If every composed pixel is identical we can
-        // realise the result through `fill_bits`; otherwise we can only
-        // return what fill_bits can express — flag that case as a
-        // library error so callers know they need the bulk-write API.
-        let first = composed[0];
-        let uniform = composed.iter().all(|p| *p == first);
-        if !uniform {
-            return Err(TileError::LibError);
-        }
-        out.fill_bits(first[0], first[1], first[2], first[3])?;
         Ok(out)
     }
 }
@@ -410,5 +390,109 @@ mod tests {
         assert!(approx_eq(p[1], 0.0));
         assert!(approx_eq(p[2], 0.0));
         assert!(approx_eq(p[3], 1.0));
+    }
+
+    #[test]
+    fn tile_composite_over_half_alpha_blue_on_opaque_red_blends() {
+        // dst = opaque red (1, 0, 0, 1).
+        // src = premultiplied half-alpha blue (0, 0, 0.5, 0.5).
+        // Expected per-pixel composite: (0.5, 0, 0.5, 1.0) for every pixel.
+        // This is the canonical non-uniform-friendly test — every pixel
+        // takes the same value because both inputs are uniform fills,
+        // but composite_over no longer requires uniformity and must
+        // still emit the right answer pixel by pixel via write_pixel_bits.
+        let dst = match Tile::alloc(0, 0) {
+            Some(t) => t,
+            None => return,
+        };
+        let src = Tile::alloc(0, 0).expect("alloc src");
+        if dst.fill_f32(1.0, 0.0, 0.0, 1.0).is_err() {
+            return;
+        }
+        if src.fill_f32(0.0, 0.0, 0.5, 0.5).is_err() {
+            return;
+        }
+        let composed = dst.composite_over(&src).expect("composite_over");
+        // Sample (0, 0) and (63, 63): the result must be the blend, not
+        // the fallback "uniform fill of (0, 0, 0, 0)" the old impl would
+        // have refused outright.
+        let p00 = composed.read_pixel_f32(0, 0).expect("read (0,0)");
+        assert!(approx_eq(p00[0], 0.5), "R(0,0) = {}", p00[0]);
+        assert!(approx_eq(p00[1], 0.0), "G(0,0) = {}", p00[1]);
+        assert!(approx_eq(p00[2], 0.5), "B(0,0) = {}", p00[2]);
+        assert!(approx_eq(p00[3], 1.0), "A(0,0) = {}", p00[3]);
+
+        let p63 = composed
+            .read_pixel_f32(TILE_SIZE - 1, TILE_SIZE - 1)
+            .expect("read (63,63)");
+        assert!(approx_eq(p63[0], 0.5), "R(63,63) = {}", p63[0]);
+        assert!(approx_eq(p63[1], 0.0), "G(63,63) = {}", p63[1]);
+        assert!(approx_eq(p63[2], 0.5), "B(63,63) = {}", p63[2]);
+        assert!(approx_eq(p63[3], 1.0), "A(63,63) = {}", p63[3]);
+    }
+
+    #[test]
+    fn tile_composite_over_transparent_src_yields_dst_everywhere() {
+        // src fully transparent → composite_over must leave dst unchanged
+        // at every probed pixel.
+        let dst = match Tile::alloc(0, 0) {
+            Some(t) => t,
+            None => return,
+        };
+        let src = Tile::alloc(0, 0).expect("alloc src");
+        // dst = opaque green; src stays at zero (fully transparent).
+        if dst.fill_f32(0.0, 1.0, 0.0, 1.0).is_err() {
+            return;
+        }
+        let composed = dst.composite_over(&src).expect("composite_over");
+        let probes: [(u32, u32); 5] = [
+            (0, 0),
+            (TILE_SIZE - 1, 0),
+            (0, TILE_SIZE - 1),
+            (TILE_SIZE - 1, TILE_SIZE - 1),
+            (TILE_SIZE / 2, TILE_SIZE / 2),
+        ];
+        for (px, py) in probes {
+            let p = composed
+                .read_pixel_f32(px, py)
+                .unwrap_or_else(|_| panic!("read ({px},{py})"));
+            assert!(approx_eq(p[0], 0.0), "R({px},{py}) = {}", p[0]);
+            assert!(approx_eq(p[1], 1.0), "G({px},{py}) = {}", p[1]);
+            assert!(approx_eq(p[2], 0.0), "B({px},{py}) = {}", p[2]);
+            assert!(approx_eq(p[3], 1.0), "A({px},{py}) = {}", p[3]);
+        }
+    }
+
+    #[test]
+    fn tile_composite_over_opaque_red_on_opaque_green_yields_red() {
+        // Opaque src must completely replace dst per Porter-Duff over.
+        let dst = match Tile::alloc(0, 0) {
+            Some(t) => t,
+            None => return,
+        };
+        let src = Tile::alloc(0, 0).expect("alloc src");
+        if dst.fill_f32(0.0, 1.0, 0.0, 1.0).is_err() {
+            return;
+        }
+        if src.fill_f32(1.0, 0.0, 0.0, 1.0).is_err() {
+            return;
+        }
+        let composed = dst.composite_over(&src).expect("composite_over");
+        // Sample several pixels — every one should now read as red.
+        let probes: [(u32, u32); 4] = [
+            (0, 0),
+            (17, 41),
+            (TILE_SIZE / 2, TILE_SIZE / 2),
+            (TILE_SIZE - 1, TILE_SIZE - 1),
+        ];
+        for (px, py) in probes {
+            let p = composed
+                .read_pixel_f32(px, py)
+                .unwrap_or_else(|_| panic!("read ({px},{py})"));
+            assert!(approx_eq(p[0], 1.0), "R({px},{py}) = {}", p[0]);
+            assert!(approx_eq(p[1], 0.0), "G({px},{py}) = {}", p[1]);
+            assert!(approx_eq(p[2], 0.0), "B({px},{py}) = {}", p[2]);
+            assert!(approx_eq(p[3], 1.0), "A({px},{py}) = {}", p[3]);
+        }
     }
 }

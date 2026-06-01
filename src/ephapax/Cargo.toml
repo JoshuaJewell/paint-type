@@ -16,6 +16,11 @@ build = "build.rs"
 name = "ephapax"
 crate-type = ["rlib"]
 
+[[bench]]
+name = "undo"
+harness = false
+path = "benches/undo.rs"
+
 [build-dependencies]
 
 [dependencies]

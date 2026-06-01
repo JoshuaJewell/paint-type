@@ -28,6 +28,9 @@
 /// Compositing operators (Porter-Duff over, masked blend, layer flattening).
 pub mod composite;
 
+/// Non-destructive branching undo graph (PROOF-NEEDS INV-2 substrate).
+pub mod undo;
+
 //==============================================================================
 // FFI declarations (must match libpt — see src/interface/ffi/src/main.zig)
 //==============================================================================
@@ -44,6 +47,15 @@ unsafe extern "C" {
         out_g: u64,
         out_b: u64,
         out_a: u64,
+    ) -> u32;
+    fn pt_tile_write_pixel(
+        tile_ptr: u64,
+        px: u32,
+        py: u32,
+        r: u16,
+        g: u16,
+        b: u16,
+        a: u16,
     ) -> u32;
     fn pt_is_initialized(tile_ptr: u64) -> u32;
 }
@@ -327,6 +339,53 @@ impl Tile {
             f16_bits_to_f32(bits[2]),
             f16_bits_to_f32(bits[3]),
         ])
+    }
+
+    /// Write one pixel at `(px, py)` with RGBA16F bit patterns.
+    ///
+    /// Channel arguments carry the bit patterns of f16 values; use
+    /// [`f32_to_f16_bits`] to convert f32 inputs. Returns
+    /// [`TileError::InvalidParam`] when the pixel coordinates are out of
+    /// range (`px >= TILE_SIZE` or `py >= TILE_SIZE`).
+    pub fn write_pixel_bits(
+        &self,
+        px: u32,
+        py: u32,
+        r: u16,
+        g: u16,
+        b: u16,
+        a: u16,
+    ) -> Result<(), TileError> {
+        // SAFETY: self.raw is a live tile (we hold the only owner);
+        // pt_tile_write_pixel validates non-null, magic, and bounds
+        // internally and never dereferences past the header check.
+        let code = unsafe { pt_tile_write_pixel(self.raw, px, py, r, g, b, a) };
+        if code == RESULT_OK {
+            Ok(())
+        } else {
+            Err(TileError::from_code(code))
+        }
+    }
+
+    /// Convenience: write one pixel with f32 channel values, converted
+    /// to f16 bit patterns first.
+    pub fn write_pixel_f32(
+        &self,
+        px: u32,
+        py: u32,
+        r: f32,
+        g: f32,
+        b: f32,
+        a: f32,
+    ) -> Result<(), TileError> {
+        self.write_pixel_bits(
+            px,
+            py,
+            f32_to_f16_bits(r),
+            f32_to_f16_bits(g),
+            f32_to_f16_bits(b),
+            f32_to_f16_bits(a),
+        )
     }
 }
 
