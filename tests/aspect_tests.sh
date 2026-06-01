@@ -129,16 +129,25 @@ fi
 bold "Aspect 4: Rust error handling (src/ephapax/)"
 
 if [ -d "src/ephapax/src" ]; then
-    # Allow .unwrap() in #[cfg(test)] modules and inline doc tests; flag elsewhere.
-    # `set +o pipefail` locally so empty grep matches (legitimate: zero unwraps)
-    # don't abort the script under the global `pipefail`.
+    # Allow .unwrap() inside `#[cfg(test)] mod tests { ... }` blocks and
+    # inside doctests; flag elsewhere.
+    #
+    # Heuristic: per-file, strip the file at the first line containing
+    # `mod tests {`; any `.unwrap()` after that point is presumed to be
+    # in test code. Also skip `//` line comments and `///` doctest lines.
+    UNWRAP_PROD=0
     set +o pipefail
-    UNWRAP_PROD=$(grep -rn '\.unwrap()' src/ephapax/src/ 2>/dev/null \
-        | grep -v '^[^:]*:[^:]*:[[:space:]]*//' \
-        | grep -v '#\[cfg(test)\]' \
-        | grep -v '/// ' \
-        | wc -l)
+    while IFS= read -r -d '' f; do
+        PROD_PART=$(awk '/mod tests[[:space:]]*\{/{exit}{print}' "$f" 2>/dev/null || true)
+        N=$(printf '%s' "$PROD_PART" \
+            | { grep -E '\.unwrap\(\)' || true; } \
+            | { grep -vE '^[[:space:]]*//' || true; } \
+            | { grep -vE '^[[:space:]]*///' || true; } \
+            | wc -l)
+        UNWRAP_PROD=$((UNWRAP_PROD + N))
+    done < <(find src/ephapax/src -type f -name '*.rs' -print0 2>/dev/null)
     set -o pipefail
+
     if [ "$UNWRAP_PROD" -gt 0 ]; then
         warn "$UNWRAP_PROD .unwrap() call(s) in non-test Ephapax code — review for panic-safety"
     else

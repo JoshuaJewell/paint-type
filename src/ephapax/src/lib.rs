@@ -31,6 +31,9 @@ pub mod composite;
 /// Non-destructive branching undo graph (PROOF-NEEDS INV-2 substrate).
 pub mod undo;
 
+/// Layer model: sparse tile maps + a stable-ID layer stack.
+pub mod layer;
+
 //==============================================================================
 // FFI declarations (must match libpt — see src/interface/ffi/src/main.zig)
 //==============================================================================
