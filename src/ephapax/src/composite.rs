@@ -139,6 +139,156 @@ pub fn flatten_layer_stack(
 }
 
 //==============================================================================
+// Linear interpolation
+//==============================================================================
+
+/// Channel-wise linear interpolation between two pixels.
+///
+/// * `t = 0` returns `a` exactly (modulo f16 round-trip).
+/// * `t = 1` returns `b` exactly (modulo f16 round-trip).
+/// * `t` is clamped to `[0, 1]` before use; values outside the range
+///   would cause overshoot that is rarely what a caller wants.
+///
+/// Operates on all four channels uniformly, so it works on both
+/// premultiplied and unpremultiplied data — the meaning of "halfway"
+/// just differs between the two conventions.
+pub fn lerp(a: [u16; 4], b: [u16; 4], t: u16) -> [u16; 4] {
+    let s = f16_bits_to_f32(t).clamp(0.0_f32, 1.0_f32);
+    let inv = 1.0_f32 - s;
+    let av = unpack(a);
+    let bv = unpack(b);
+    pack([
+        av[0] * inv + bv[0] * s,
+        av[1] * inv + bv[1] * s,
+        av[2] * inv + bv[2] * s,
+        av[3] * inv + bv[3] * s,
+    ])
+}
+
+//==============================================================================
+// Separable blend modes (multiply, screen) over premultiplied alpha
+//==============================================================================
+//
+// Derivation reference: W3C Compositing and Blending Level 2 §13. For a
+// separable blend `B(cs, cd)` applied in unpremultiplied space, the
+// premultiplied result is
+//
+//     co = Sca * (1 - Da) + Dca * (1 - Sa) + Sa * Da * B(Sca/Sa, Dca/Da)
+//     ao = Sa + Da - Sa * Da     (same as plain "over")
+//
+// Substituting the closed forms simplifies to the per-channel formulas
+// implemented below.
+
+/// Photoshop-style **multiply** blend over premultiplied inputs.
+///
+/// Closed form per colour channel:
+///
+/// ```text
+/// co = Sca * (1 - Da) + Dca * (1 - Sa) + Sca * Dca
+/// ao = Sa + Da - Sa * Da
+/// ```
+///
+/// White multiplied by anything is the other operand; black multiplied
+/// by anything is black. Useful for shadow / darkening passes.
+pub fn multiply(src: [u16; 4], dst: [u16; 4]) -> [u16; 4] {
+    let s = unpack(src);
+    let d = unpack(dst);
+    let inv_sa = 1.0_f32 - s[3];
+    let inv_da = 1.0_f32 - d[3];
+    let a_out = s[3] + d[3] * inv_sa;
+    pack([
+        s[0] * inv_da + d[0] * inv_sa + s[0] * d[0],
+        s[1] * inv_da + d[1] * inv_sa + s[1] * d[1],
+        s[2] * inv_da + d[2] * inv_sa + s[2] * d[2],
+        a_out,
+    ])
+}
+
+/// Photoshop-style **screen** blend over premultiplied inputs.
+///
+/// Closed form per colour channel:
+///
+/// ```text
+/// co = Sca + Dca - Sca * Dca
+/// ao = Sa + Da - Sa * Da
+/// ```
+///
+/// Screen is multiply's inverse: black screened with anything is the
+/// other operand; white screened with anything is white. Useful for
+/// highlight / lightening passes.
+pub fn screen(src: [u16; 4], dst: [u16; 4]) -> [u16; 4] {
+    let s = unpack(src);
+    let d = unpack(dst);
+    let a_out = s[3] + d[3] * (1.0_f32 - s[3]);
+    pack([
+        s[0] + d[0] - s[0] * d[0],
+        s[1] + d[1] - s[1] * d[1],
+        s[2] + d[2] - s[2] * d[2],
+        a_out,
+    ])
+}
+
+//==============================================================================
+// Additional Porter-Duff operators (premultiplied alpha)
+//==============================================================================
+//
+// All four assume premultiplied alpha on both inputs, matching
+// `over_premultiplied`. Formulas follow Porter & Duff 1984 §3.
+
+/// Porter-Duff **src in dst** — show src only where dst already has alpha.
+///
+/// * `co = Sca * Da`
+/// * `ao = Sa  * Da`
+pub fn in_op(src: [u16; 4], dst: [u16; 4]) -> [u16; 4] {
+    let s = unpack(src);
+    let da = f16_bits_to_f32(dst[3]);
+    pack([s[0] * da, s[1] * da, s[2] * da, s[3] * da])
+}
+
+/// Porter-Duff **src out dst** — show src only where dst is empty.
+///
+/// * `co = Sca * (1 - Da)`
+/// * `ao = Sa  * (1 - Da)`
+pub fn out_op(src: [u16; 4], dst: [u16; 4]) -> [u16; 4] {
+    let s = unpack(src);
+    let inv_da = 1.0_f32 - f16_bits_to_f32(dst[3]);
+    pack([s[0] * inv_da, s[1] * inv_da, s[2] * inv_da, s[3] * inv_da])
+}
+
+/// Porter-Duff **src atop dst** — src over dst clipped to dst's alpha.
+///
+/// * `co = Sca * Da + Dca * (1 - Sa)`
+/// * `ao = Da`   (output alpha equals destination alpha)
+pub fn atop(src: [u16; 4], dst: [u16; 4]) -> [u16; 4] {
+    let s = unpack(src);
+    let d = unpack(dst);
+    let inv_sa = 1.0_f32 - s[3];
+    pack([
+        s[0] * d[3] + d[0] * inv_sa,
+        s[1] * d[3] + d[1] * inv_sa,
+        s[2] * d[3] + d[2] * inv_sa,
+        d[3],
+    ])
+}
+
+/// Porter-Duff **src xor dst** — non-overlapping union of the two.
+///
+/// * `co = Sca * (1 - Da) + Dca * (1 - Sa)`
+/// * `ao = Sa  * (1 - Da) + Da  * (1 - Sa)`
+pub fn xor(src: [u16; 4], dst: [u16; 4]) -> [u16; 4] {
+    let s = unpack(src);
+    let d = unpack(dst);
+    let inv_sa = 1.0_f32 - s[3];
+    let inv_da = 1.0_f32 - d[3];
+    pack([
+        s[0] * inv_da + d[0] * inv_sa,
+        s[1] * inv_da + d[1] * inv_sa,
+        s[2] * inv_da + d[2] * inv_sa,
+        s[3] * inv_da + d[3] * inv_sa,
+    ])
+}
+
+//==============================================================================
 // Tile-level convenience
 //==============================================================================
 
@@ -494,5 +644,204 @@ mod tests {
             assert!(approx_eq(p[2], 0.0), "B({px},{py}) = {}", p[2]);
             assert!(approx_eq(p[3], 1.0), "A({px},{py}) = {}", p[3]);
         }
+    }
+
+    // ─── lerp ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn lerp_at_zero_is_a() {
+        let a = [F16_ONE, F16_ZERO, F16_ZERO, F16_ONE];
+        let b = [F16_ZERO, F16_ONE, F16_ZERO, F16_ONE];
+        let out = lerp(a, b, F16_ZERO);
+        assert!(approx_eq_pixel(out, [1.0, 0.0, 0.0, 1.0]));
+    }
+
+    #[test]
+    fn lerp_at_one_is_b() {
+        let a = [F16_ONE, F16_ZERO, F16_ZERO, F16_ONE];
+        let b = [F16_ZERO, F16_ONE, F16_ZERO, F16_ONE];
+        let out = lerp(a, b, F16_ONE);
+        assert!(approx_eq_pixel(out, [0.0, 1.0, 0.0, 1.0]));
+    }
+
+    #[test]
+    fn lerp_at_half_is_midpoint() {
+        // (1,0,0,1) ← 0.5 → (0,1,0,1)  →  (0.5, 0.5, 0, 1).
+        let a = [F16_ONE, F16_ZERO, F16_ZERO, F16_ONE];
+        let b = [F16_ZERO, F16_ONE, F16_ZERO, F16_ONE];
+        let out = lerp(a, b, F16_HALF);
+        assert!(approx_eq_pixel(out, [0.5, 0.5, 0.0, 1.0]));
+    }
+
+    #[test]
+    fn lerp_clamps_overshoot() {
+        // Out-of-range t (2.0 → clamped to 1.0).
+        let a = [F16_ONE, F16_ZERO, F16_ZERO, F16_ONE];
+        let b = [F16_ZERO, F16_ONE, F16_ZERO, F16_ONE];
+        let t_two: u16 = 0x4000; // 2.0 in binary16
+        let out = lerp(a, b, t_two);
+        assert!(approx_eq_pixel(out, [0.0, 1.0, 0.0, 1.0]));
+    }
+
+    // ─── multiply ──────────────────────────────────────────────────────
+
+    #[test]
+    fn multiply_with_white_opaque_returns_src() {
+        // White opaque = (1, 1, 1, 1) premultiplied.
+        // multiply(src, white) = Sca*0 + 1*(1-Sa) + Sca*1 = Sca + (1-Sa)
+        // For premultiplied opaque src (Sa = 1): result = Sca. So opaque
+        // src against opaque white = src.
+        let src = [F16_HALF, F16_HALF, F16_HALF, F16_ONE]; // opaque grey
+        let white = [F16_ONE, F16_ONE, F16_ONE, F16_ONE];
+        let out = multiply(src, white);
+        assert!(approx_eq_pixel(out, [0.5, 0.5, 0.5, 1.0]));
+    }
+
+    #[test]
+    fn multiply_with_black_opaque_returns_black() {
+        // multiply(src, black_opaque) with src opaque:
+        //   co = Sca*0 + 0*(1-Sa) + Sca*0 = 0
+        //   ao = Sa + Da - Sa*Da = 1 + 1 - 1 = 1
+        let src = [F16_ONE, F16_HALF, F16_ZERO, F16_ONE];
+        let black = [F16_ZERO, F16_ZERO, F16_ZERO, F16_ONE];
+        let out = multiply(src, black);
+        assert!(approx_eq_pixel(out, [0.0, 0.0, 0.0, 1.0]));
+    }
+
+    #[test]
+    fn multiply_alpha_is_over_alpha() {
+        // multiply preserves the standard over alpha formula.
+        let src = [F16_HALF, F16_ZERO, F16_ZERO, F16_HALF];
+        let dst = [F16_ZERO, F16_HALF, F16_ZERO, F16_HALF];
+        let out = multiply(src, dst);
+        let out_a = f16_bits_to_f32(out[3]);
+        // 0.5 + 0.5 - 0.25 = 0.75
+        assert!(approx_eq(out_a, 0.75));
+    }
+
+    // ─── screen ────────────────────────────────────────────────────────
+
+    #[test]
+    fn screen_with_black_opaque_returns_src() {
+        // screen(src, black) = Sca + 0 - 0 = Sca; alpha as over.
+        let src = [F16_HALF, F16_HALF, F16_ZERO, F16_ONE];
+        let black = [F16_ZERO, F16_ZERO, F16_ZERO, F16_ONE];
+        let out = screen(src, black);
+        assert!(approx_eq_pixel(out, [0.5, 0.5, 0.0, 1.0]));
+    }
+
+    #[test]
+    fn screen_with_white_opaque_returns_white() {
+        // screen(src, white) = Sca + 1 - Sca = 1 channelwise; alpha = 1.
+        let src = [F16_HALF, F16_HALF, F16_ZERO, F16_ONE];
+        let white = [F16_ONE, F16_ONE, F16_ONE, F16_ONE];
+        let out = screen(src, white);
+        assert!(approx_eq_pixel(out, [1.0, 1.0, 1.0, 1.0]));
+    }
+
+    #[test]
+    fn screen_alpha_is_over_alpha() {
+        let src = [F16_ZERO, F16_ZERO, F16_HALF, F16_HALF];
+        let dst = [F16_HALF, F16_ZERO, F16_ZERO, F16_HALF];
+        let out = screen(src, dst);
+        // Same alpha formula as over: 0.75.
+        assert!(approx_eq(f16_bits_to_f32(out[3]), 0.75));
+    }
+
+    // ─── in_op ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn in_op_against_transparent_dst_is_transparent() {
+        // src opaque, dst transparent → result all zero (Da = 0 wipes out).
+        let src = [F16_ONE, F16_ZERO, F16_ZERO, F16_ONE];
+        let dst = [F16_ZERO, F16_ZERO, F16_ZERO, F16_ZERO];
+        let out = in_op(src, dst);
+        assert_eq!(out, [0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn in_op_against_opaque_dst_returns_src() {
+        // Da = 1 → result = src.
+        let src = [F16_HALF, F16_ZERO, F16_HALF, F16_HALF];
+        let dst = [F16_ZERO, F16_ONE, F16_ZERO, F16_ONE];
+        let out = in_op(src, dst);
+        assert!(approx_eq_pixel(out, [0.5, 0.0, 0.5, 0.5]));
+    }
+
+    // ─── out_op ────────────────────────────────────────────────────────
+
+    #[test]
+    fn out_op_against_transparent_dst_returns_src() {
+        // Da = 0 → result = src.
+        let src = [F16_HALF, F16_ZERO, F16_HALF, F16_HALF];
+        let dst = [F16_ZERO, F16_ZERO, F16_ZERO, F16_ZERO];
+        let out = out_op(src, dst);
+        assert!(approx_eq_pixel(out, [0.5, 0.0, 0.5, 0.5]));
+    }
+
+    #[test]
+    fn out_op_against_opaque_dst_is_transparent() {
+        // Da = 1 → result all zero.
+        let src = [F16_ONE, F16_ZERO, F16_ZERO, F16_ONE];
+        let dst = [F16_ZERO, F16_ONE, F16_ZERO, F16_ONE];
+        let out = out_op(src, dst);
+        assert_eq!(out, [0, 0, 0, 0]);
+    }
+
+    // ─── atop ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn atop_alpha_equals_dst_alpha() {
+        let src = [F16_HALF, F16_ZERO, F16_ZERO, F16_HALF];
+        let dst = [F16_ZERO, F16_HALF, F16_ZERO, F16_HALF];
+        let out = atop(src, dst);
+        // Output alpha must equal dst alpha exactly (modulo f16 round-trip).
+        assert!(approx_eq(f16_bits_to_f32(out[3]), 0.5));
+    }
+
+    #[test]
+    fn atop_against_transparent_dst_is_transparent() {
+        // Da = 0 → co = 0; ao = 0.
+        let src = [F16_ONE, F16_ZERO, F16_ZERO, F16_ONE];
+        let dst = [F16_ZERO, F16_ZERO, F16_ZERO, F16_ZERO];
+        let out = atop(src, dst);
+        assert_eq!(out, [0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn atop_opaque_src_on_opaque_dst_is_src() {
+        // src opaque (Sa = 1) atop opaque dst (Da = 1):
+        // co = Sca*1 + Dca*0 = Sca; ao = 1.
+        let src = [F16_ONE, F16_ZERO, F16_ZERO, F16_ONE];
+        let dst = [F16_ZERO, F16_ONE, F16_ZERO, F16_ONE];
+        let out = atop(src, dst);
+        assert!(approx_eq_pixel(out, [1.0, 0.0, 0.0, 1.0]));
+    }
+
+    // ─── xor ───────────────────────────────────────────────────────────
+
+    #[test]
+    fn xor_opaque_with_opaque_is_transparent() {
+        // Sa = 1, Da = 1 → both (1-Da) and (1-Sa) are 0 → result all 0.
+        let src = [F16_ONE, F16_ZERO, F16_ZERO, F16_ONE];
+        let dst = [F16_ZERO, F16_ONE, F16_ZERO, F16_ONE];
+        let out = xor(src, dst);
+        assert_eq!(out, [0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn xor_with_transparent_dst_returns_src() {
+        let src = [F16_HALF, F16_ZERO, F16_HALF, F16_HALF];
+        let dst = [F16_ZERO, F16_ZERO, F16_ZERO, F16_ZERO];
+        let out = xor(src, dst);
+        assert!(approx_eq_pixel(out, [0.5, 0.0, 0.5, 0.5]));
+    }
+
+    #[test]
+    fn xor_with_transparent_src_returns_dst() {
+        let src = [F16_ZERO, F16_ZERO, F16_ZERO, F16_ZERO];
+        let dst = [F16_HALF, F16_ZERO, F16_HALF, F16_HALF];
+        let out = xor(src, dst);
+        assert!(approx_eq_pixel(out, [0.5, 0.0, 0.5, 0.5]));
     }
 }
