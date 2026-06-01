@@ -2,26 +2,29 @@
 ;; Project state — update throughout each session
 (state
   (metadata
-    (version "0.1.0")
+    (version "0.2.0-dev")
     (project "paint-type")
-    (last-updated "2026-05-11"))
+    (last-updated "2026-06-01"))
   (project-context
     (description "paint-type — cross-platform open-source image editor in the spirit of Paint.NET. Capable enough for real work, simple enough to reach for without thinking.")
-    (primary-language "Rust (Ephapax) + Idris2 (ABI) + Zig (FFI) + AffineScript→typed-wasm (bridge)")
-    (status "early-development"))
+    (primary-language "Rust (Ephapax) + Idris2 (ABI) + Zig (FFI) + AffineScript→typed-wasm (bridge, draft)")
+    (status "pre-alpha — v0.2.0 closing"))
   (current-position
     (phase "implementation")
-    (completion-percentage 10)
-    (milestone "v0.1.0 Foundation — tile primitive, ABI bridge, Ephapax skeleton"))
+    (completion-percentage 22)
+    (milestone "v0.2.0 Core Image Operations — in-repo work complete; only AffineScript→typed-wasm bridge remains (gated upstream)"))
   (testing-summary
-    (zig-ffi-tests "src/interface/ffi/: PASS (zig build test)")
-    (rust-tests "src/ephapax/: PASS (cargo test)")
+    (zig-ffi-tests "src/interface/ffi/: PASS (zig build test — 29/29; pt_tile_* + pt_layer_*)")
+    (rust-tests "src/ephapax/: PASS (cargo test — 98/98 + 1 doctest across lib/composite/undo/layer/brush)")
     (workflow-tests "tests/workflows/validate_workflows_test.sh: PASS")
-    (aspect-tests "tests/aspect_tests.sh: STUB (not yet populated)")
-    (e2e-tests "tests/e2e.sh: STUB"))
+    (aspect-tests "tests/aspect_tests.sh: PASS (7 aspects)")
+    (e2e-tests "tests/e2e.sh + cargo --test e2e_pipeline: PASS (9 stages; 2 Rust scenarios; 2 scenario_*.sh probes)")
+    (fuzz "cargo-fuzz: 3 targets (pt_tile_blit / pt_tile_write_pixel / pt_layer_opacity); 30 s CI smoke per target")
+    (coverage "cargo-llvm-cov: WIRED (Rust regions ~94.53%); kcov for Zig: best-effort on Ubuntu noble; reporting only, no gate")
+    (rust-ci "GREEN on main since 2026-06-01 (PRs #36/#37/#38)"))
   (critical-next-actions
-    ("Implement Ephapax brush engine and tile compositing (v0.2.0)"
-     "Generate AffineScript → typed-wasm bridge from Idris2 ABI"
-     "Wire idris2 --check into CI for ABI proof validation"
-     "Add fuzz harness for pt_tile_blit"
+    ("Wait on hyperpolymath/typed-wasm#127 (D1 codegen coverage) + #130 (D2 round-trip soundness) — needed to make src/bridges/paint-type-{tile,layer}.twasm compilable via `tw build` (paint-type#39)"
+     "TP-2 — Public API type safety proof in Lean4 (P1, ~4 h)"
+     "INV-1 — Tile pool no-double-free / no-use-after-free proof in Idris2 (P1, ~6 h)"
+     "Layer-model property tests (proptest reorder commutativity)"
      "Integrate Gossamer shell for a runnable application (v0.3.0)")))

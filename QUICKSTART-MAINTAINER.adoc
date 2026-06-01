@@ -10,8 +10,10 @@ on your platform.
 
 == Runtime Dependencies
 
-At v0.1.0 (current), paint-type is a library/bridge crate, not a standalone binary.
-Runtime dependencies will be specified at v0.3.0 (Gossamer shell integration).
+As of 2026-06-01, paint-type is a library/bridge crate (v0.2.0 closing — only
+the AffineScript→typed-wasm bridge remains, gated upstream), not yet a
+standalone binary. Runtime dependencies will be specified at v0.3.0 (Gossamer
+shell integration).
 
 For build dependencies, see: `guix.scm`.
 
@@ -96,8 +98,9 @@ just build-release
 
 == Multi-Instance Deployment
 
-paint-type at v0.1.0 is not yet a deployed service. Multi-instance notes will be
-added at v0.3.0 when the Gossamer shell integration lands.
+paint-type is not yet a deployed service (current state: v0.2.0 closing,
+library/bridge only). Multi-instance notes will be added at v0.3.0 when the
+Gossamer shell integration lands.
 
 == Reporting Issues
 

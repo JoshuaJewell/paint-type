@@ -22,7 +22,7 @@ import? "contractile.just"
 project := "paint-type"
 OWNER := "JoshuaJewell"
 REPO := "paint-type"
-version := "0.1.0"
+version := "0.2.0-dev"
 tier := "1"
 
 # ═══════════════════════════════════════════════════════════════════════════════

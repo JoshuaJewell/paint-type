@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
-<!-- Last updated: 2026-05-11 -->
+<!-- Last updated: 2026-06-01 -->
 
 # paint-type Architecture Topology
 
@@ -16,10 +16,10 @@ layer (Burble + Groove).
 
 | Component | Language | Purpose |
 |-----------|----------|---------|
-| Ephapax | Rust (linear types) | Native image core — RGBA16F tile compositing, brush engine, undo graph |
-| Abi | Idris2 | Formally verified ABI definitions — tile layout proofs, FFI type safety |
-| ffi | Zig | C ABI bridge — zero-cost bindings between Ephapax and the web layer |
-| AffineScript bridge | AffineScript → typed-wasm | High-level API surface for UI and plugins |
+| Ephapax | Rust (linear types) | Native image core — RGBA16F tile compositing (11 ops), brush engine (BrushTip + Brush::stamp + Stroke), persistent UndoGraph, Layer / LayerStack. Rust CI green. |
+| Abi | Idris2 | Formally verified ABI definitions — tile layout proofs, FFI type safety. ABI-1..5 + TP-1/TP-3 closed. |
+| ffi | Zig | C ABI bridge — zero-cost bindings between Ephapax and the web layer. 23 exports (pt_tile_* + pt_layer_* + slot helpers); 29/29 tests. |
+| AffineScript bridge | AffineScript → typed-wasm | High-level API surface for UI and plugins. Draft `.twasm` schemas at `src/bridges/paint-type-{tile,layer}.twasm`; gated on `hyperpolymath/typed-wasm#127` + `#130` (paint-type#39). |
 | Gossamer shell | Linearly-typed webview | Desktop shell hosting the web UI |
 | Web UI | HTML/CSS/JS (in Gossamer) | Layer panel, tool bar, canvas viewport |
 | Plugin sandbox | typed-wasm | Isolated WASM environment for third-party plugins |

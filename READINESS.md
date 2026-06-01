@@ -21,7 +21,7 @@
 | Gossamer shell integration | D | Pre-alpha  | Not started; architecture specified                       |
 | Burble / Groove     | D     | Pre-alpha     | Not started; architecture specified                       |
 
-**Overall:** Grade D (closing on C) — 10 PRs of v0.2.0 work landed on 2026-06-01: compositing primitives + 7 more operators (lerp/multiply/screen/in/out/atop/xor), non-uniform `Tile::composite_over`, persistent UndoGraph + benches, basic Layer / LayerStack model, brush engine (tip masks + stroke sampling + tile-local stamping), pt_layer_* cross-language FFI, ABI-3/ABI-5/TP-3 proofs. ABI category fully proven; cargo test 98/98 + 1 doctest; zig build test 29/29; aspect tests 7 PASS. Remaining v0.2.0 work: AffineScript → typed-wasm bridge (still gated on typed-wasm emitter stability). Outstanding for Grade C: AffineScript bridge generated, Gossamer integration started.
+**Overall:** Grade D (closing on C) — 15 PRs of v0.2.0 work landed 2026-06-01: compositing primitives + 7 more operators (lerp/multiply/screen/in/out/atop/xor), non-uniform `Tile::composite_over`, persistent UndoGraph + benches, basic Layer / LayerStack model, brush engine (tip masks + stroke sampling + tile-local stamping), pt_layer_* cross-language FFI, ABI-3/ABI-5/TP-3 proofs, **draft `.twasm` schemas at `src/bridges/`** (PR #40), and the full CI tail — coverage (PR #32 + #34), E2E pipeline (PR #33), fuzz harness (PR #35), Rust CI now green on main (PRs #36/#37/#38). ABI category fully proven; cargo test 98/98 + 1 doctest; zig build test 29/29; aspect tests 7 PASS. Remaining v0.2.0 work: AffineScript → typed-wasm bridge **compilation** (draft `.twasm` exists; `tw build` gated on `hyperpolymath/typed-wasm#127` + `#130`; paint-type#39). Outstanding for Grade C: AffineScript bridge generated and verifier-accepted, Gossamer integration started.
 
 ---
 
@@ -29,9 +29,11 @@
 
 - Repository follows RSR standards (CI/CD, SPDX, machine-readable metadata, CRG structure)
 - `src/interface/Abi/` — Idris2 types and layout proofs compile and typecheck
-- `src/interface/ffi/` — Zig libpt builds and integration tests pass
-- `src/ephapax/` — Rust crate builds with `cargo test`
-- dogfood-gate, hypatia-scan, and static-analysis-gate workflows all green
+- `src/interface/ffi/` — Zig libpt builds and integration tests pass (29/29)
+- `src/ephapax/` — Rust crate builds with `cargo test` (98/98 + 1 doctest); `cargo clippy --all-targets -- -D warnings` clean
+- dogfood-gate, hypatia-scan, static-analysis-gate workflows all green
+- **Rust CI green on `main` since 2026-06-01** (`.github/workflows/rust.yml` — PRs #36/#37/#38)
+- idris-ci, coverage, e2e, and fuzz-smoke workflows wired and exercising the v0.2.0 surface
 - TOPOLOGY.md, TEST-NEEDS.md, PROOF-NEEDS.md, and ROADMAP.adoc reflect actual project state
 
 ---
