@@ -25,6 +25,9 @@
 //!
 //! See the top-of-file comments for design rationale.
 
+/// Compositing operators (Porter-Duff over, masked blend, layer flattening).
+pub mod composite;
+
 //==============================================================================
 // FFI declarations (must match libpt — see src/interface/ffi/src/main.zig)
 //==============================================================================
