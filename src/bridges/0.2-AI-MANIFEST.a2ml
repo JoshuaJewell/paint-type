@@ -8,4 +8,32 @@ parent: "../0.1-AI-MANIFEST.a2ml"
 ---
 ### [AI_MANIFEST]
 description: |
-  Integration logic for external systems (API, Database, RPC, etc.).
+  AffineScript → typed-wasm bridge surface.
+
+  Hand-modelled `.twasm` sources for paint-type's two FFI surfaces:
+
+    paint-type-tile.twasm   — pt_tile_* RGBA16F tile region + ops
+                              (L1-L10: linear alloc/free, &mut/& blit
+                              pairing, bounds-proved pixel access).
+    paint-type-layer.twasm  — pt_layer_* metadata stack
+                              (L1-L8: bounded array, opacity bits,
+                              visibility flags, name buffer).
+
+  Both files are DRAFT as of 2026-06-01: `tw build` from
+  `hyperpolymath/typed-wasm` codegen v0 only accepts the example-01
+  schema via structural string-match. General `.twasm` front-end →
+  IR lowering is tracked upstream in hyperpolymath/typed-wasm#127,
+  and paint-type's side is paint-type#39.
+
+  When #127 lands these become the actual sources the bridge generator
+  emits (from AffineScript ABI declarations) plus corpus entries for
+  hyperpolymath/typed-wasm#130 (round-trip soundness property).
+
+status: draft
+gates:
+  - hyperpolymath/typed-wasm#127
+  - hyperpolymath/typed-wasm#130
+  - JoshuaJewell/paint-type#39
+mirrors:
+  - src/interface/ffi/src/main.zig
+  - src/ephapax/src/lib.rs

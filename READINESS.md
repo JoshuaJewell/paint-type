@@ -17,7 +17,7 @@
 | Idris2 ABI (Types, Layout, Foreign) | C | Pre-alpha | Compiles + CI-checked; ABI category fully proven (ABI-1..5 done) |
 | Zig FFI (libpt)     | C     | Pre-alpha     | 29/29 tests pass; 23 exports (pt_tile_* + pt_layer_* + slot helpers) |
 | Ephapax (Rust core) | C     | Pre-alpha     | Tile API + 11 compositing ops + UndoGraph + layer model + brush engine + benches (cargo test 98/98 + 1 doctest) |
-| AffineScript bridge | D     | Pre-alpha     | Stubs only; gated on typed-wasm emitter stability         |
+| AffineScript bridge | D     | Pre-alpha     | Draft `.twasm` schemas in `src/bridges/`; gated on `hyperpolymath/typed-wasm#127` + `#130` (paint-type#39) |
 | Gossamer shell integration | D | Pre-alpha  | Not started; architecture specified                       |
 | Burble / Groove     | D     | Pre-alpha     | Not started; architecture specified                       |
 
@@ -98,6 +98,6 @@ This follows after reaching Grade C. Target: after v0.3.0 Desktop Shell mileston
 ## Concerns and Maintenance Notes
 
 - Ephapax is architecturally specified but not yet feature-complete — compositing, brush engine, and undo graph are all v0.2.0 work
-- AffineScript bridge is stub-only; the code generator is not yet integrated
+- AffineScript bridge has draft `.twasm` schemas at `src/bridges/paint-type-{tile,layer}.twasm`; the AffineScript-ABI → `.twasm` generator + the upstream `tw build` path are not yet integrated (gated on `hyperpolymath/typed-wasm#127` general front-end + `#130` round-trip soundness; tracked in paint-type#39)
 - Gossamer shell integration has not started; depends on Gossamer reaching a usable API surface
 - Burble and Groove collaboration layers are future work (v0.5.0)

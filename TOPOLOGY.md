@@ -64,7 +64,7 @@ paint-type/
 │   │   ├── Abi/          # Idris2 ABI definitions (Types, Layout, Foreign)
 │   │   └── ffi/          # Zig FFI implementation and tests
 │   ├── aspects/          # Cross-cutting concerns (integrity, observability, security)
-│   ├── bridges/          # AffineScript → typed-wasm bridge stubs
+│   ├── bridges/          # AffineScript → typed-wasm bridge (draft .twasm)
 │   ├── contracts/        # API contracts
 │   ├── core/             # Core abstractions (placeholder)
 │   ├── definitions/      # Shared type definitions
