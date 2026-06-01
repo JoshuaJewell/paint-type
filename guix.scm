@@ -1,13 +1,13 @@
 ;; SPDX-License-Identifier: PMPL-1.0-or-later
-;; Copyright (c) {{CURRENT_YEAR}} {{AUTHOR}} ({{OWNER}}) <{{AUTHOR_EMAIL}}>
+;; Copyright (c) 2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me>
 ;;
-;; Guix package definition for {{PROJECT_NAME}}
+;; Guix package definition for paint-type
 ;;
 ;; Usage:
 ;;   guix shell -D -f guix.scm    # Enter development shell
 ;;   guix build -f guix.scm       # Build package
 ;;
-;; TODO: Replace {{PROJECT_NAME}} and customize inputs for your language/stack.
+;; TODO: Replace paint-type and customize inputs for your language/stack.
 ;; See: https://guix.gnu.org/manual/en/html_node/Defining-Packages.html
 
 (use-modules (guix packages)
@@ -18,7 +18,7 @@
              (gnu packages base))
 
 (package
-  (name "{{PROJECT_NAME}}")
+  (name "paint-type")
   (version "0.1.0")
   (source (local-file "." "source"
                        #:recursive? #t
@@ -63,8 +63,8 @@
    (list
     ;; TODO: Add runtime dependencies
     ))
-  (home-page "https://github.com/{{OWNER}}/{{PROJECT_NAME}}")
-  (synopsis "{{PROJECT_PURPOSE}}")
+  (home-page "https://github.com/JoshuaJewell/paint-type")
+  (synopsis "cross-platform open-source image editor with formally-verified ABI bridge")
   (description "RSR-compliant project. See README.adoc for details.")
   (license (list
             ;; PMPL-1.0-or-later extends MPL-2.0

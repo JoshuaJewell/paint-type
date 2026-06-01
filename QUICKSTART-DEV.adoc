@@ -21,14 +21,7 @@
 guix shell
 ----
 
-=== Option B: Nix (fallback)
-
-[source,bash]
-----
-nix develop
-----
-
-=== Option C: Manual
+=== Option B: Manual
 
 Prerequisites:
 
