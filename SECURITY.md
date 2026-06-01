@@ -5,7 +5,7 @@
 
 If you discover a security vulnerability, please report it responsibly.
 
-**Email:** j.d.a.jewell@open.ac.uk
+**Email:** paint-type@pm.me
 
 **Please include:**
 - Description of the vulnerability

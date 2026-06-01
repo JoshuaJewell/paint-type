@@ -1,384 +1,316 @@
-= ABI/FFI Standards
-{{~ Aditionally delete this line and fill out the template below ~}}
+// SPDX-License-Identifier: PMPL-1.0-or-later
+= paint-type ABI/FFI Documentation
+:toc: left
+:source-highlighter: rouge
 
-# paint-type ABI/FFI Documentation
+== Overview
 
-## Overview
+paint-type follows the **Hyperpolymath RSR Standard** for ABI and FFI design:
 
-This library follows the **Hyperpolymath RSR Standard** for ABI and FFI design:
+* **ABI (Application Binary Interface)** defined in **Idris2** with formal proofs
+* **FFI (Foreign Function Interface)** implemented in **Zig** for C compatibility
+* **Native Rust consumer** wraps the FFI as a safe API in `src/ephapax/`
+* **Any language** can call through the standard C ABI exposed by libpt
 
-- **ABI (Application Binary Interface)** defined in **Idris2** with formal proofs
-- **FFI (Foreign Function Interface)** implemented in **Zig** for C compatibility
-- **Generated C headers** bridge Idris2 ABI to Zig FFI
-- **Any language** can call through standard C ABI
+The native C symbol prefix is `pt_`; the shared library is `libpt.{so,a,dylib}`.
 
-## Architecture
+== Architecture
 
-```
+----
 ┌─────────────────────────────────────────────┐
 │  ABI Definitions (Idris2)                   │
-│  src/abi/                                   │
-│  - Types.idr      (Type definitions)        │
+│  src/interface/Abi/                         │
+│  - Types.idr      (Type definitions + proofs)│
 │  - Layout.idr     (Memory layout proofs)    │
 │  - Foreign.idr    (FFI declarations)        │
 └─────────────────┬───────────────────────────┘
                   │
-                  │ generates (at compile time)
-                  ▼
-┌─────────────────────────────────────────────┐
-│  C Headers (auto-generated)                 │
-│  generated/abi/paint-type.h                │
-└─────────────────┬───────────────────────────┘
-                  │
-                  │ imported by
+                  │ matches by name + signature
                   ▼
 ┌─────────────────────────────────────────────┐
 │  FFI Implementation (Zig)                   │
-│  ffi/zig/src/main.zig                       │
-│  - Implements C-compatible functions        │
-│  - Zero-cost abstractions                   │
-│  - Memory-safe by default                   │
+│  src/interface/ffi/                         │
+│  - src/main.zig         (pt_* exports)      │
+│  - build.zig            (Zig 0.15.x build)  │
+│  - test/integration_test.zig                │
 └─────────────────┬───────────────────────────┘
                   │
-                  │ compiled to libpaint-type.so/.a
+                  │ compiled to libpt.{so,a}
                   ▼
 ┌─────────────────────────────────────────────┐
-│  Any Language via C ABI                     │
-│  - Rust, ReScript, Julia, Python, etc.     │
+│  Native Rust consumer (`src/ephapax/`)      │
+│  + Any other language via C ABI             │
 └─────────────────────────────────────────────┘
-```
+----
 
-## Directory Structure
+== Directory Structure
 
-```
+----
 paint-type/
 ├── src/
-│   ├── abi/                    # ABI definitions (Idris2)
-│   │   ├── Types.idr           # Core type definitions with proofs
-│   │   ├── Layout.idr          # Memory layout verification
-│   │   └── Foreign.idr         # FFI function declarations
-│   └── lib/                    # Core library (any language)
-│
-├── ffi/
-│   └── zig/                    # FFI implementation (Zig)
-│       ├── build.zig           # Build configuration
-│       ├── build.zig.zon       # Dependencies
-│       ├── src/
-│       │   └── main.zig        # C-compatible FFI implementation
-│       ├── test/
-│       │   └── integration_test.zig
-│       └── include/
-│           └── paint-type.h   # C header (optional, can be generated)
-│
-├── generated/                  # Auto-generated files
-│   └── abi/
-│       └── paint-type.h       # Generated from Idris2 ABI
-│
-└── bindings/                   # Language-specific wrappers (optional)
-    ├── rust/
-    ├── rescript/
-    └── julia/
-```
+│   ├── interface/
+│   │   ├── Abi/                        # Idris2 ABI definitions
+│   │   │   ├── Types.idr               # Core types + proofs (ABI-1, TP-1)
+│   │   │   ├── Layout.idr              # Memory layout proofs (ABI-2)
+│   │   │   └── Foreign.idr             # %foreign declarations (ABI-4)
+│   │   └── ffi/                        # Zig FFI implementation
+│   │       ├── build.zig               # Zig 0.15.x build (link_libc = true)
+│   │       ├── src/main.zig            # pt_* exports
+│   │       └── test/integration_test.zig
+│   └── ephapax/                        # Rust crate consuming libpt
+│       ├── Cargo.toml
+│       ├── build.rs                    # Links against ../interface/ffi/zig-out/lib/libpt
+│       └── src/
+│           ├── lib.rs                  # Safe Tile API
+│           ├── composite.rs            # Compositing operators
+│           └── undo.rs                 # Persistent undo graph
+└── verification/proofs/idris2/         # Standalone Idris2 proofs (CI-checked)
+    ├── ABI/
+    │   ├── Platform.idr                # ABI-3: per-platform sizes
+    │   └── Compliance.idr              # ABI-5: C ABI compliance
+    └── Pixel.idr                       # TP-3: RGBA16F bit-pattern classifier
+----
 
-## Why Idris2 for ABI?
+== The libpt FFI Surface
 
-### 1. **Formal Verification**
+As of v0.1.0, libpt exports these C-ABI functions (see
+`src/interface/ffi/src/main.zig` for the canonical signatures):
 
-Idris2's dependent types allow proving properties about the ABI at compile-time:
+[cols="1,3", options="header"]
+|===
+| Symbol | Purpose
 
-```idris
--- Prove struct size is correct
+| `pt_tile_alloc(x, y) -> u64`           | Allocate a 64×64 RGBA16F tile; returns opaque handle or 0 on OOM
+| `pt_tile_free(tile_ptr)`               | Free a tile; no-op on null; double-free-safe via magic word
+| `pt_tile_fill(t, r, g, b, a) -> u32`   | Fill every pixel with one f16 colour
+| `pt_tile_read_pixel(t, px, py, &r, &g, &b, &a) -> u32` | Read one pixel
+| `pt_tile_write_pixel(t, px, py, r, g, b, a) -> u32`   | Write one pixel
+| `pt_alloc_u16_slot() -> u64`           | Allocate a single-u16 scratch slot
+| `pt_read_u16_slot(slot) -> u16`        | Read scratch slot
+| `pt_free_u16_slot(slot)`               | Free scratch slot
+| `pt_last_error() -> char*`             | Static-buffer last-error message
+| `pt_version() -> char*`                | Static-buffer semver string
+| `pt_is_initialized(tile_ptr) -> u32`   | Sanity check: 1 iff libpt still recognises the tile
+|===
+
+== Why Idris2 for ABI?
+
+=== 1. Formal Verification
+
+Idris2's dependent types prove structural ABI properties at compile-time.
+See `src/interface/Abi/Layout.idr` and `verification/proofs/idris2/ABI/`:
+
+[source,idris]
+----
+-- The PtTile header is C-ABI compliant on every supported platform
 public export
-exampleStructSize : HasSize ExampleStruct 16
+tileHeaderCompliant : CABICompliant ABI.Compliance.tileHeader
+tileHeaderCompliant = ...
 
--- Prove field alignment is correct
+-- 4 * sizeof(uint32_t) = 16 on every supported platform
+export
+tileHeaderSize : (p : Platform) -> 4 * cInt32Size p = 16
+----
+
+=== 2. Type Safety at the Boundary
+
+Encode invariants that C and Zig cannot express. See `src/interface/Abi/Types.idr`:
+
+[source,idris]
+----
+-- Non-null pointer guaranteed at the type level
 public export
-fieldAligned : Divides 8 (offsetOf ExampleStruct.field)
+record Handle where
+  constructor MkHandle
+  ptr : Bits64
+  0 prf : So (ptr /= 0)
+----
 
--- Prove ABI is platform-compatible
+=== 3. Platform Abstraction
+
+[source,idris]
+----
+-- Per-platform integer sizes (verification/proofs/idris2/ABI/Platform.idr)
 public export
-abiCompatible : Compatible (ABI 1) (ABI 2)
-```
+cInt32Size : Platform -> Nat
+cInt32Size _ = 4  -- Proven equal across Linux64/LinuxARM64/MacOS64/Windows64/WASM32/...
+----
 
-### 2. **Type Safety**
+== Why Zig for FFI?
 
-Encode invariants that C/Zig cannot express:
-
-```idris
--- Non-null pointer guaranteed at type level
-data Handle : Type where
-  MkHandle : (ptr : Bits64) -> {auto 0 nonNull : So (ptr /= 0)} -> Handle
-
--- Array with length proof
-data Buffer : (n : Nat) -> Type where
-  MkBuffer : Vect n Byte -> Buffer n
-```
-
-### 3. **Platform Abstraction**
-
-Platform-specific types with compile-time selection:
-
-```idris
-CInt : Platform -> Type
-CInt Linux = Bits32
-CInt Windows = Bits32
-
-CSize : Platform -> Type
-CSize Linux = Bits64
-CSize Windows = Bits64
-```
-
-### 4. **Safe Evolution**
-
-Prove that new ABI versions are backward-compatible:
-
-```idris
--- Compiler enforces compatibility
-abiUpgrade : ABI 1 -> ABI 2
-abiUpgrade old = MkABI2 {
-  -- Must preserve all v1 fields
-  v1_compat = old,
-  -- Can add new fields
-  new_features = defaults
-}
-```
-
-## Why Zig for FFI?
-
-### 1. **C ABI Compatibility**
+=== 1. C ABI Compatibility
 
 Zig exports C-compatible functions naturally:
 
-```zig
-export fn library_function(param: i32) i32 {
-    return param * 2;
+[source,zig]
+----
+export fn pt_tile_alloc(x: u32, y: u32) u64 {
+    const allocator = std.heap.c_allocator;
+    // ...
 }
-```
+----
 
-### 2. **Memory Safety**
+=== 2. Memory Safety
 
-Compile-time safety without runtime overhead:
+Compile-time safety checks without runtime overhead.
 
-```zig
-// Null check enforced at compile time
-const handle = init() orelse return error.InitFailed;
-defer free(handle);
-```
-
-### 3. **Cross-Compilation**
+=== 3. Cross-Compilation
 
 Built-in cross-compilation to any platform:
 
-```bash
+[source,bash]
+----
+cd src/interface/ffi
 zig build -Dtarget=x86_64-linux
 zig build -Dtarget=aarch64-macos
 zig build -Dtarget=x86_64-windows
-```
+----
 
-### 4. **Zero Dependencies**
+== Building
 
-No runtime, no libc required (unless explicitly needed):
+=== libpt (Zig)
 
-```zig
-// Minimal binary size
-pub const lib = @import("std");
-// Only includes what you use
-```
+[source,bash]
+----
+cd src/interface/ffi
+zig build                         # debug
+zig build -Doptimize=ReleaseFast  # optimized
+zig build test                    # unit + integration tests
+----
 
-## Building
+Output: `zig-out/lib/libpt.so` and `zig-out/lib/libpt.a`.
 
-### Build FFI Library
+=== Idris2 ABI Type-Check
 
-```bash
-cd ffi/zig
-zig build                         # Build debug
-zig build -Doptimize=ReleaseFast  # Build optimized
-zig build test                    # Run tests
-```
+[source,bash]
+----
+cd src/interface
+idris2 --check Abi/Types.idr
+idris2 --check Abi/Layout.idr
+idris2 --check Abi/Foreign.idr
 
-### Generate C Header from Idris2 ABI
+cd ../../verification/proofs/idris2
+idris2 --check ABI/Platform.idr
+idris2 --check ABI/Compliance.idr
+idris2 --check Pixel.idr
+----
 
-```bash
-cd src/abi
-idris2 --cg c-header Types.idr -o ../../generated/abi/paint-type.h
-```
+CI runs these via `.github/workflows/idris-ci.yml`.
 
-### Cross-Compile
+=== Rust Consumer
 
-```bash
-cd ffi/zig
+[source,bash]
+----
+cd src/ephapax
+cargo build
+cargo test
+----
 
-# Linux x86_64
-zig build -Dtarget=x86_64-linux
+== Usage Examples
 
-# macOS ARM64
-zig build -Dtarget=aarch64-macos
+=== From C
 
-# Windows x86_64
-zig build -Dtarget=x86_64-windows
-```
+[source,c]
+----
+#include <stdint.h>
 
-## Usage
+extern uint64_t pt_tile_alloc(uint32_t x, uint32_t y);
+extern void     pt_tile_free(uint64_t tile_ptr);
+extern uint32_t pt_tile_fill(uint64_t tile_ptr,
+                             uint16_t r, uint16_t g, uint16_t b, uint16_t a);
+extern const char *pt_version(void);
 
-### From C
-
-```c
-#include "paint-type.h"
-
-int main() {
-    void* handle = paint-type_init();
-    if (!handle) return 1;
-
-    int result = paint-type_process(handle, 42);
-    if (result != 0) {
-        const char* err = paint-type_last_error();
-        fprintf(stderr, "Error: %s\n", err);
-    }
-
-    paint-type_free(handle);
+int main(void) {
+    uint64_t tile = pt_tile_alloc(0, 0);
+    if (!tile) return 1;
+    pt_tile_fill(tile, 0x3C00, 0x0000, 0x0000, 0x3C00);  // opaque red
+    pt_tile_free(tile);
     return 0;
 }
-```
+----
 
-Compile with:
-```bash
-gcc -o example example.c -lpaint-type -L./zig-out/lib
-```
+Compile against the static lib:
 
-### From Idris2
+[source,bash]
+----
+gcc example.c \
+    -L./src/interface/ffi/zig-out/lib \
+    -lpt -o example
+----
 
-```idris
-import paint-type.ABI.Foreign
+=== From Idris2
+
+[source,idris]
+----
+import Abi.Foreign
+import Abi.Types
 
 main : IO ()
 main = do
-  Just handle <- init
-    | Nothing => putStrLn "Failed to initialize"
+  Just tile <- pure $ createTileHandle !(pt_tile_alloc 0 0)
+    | Nothing => putStrLn "alloc failed"
+  _ <- pt_tile_fill tile.ptr 0x3C00 0x0000 0x0000 0x3C00
+  pt_tile_free tile.ptr
+----
 
-  Right result <- process handle 42
-    | Left err => putStrLn $ "Error: " ++ errorDescription err
+=== From Rust (via `src/ephapax/`)
 
-  free handle
-  putStrLn "Success"
-```
+[source,rust]
+----
+use ephapax::Tile;
 
-### From Rust
-
-```rust
-#[link(name = "paint-type")]
-extern "C" {
-    fn paint-type_init() -> *mut std::ffi::c_void;
-    fn paint-type_free(handle: *mut std::ffi::c_void);
-    fn paint-type_process(handle: *mut std::ffi::c_void, input: u32) -> i32;
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let tile = Tile::alloc(0, 0).ok_or("alloc failed")?;
+    tile.fill_f32(1.0, 0.0, 0.0, 1.0)?;          // opaque red
+    let pixel = tile.read_pixel_f32(0, 0)?;
+    assert_eq!(pixel, [1.0, 0.0, 0.0, 1.0]);
+    // Tile drops here → pt_tile_free
+    Ok(())
 }
+----
 
-fn main() {
-    unsafe {
-        let handle = paint-type_init();
-        assert!(!handle.is_null());
+== Testing
 
-        let result = paint-type_process(handle, 42);
-        assert_eq!(result, 0);
+* **Zig unit + integration**: `cd src/interface/ffi && zig build test`
+* **Rust**: `cd src/ephapax && cargo test`
+* **Idris2 proofs**: see "Idris2 ABI Type-Check" above; CI runs it via
+  `.github/workflows/idris-ci.yml`.
+* **Aspect tests**: `bash tests/aspect_tests.sh` — checks SPDX, banned
+  patterns, ABI↔FFI contract (every Idris2 `%foreign "C:pt_X,libpt"`
+  resolves to an `export fn pt_X` in Zig), Rust panic-safety, RGBA16F
+  constants present in all three tiers.
 
-        paint-type_free(handle);
-    }
-}
-```
+== Contributing to the ABI/FFI
 
-### From Julia
+When modifying the ABI/FFI boundary:
 
-```julia
-const libpaint-type = "libpaint-type"
+. **Update the Idris2 ABI first** (`src/interface/Abi/*.idr`).
+   * Modify type definitions
+   * Update or add proofs
+   * Keep backward compatibility where possible
+. **Implement the Zig side** (`src/interface/ffi/src/main.zig`).
+   * Match the Idris2 `%foreign "C:pt_X,libpt"` symbols exactly
+   * Validate inputs; never trust the caller
+. **Mirror the extern in Rust** (`src/ephapax/src/lib.rs`).
+   * Add the `unsafe extern "C"` declaration
+   * Expose a safe `Tile::*` method with `// SAFETY:` comments
+. **Add tests**
+   * Zig inline unit test in `main.zig`
+   * Zig integration test in `test/integration_test.zig`
+   * Rust unit test in `src/ephapax/src/lib.rs` or relevant module
+. **Add aspect-test coverage** — Aspect 3 in `tests/aspect_tests.sh`
+   verifies the ABI ⊆ FFI inclusion; if your new symbol breaks the
+   pattern, fix the aspect test first.
 
-function init()
-    handle = ccall((:paint-type_init, libpaint-type), Ptr{Cvoid}, ())
-    handle == C_NULL && error("Failed to initialize")
-    handle
-end
+== Licence
 
-function process(handle, input)
-    result = ccall((:paint-type_process, libpaint-type), Cint, (Ptr{Cvoid}, UInt32), handle, input)
-    result
-end
+PMPL-1.0-or-later. See the root `LICENSE` for the full text and the
+PMPL/MPL-2.0 fallback rationale.
 
-function cleanup(handle)
-    ccall((:paint-type_free, libpaint-type), Cvoid, (Ptr{Cvoid},), handle)
-end
+== See Also
 
-# Usage
-handle = init()
-try
-    result = process(handle, 42)
-    println("Result: $result")
-finally
-    cleanup(handle)
-end
-```
-
-## Testing
-
-### Unit Tests (Zig)
-
-```bash
-cd ffi/zig
-zig build test
-```
-
-### Integration Tests
-
-```bash
-cd ffi/zig
-zig build test-integration
-```
-
-### ABI Verification (Idris2)
-
-```idris
--- Compile-time verification
-%runElab verifyABI
-
--- Runtime checks
-main : IO ()
-main = do
-  verifyLayoutsCorrect
-  verifyAlignmentsCorrect
-  putStrLn "ABI verification passed"
-```
-
-## Contributing
-
-When modifying the ABI/FFI:
-
-1. **Update ABI first** (`src/abi/*.idr`)
-   - Modify type definitions
-   - Update proofs
-   - Ensure backward compatibility
-
-2. **Generate C header**
-   ```bash
-   idris2 --cg c-header src/abi/Types.idr -o generated/abi/paint-type.h
-   ```
-
-3. **Update FFI implementation** (`ffi/zig/src/main.zig`)
-   - Implement new functions
-   - Match ABI types exactly
-
-4. **Add tests**
-   - Unit tests in Zig
-   - Integration tests
-   - ABI verification tests
-
-5. **Update documentation**
-   - Function signatures
-   - Usage examples
-   - Migration guide (if breaking changes)
-
-## License
-
-PMPL-1.0-or-later
-
-## See Also
-
-- [Idris2 Documentation](https://idris2.readthedocs.io)
-- [Zig Documentation](https://ziglang.org/documentation/master/)
-- [Rhodium Standard Repositories](https://github.com/JoshuaJewell/rhodium-standard-repositories)
+* https://idris2.readthedocs.io[Idris2 Documentation]
+* https://ziglang.org/documentation/master/[Zig Documentation]
+* `PROOF-STATUS.md` for the current proof-completion table
+* `PROOF-NEEDS.md` for the full ABI/typing/invariant/security proof catalogue
+* `TEST-NEEDS.md` for the test surface

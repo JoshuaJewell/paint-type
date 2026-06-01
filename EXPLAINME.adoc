@@ -111,6 +111,7 @@ Stapeln-based container definitions for running paint-type as a containerized se
 Key workflows:
 
 `rust-ci.yml`:: Rust build and test for Ephapax.
+`idris-ci.yml`:: Idris2 ABI proof type-check (`idris2 --check`) on ABI module + `verification/proofs/idris2/` changes.
 `dogfood-gate.yml`:: A2ML, K9, eclexiaiser, Groove compliance.
 `hypatia-scan.yml`:: Neurosymbolic CI/CD safety scan.
 `static-analysis-gate.yml`:: Security static analysis.
