@@ -72,17 +72,20 @@ Run with: `cargo test` from `src/ephapax/`
 ## Test Results Summary
 
 ```
-Zig FFI Integration Tests:    PASS (zig build test)
-Rust Ephapax Unit Tests:      PASS (cargo test — 10/10)
+Zig FFI Integration Tests:    PASS (zig build test — 18/18)
+Rust Ephapax Unit Tests:      PASS (cargo test — 56/56 + 1 doctest)
 Workflow Validation:          PASS (validate_workflows_test.sh)
 Aspect Tests:                 PASS (7 aspects, 0 fail)
-Idris2 ABI Check (CI):        WIRED (.github/workflows/idris-ci.yml)
-E2E Tests:                    STUB (structure test only)
+Idris2 ABI Check (CI):        WIRED (.github/workflows/idris-ci.yml; 3 modules + 3 verification modules)
+Undo-graph benches:           PASS (88 ns/commit, 2 ns/checkout)
+panic-attack scan:            3 weak points, all pre-existing false-positive heuristics
+E2E Tests:                    STUB (compositing primitive E2E available now via Tile::composite_over)
 Fuzz Tests:                   NOT STARTED
 ```
 
 ## Next Steps
 
-- [ ] Add fuzz harness for `pt_tile_blit`
-- [ ] Set up coverage reporting for Zig (kcov) and Rust (cargo-llvm-cov)
-- [ ] Populate E2E test with a real tile-alloc → composite → free flow once compositing lands (v0.2.0)
+- [ ] Add fuzz harness for `pt_tile_blit` / `pt_tile_write_pixel` (TEST-NEEDS P2)
+- [ ] Set up coverage reporting for Zig (kcov) and Rust (cargo-llvm-cov) (TEST-NEEDS P2)
+- [ ] Populate E2E test with a real tile-alloc → composite_over → free flow now that compositing has landed (PR #20/#21)
+- [ ] Layer-model property tests (e.g. proptest for reorder commutativity)
