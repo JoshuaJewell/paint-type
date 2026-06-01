@@ -32,11 +32,28 @@ Part of the hyperpolymath/palimpsest ecosystem.
 
 === `src/ephapax/` — Native Image Core (Rust)
 
-Ephapax is the Rust crate that implements the image engine:
-RGBA16F tile pool, compositing, brush engine, and undo graph.
-Linear types enforce no aliased mutable tile access.
-Entry point: `src/ephapax/src/lib.rs`.
-Build with `cargo test` from `src/ephapax/`.
+`src/ephapax/` is paint-type's Rust crate (named "ephapax" for the role
+it plays as the image core, not because it is the
+`hyperpolymath/ephapax` language — those are SEPARATE things; the
+language has sublanguages `ephapax-linear` + `ephapax-proven`, and this
+crate is neither).
+
+Modules:
+
+`lib.rs`:: Tile API (`Tile::alloc/fill/read_pixel/write_pixel/drop`),
+           f16↔f32 helpers, FFI declarations against libpt.
+`composite.rs`:: Porter-Duff compositing operators (`over_premultiplied`,
+           `over_unpremultiplied`, `masked_blend`, `flatten_layer_stack`,
+           `Tile::composite_over`).
+`undo.rs`:: Persistent branching undo graph (`UndoGraph<T>`, `RevId`)
+           with the monotonicity invariant documented as a 4-clause
+           contract for the eventual INV-2 Lean4 mechanisation.
+`layer.rs`:: Layer model (`Layer`, `LayerStack`, `LayerId`) with stable
+           IDs across reorderings and a `flatten(name)` builder.
+
+Linear types enforce no aliased mutable tile access — `Tile` is `!Copy
++ !Clone`. Build with `cargo test` from `src/ephapax/`. Benches in
+`src/ephapax/benches/`.
 
 === `src/interface/Abi/` — Formally Verified ABI Definitions (Idris2)
 
