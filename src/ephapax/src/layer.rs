@@ -487,7 +487,10 @@ mod tests {
         let flat = s.flatten("flat").expect("flatten");
         let result_tile = flat.tile(TileCoord::new(0, 0)).expect("tile present");
         let pixel = result_tile.read_pixel_f32(0, 0).expect("read pixel");
-        assert!((pixel[0] - 1.0).abs() < 1e-2, "red preserved when fg invisible");
+        assert!(
+            (pixel[0] - 1.0).abs() < 1e-2,
+            "red preserved when fg invisible"
+        );
         assert!(pixel[2].abs() < 1e-2, "no blue contribution");
     }
 

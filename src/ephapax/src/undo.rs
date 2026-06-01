@@ -143,12 +143,11 @@ impl<T> UndoGraph<T> {
     /// The root has ID `RevId::ROOT` (`RevId(0)`) and `parent_of(root)`
     /// is `None` — both are part of the public contract.
     pub fn new(root: T) -> Self {
-        let mut nodes = Vec::with_capacity(1);
-        nodes.push(Node {
+        let nodes = vec![Node {
             parent: None,
             value: root,
             children: Vec::new(),
-        });
+        }];
         UndoGraph { nodes }
     }
 
@@ -253,8 +252,7 @@ impl<T> UndoGraph<T> {
     /// Returns `false` if either ID is unknown.
     pub fn is_ancestor(&self, ancestor: RevId, descendant: RevId) -> bool {
         // Both must be known.
-        if (ancestor.0 as usize) >= self.nodes.len()
-            || (descendant.0 as usize) >= self.nodes.len()
+        if (ancestor.0 as usize) >= self.nodes.len() || (descendant.0 as usize) >= self.nodes.len()
         {
             return false;
         }

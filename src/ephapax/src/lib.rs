@@ -54,25 +54,30 @@ unsafe extern "C" {
         out_b: u64,
         out_a: u64,
     ) -> u32;
-    fn pt_tile_write_pixel(
-        tile_ptr: u64,
-        px: u32,
-        py: u32,
-        r: u16,
-        g: u16,
-        b: u16,
-        a: u16,
-    ) -> u32;
+    fn pt_tile_write_pixel(tile_ptr: u64, px: u32, py: u32, r: u16, g: u16, b: u16, a: u16) -> u32;
     fn pt_is_initialized(tile_ptr: u64) -> u32;
 
-    // pt_layer_* — cross-language layer-metadata stack.
+    // pt_layer_* — cross-language layer-metadata stack. See
+    // `src/interface/ffi/src/main.zig` for the canonical contract.
+    /// Allocate a fresh `PtLayerStack`. Returns 0 on allocation failure.
     pub fn pt_layer_stack_new() -> u64;
+    /// Free a stack previously returned by `pt_layer_stack_new`. No-op on 0.
     pub fn pt_layer_stack_free(stack_ptr: u64);
+    /// Push a new layer. Returns the freshly issued non-zero id, or
+    /// `PT_LAYER_ID_NONE` if the stack is full or arguments are invalid.
     pub fn pt_layer_push(stack_ptr: u64, name_ptr: u64, name_len: u32) -> u32;
+    /// Delete the layer with `id`. Returns 0 on success, 1 on error.
     pub fn pt_layer_delete(stack_ptr: u64, id: u32) -> u32;
+    /// Reorder the layer with `id` to position `new_position` (0-based).
+    /// Returns 0 on success, 1 on out-of-bounds or unknown id.
     pub fn pt_layer_reorder_to(stack_ptr: u64, id: u32, new_position: u32) -> u32;
+    /// Number of layers currently in the stack.
     pub fn pt_layer_count(stack_ptr: u64) -> u32;
+    /// Id of the layer at `position` (0-based), or `PT_LAYER_ID_NONE`.
     pub fn pt_layer_get_id_at(stack_ptr: u64, position: u32) -> u32;
+    /// Copy the UTF-8 name of layer `id` into the caller-provided buffer.
+    /// Writes the actual byte length through `out_len`. Returns 0 on
+    /// success, 1 on error (unknown id or buffer too small).
     pub fn pt_layer_get_name(
         stack_ptr: u64,
         id: u32,
@@ -80,9 +85,16 @@ unsafe extern "C" {
         buf_size: u32,
         out_len: u64,
     ) -> u32;
+    /// Set opacity bits (IEEE 754 binary32). NaN → 1.0; values outside
+    /// `[0, 1]` are clamped. Returns 0 on success, 1 on unknown id.
     pub fn pt_layer_set_opacity(stack_ptr: u64, id: u32, opacity_bits: u32) -> u32;
+    /// Get opacity bits (IEEE 754 binary32). Returns the bit-pattern of
+    /// the stored f32, or the bit-pattern of `1.0_f32` if `id` is unknown.
     pub fn pt_layer_get_opacity(stack_ptr: u64, id: u32) -> u32;
+    /// Set visibility (non-zero → visible). Returns 0 on success, 1 on
+    /// unknown id.
     pub fn pt_layer_set_visible(stack_ptr: u64, id: u32, visible: u32) -> u32;
+    /// Get visibility (1 → visible, 0 → hidden or unknown id).
     pub fn pt_layer_get_visible(stack_ptr: u64, id: u32) -> u32;
 }
 
@@ -196,9 +208,7 @@ pub fn f32_to_f16_bits(value: f32) -> u16 {
         let lower_mask = (1u32 << shift) - 1;
         let lower_bits = mant_with_lead & lower_mask;
         let mut rounded = shifted;
-        if lower_bits > half_bit
-            || (lower_bits == half_bit && (shifted & 1) == 1)
-        {
+        if lower_bits > half_bit || (lower_bits == half_bit && (shifted & 1) == 1) {
             rounded += 1;
         }
         return (sign << 15) | (rounded as u16);
@@ -209,13 +219,12 @@ pub fn f32_to_f16_bits(value: f32) -> u16 {
     let lower_mask = (1u32 << 13) - 1;
     let mut new_mant = mant >> 13;
     let lower_bits = mant & lower_mask;
-    if lower_bits > half_bit
-        || (lower_bits == half_bit && (new_mant & 1) == 1)
-    {
+    if lower_bits > half_bit || (lower_bits == half_bit && (new_mant & 1) == 1) {
         new_mant += 1;
         if new_mant == 0x400 {
             // Mantissa overflowed back to 1.0 — bump the exponent.
-            new_mant = 0;
+            // The mantissa field of the returned bit pattern is implicitly
+            // zero (we don't OR `new_mant` into the result on this path).
             let bumped_exp = new_exp + 1;
             if bumped_exp >= 0x1F {
                 return (sign << 15) | 0x7C00;
@@ -480,7 +489,7 @@ mod tests {
         for i in 0..512 {
             let t = Tile::alloc(i, i).expect("alloc");
             t.fill_bits(0x3C00, 0x0000, 0x0000, 0x3C00).expect("fill"); // f16 1.0, 0.0, 0.0, 1.0
-            // Drop t.
+                                                                        // Drop t.
         }
     }
 
@@ -568,9 +577,7 @@ mod tests {
         let name = b"Background";
         // SAFETY: name is a static byte slice; the pointer outlives the
         // call. name.len() is a u32-sized small literal.
-        let id = unsafe {
-            pt_layer_push(stack, name.as_ptr() as u64, name.len() as u32)
-        };
+        let id = unsafe { pt_layer_push(stack, name.as_ptr() as u64, name.len() as u32) };
         assert_ne!(id, PT_LAYER_ID_NONE);
 
         let mut buf = [0u8; 32];

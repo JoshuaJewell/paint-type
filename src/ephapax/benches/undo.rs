@@ -30,10 +30,7 @@ fn bench_commit(n: usize) {
 
     let total_ns = elapsed.as_nanos() as u64;
     let per_op = if n == 0 { 0 } else { total_ns / (n as u64) };
-    println!(
-        "undo_bench\tcommit\t{}\t{}\t{}",
-        n, total_ns, per_op
-    );
+    println!("undo_bench\tcommit\t{}\t{}\t{}", n, total_ns, per_op);
 }
 
 fn bench_checkout(graph_size: usize, n_lookups: usize) {
@@ -62,7 +59,11 @@ fn bench_checkout(graph_size: usize, n_lookups: usize) {
     black_box(sink);
 
     let total_ns = elapsed.as_nanos() as u64;
-    let per_op = if n_lookups == 0 { 0 } else { total_ns / (n_lookups as u64) };
+    let per_op = if n_lookups == 0 {
+        0
+    } else {
+        total_ns / (n_lookups as u64)
+    };
     println!(
         "undo_bench\tcheckout\t{}\t{}\t{}",
         n_lookups, total_ns, per_op

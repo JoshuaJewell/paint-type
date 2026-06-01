@@ -16,9 +16,7 @@
 
 #![allow(clippy::needless_range_loop)]
 
-use crate::{
-    f16_bits_to_f32, f32_to_f16_bits, Tile, TileError, TILE_SIZE,
-};
+use crate::{f16_bits_to_f32, f32_to_f16_bits, Tile, TileError, TILE_SIZE};
 
 /// Number of pixels in a single 64×64 tile (64 * 64 = 4096).
 pub const TILE_PIXEL_COUNT: usize = (TILE_SIZE as usize) * (TILE_SIZE as usize);
@@ -309,14 +307,7 @@ impl Tile {
                 let s = src.read_pixel_bits(px, py)?;
                 let d = self.read_pixel_bits(px, py)?;
                 let composed = over_premultiplied(s, d);
-                out.write_pixel_bits(
-                    px,
-                    py,
-                    composed[0],
-                    composed[1],
-                    composed[2],
-                    composed[3],
-                )?;
+                out.write_pixel_bits(px, py, composed[0], composed[1], composed[2], composed[3])?;
             }
         }
 

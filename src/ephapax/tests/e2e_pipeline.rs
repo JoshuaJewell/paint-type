@@ -29,13 +29,13 @@
 
 #![allow(clippy::float_cmp)]
 
+use ephapax::undo::{RevId, UndoGraph};
 use ephapax::{
     brush::{Brush, BrushTip, Stroke},
     layer::{Layer, LayerStack, TileCoord},
-    pt_layer_count, pt_layer_get_id_at, pt_layer_get_name, pt_layer_push,
-    pt_layer_reorder_to, pt_layer_stack_free, pt_layer_stack_new, Tile, TILE_SIZE,
+    pt_layer_count, pt_layer_get_id_at, pt_layer_get_name, pt_layer_push, pt_layer_reorder_to,
+    pt_layer_stack_free, pt_layer_stack_new, Tile, TILE_SIZE,
 };
-use ephapax::undo::{RevId, UndoGraph};
 
 const APPROX_EPS: f32 = 1.0e-2_f32;
 
@@ -55,16 +55,19 @@ struct RevSnapshot {
 }
 
 fn snapshot(label: &'static str, tile: &Tile) -> RevSnapshot {
-    let p00 = tile
-        .read_pixel_f32(0, 0)
-        .expect("snapshot: read (0, 0)");
+    let p00 = tile.read_pixel_f32(0, 0).expect("snapshot: read (0, 0)");
     let p_mid = tile
         .read_pixel_f32(TILE_SIZE / 2, TILE_SIZE / 2)
         .expect("snapshot: read (32, 32)");
     let p_corner = tile
         .read_pixel_f32(TILE_SIZE - 1, TILE_SIZE - 1)
         .expect("snapshot: read (63, 63)");
-    RevSnapshot { label, p00, p_mid, p_corner }
+    RevSnapshot {
+        label,
+        p00,
+        p_mid,
+        p_corner,
+    }
 }
 
 /// Read the name of the layer at `position` into a freshly-allocated
@@ -189,12 +192,9 @@ fn end_to_end_tile_layer_brush_undo_pipeline() {
     let bg_name = b"Background";
     let stroke_name = b"Stroke";
     // SAFETY: name byte slices outlive each pt_layer_push call.
-    let bg_id = unsafe {
-        pt_layer_push(stack, bg_name.as_ptr() as u64, bg_name.len() as u32)
-    };
-    let stroke_id = unsafe {
-        pt_layer_push(stack, stroke_name.as_ptr() as u64, stroke_name.len() as u32)
-    };
+    let bg_id = unsafe { pt_layer_push(stack, bg_name.as_ptr() as u64, bg_name.len() as u32) };
+    let stroke_id =
+        unsafe { pt_layer_push(stack, stroke_name.as_ptr() as u64, stroke_name.len() as u32) };
     assert_ne!(bg_id, 0, "pt_layer_push for Background returned 0");
     assert_ne!(stroke_id, 0, "pt_layer_push for Stroke returned 0");
     assert_ne!(bg_id, stroke_id, "pt_layer_push must issue distinct IDs");
@@ -220,10 +220,8 @@ fn end_to_end_tile_layer_brush_undo_pipeline() {
     assert_eq!(pos1_after, "Background");
 
     // Snapshot the canvas under a new revision once the layer order changes.
-    let rev_layer_reordered = graph.commit(
-        rev_composited,
-        snapshot("post-layer-reorder", &composed),
-    );
+    let rev_layer_reordered =
+        graph.commit(rev_composited, snapshot("post-layer-reorder", &composed));
 
     // ── Stage 4: drive a Stroke of >=5 stamps with a hard-round tip ────
     // tip diameter 8, spacing_ratio 0.25 → stamp_spacing = 2.0.
@@ -235,7 +233,11 @@ fn end_to_end_tile_layer_brush_undo_pipeline() {
     let mut stroke = Stroke::new();
 
     let stamps_start = stroke.push(0.0, 32.0, &brush);
-    assert_eq!(stamps_start.len(), 1, "first stroke push should emit one dab");
+    assert_eq!(
+        stamps_start.len(),
+        1,
+        "first stroke push should emit one dab"
+    );
 
     let stamps_run = stroke.push(60.0, 32.0, &brush);
     assert!(
@@ -247,7 +249,7 @@ fn end_to_end_tile_layer_brush_undo_pipeline() {
     // Apply every stamp to the composited tile.
     let total_stamps = stamps_start.len() + stamps_run.len();
     let mut total_pixels_written: u32 = 0;
-    for (cx, cy) in stamps_start.into_iter().chain(stamps_run.into_iter()) {
+    for (cx, cy) in stamps_start.into_iter().chain(stamps_run) {
         let written = brush
             .stamp(&composed, cx, cy)
             .expect("brush.stamp must succeed on a live tile");

@@ -23,9 +23,10 @@
 // All operations work on the existing safe `Tile` API. No new FFI
 // surface — the brush engine is pure-Rust above libpt.
 
-use crate::{
-    composite::masked_blend, f16_bits_to_f32, f32_to_f16_bits, Tile, TileError, TILE_SIZE,
-};
+use crate::{composite::masked_blend, f32_to_f16_bits, Tile, TileError, TILE_SIZE};
+
+#[cfg(test)]
+use crate::f16_bits_to_f32;
 
 //==============================================================================
 // BrushTip
@@ -160,13 +161,7 @@ impl Brush {
     pub fn new(tip: BrushTip, color_rgba: [f32; 4], spacing_ratio: f32) -> Self {
         let mut c = color_rgba;
         for ch in &mut c {
-            if ch.is_nan() {
-                *ch = 0.0;
-            } else if *ch < 0.0 {
-                *ch = 0.0;
-            } else if *ch > 1.0 {
-                *ch = 1.0;
-            }
+            *ch = if ch.is_nan() { 0.0 } else { ch.clamp(0.0, 1.0) };
         }
         let premul = [c[0] * c[3], c[1] * c[3], c[2] * c[3], c[3]];
         let color = [
@@ -226,12 +221,7 @@ impl Brush {
                 let dst = tile.read_pixel_bits(px as u32, py as u32)?;
                 let blended = masked_blend(self.color, dst, mask_value);
                 tile.write_pixel_bits(
-                    px as u32,
-                    py as u32,
-                    blended[0],
-                    blended[1],
-                    blended[2],
-                    blended[3],
+                    px as u32, py as u32, blended[0], blended[1], blended[2], blended[3],
                 )?;
                 written += 1;
             }
@@ -257,6 +247,9 @@ pub struct Stroke {
 }
 
 impl Stroke {
+    /// Construct an empty `Stroke`. Equivalent to `Stroke::default()`;
+    /// no sample has been seen and no stamps will be emitted until the
+    /// first `push`.
     pub fn new() -> Self {
         Self::default()
     }
@@ -433,10 +426,7 @@ mod tests {
         // Stamp centred at (32, 32) — well inside the 64x64 tile.
         let written = brush.stamp(&tile, 32.0, 32.0).expect("stamp");
         assert!(written > 0, "expected at least one pixel written");
-        assert!(
-            written as u32 <= 8 * 8,
-            "wrote more than footprint ({written})"
-        );
+        assert!(written <= 8 * 8, "wrote more than footprint ({written})");
     }
 
     #[test]

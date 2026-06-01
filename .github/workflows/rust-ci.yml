@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
-# rust-ci.yml — Cargo build, test, clippy, and fmt for Rust projects.
-# Only runs if Cargo.toml exists in the repo root.
+# rust-ci.yml — Cargo build, test, clippy, and fmt for paint-type.
+# paint-type's Cargo.toml lives at src/ephapax/Cargo.toml; the workflow
+# builds libpt (Zig static library) first so cargo can link it, then
+# runs check / fmt / clippy / test against the ephapax crate.
 name: Rust CI
 
 on:
@@ -18,7 +20,7 @@ jobs:
   check:
     name: Cargo check + clippy + fmt
     runs-on: ubuntu-latest
-    if: hashFiles('Cargo.toml') != ''
+    if: hashFiles('src/ephapax/Cargo.toml') != ''
 
     steps:
       - name: Checkout repository
@@ -29,23 +31,38 @@ jobs:
         with:
           components: clippy, rustfmt
 
+      - name: Install Zig 0.15
+        uses: mlugg/setup-zig@8d6198c65fb0feaa111df26e6b467fea8345e46f # v1
+        with:
+          version: 0.15.1
+
       - name: Cache cargo registry and build
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
+        with:
+          workspaces: src/ephapax
+
+      - name: Build libpt (Zig static library)
+        run: |
+          cd src/interface/ffi
+          zig build
 
       - name: Cargo check
-        run: cargo check --all-targets 2>&1
+        working-directory: src/ephapax
+        run: cargo check --all-targets
 
       - name: Cargo fmt
+        working-directory: src/ephapax
         run: cargo fmt --all -- --check
 
       - name: Cargo clippy
+        working-directory: src/ephapax
         run: cargo clippy --all-targets -- -D warnings
 
   test:
     name: Cargo test
     runs-on: ubuntu-latest
     needs: check
-    if: hashFiles('Cargo.toml') != ''
+    if: hashFiles('src/ephapax/Cargo.toml') != ''
 
     steps:
       - name: Checkout repository
@@ -54,10 +71,23 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
 
+      - name: Install Zig 0.15
+        uses: mlugg/setup-zig@8d6198c65fb0feaa111df26e6b467fea8345e46f # v1
+        with:
+          version: 0.15.1
+
       - name: Cache cargo registry and build
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
+        with:
+          workspaces: src/ephapax
+
+      - name: Build libpt (Zig static library)
+        run: |
+          cd src/interface/ffi
+          zig build
 
       - name: Run tests
+        working-directory: src/ephapax
         run: cargo test --all-targets
 
       - name: Write summary
