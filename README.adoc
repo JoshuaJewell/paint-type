@@ -164,6 +164,17 @@ License across the ecosystem: PMPL-1.0-or-later. See https://github.com/hyperpol
 
 ---
 
+== Quick links
+
+* https://github.com/JoshuaJewell/paint-type/wiki[Wiki Home] — single-page routing hub pointing at the in-repo source of truth
+* link:EXPLAINME.adoc[EXPLAINME.adoc] — repository structure guide
+* link:TOPOLOGY.md[TOPOLOGY.md] — component architecture
+* link:ROADMAP.adoc[ROADMAP.adoc] — milestone plan
+* link:PROOF-STATUS.md[PROOF-STATUS.md] / link:TEST-NEEDS.md[TEST-NEEDS.md] — proof + test coverage status
+* link:QUICKSTART-DEV.adoc[QUICKSTART-DEV] / link:QUICKSTART-USER.adoc[QUICKSTART-USER] / link:QUICKSTART-MAINTAINER.adoc[QUICKSTART-MAINTAINER]
+
+---
+
 [#contributing]
 == Contributing
 
