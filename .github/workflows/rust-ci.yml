@@ -20,7 +20,6 @@ jobs:
   check:
     name: Cargo check + clippy + fmt
     runs-on: ubuntu-latest
-    if: hashFiles('src/ephapax/Cargo.toml') != ''
 
     steps:
       - name: Checkout repository
