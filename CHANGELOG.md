@@ -53,10 +53,24 @@ gated on `hyperpolymath/typed-wasm#127` + `#130` (tracked in paint-type#39).
   to force a fresh registration (PRs #36 / #37 / #38).
 - Coverage workflow handles `kcov`-missing on Ubuntu noble runners
   gracefully (PR #34).
+- Fuzz Smoke: align Zig action to `mlugg/setup-zig@v1` + version 0.15.1
+  (0.15.0 was never published); drop `cargo install cargo-fuzz --locked`
+  whose bundled lockfile pins a rustix incompatible with current nightly
+  (PRs #42, #45).
+- E2E Pipeline: disable Zig stack-check on the static libpt module in
+  `src/interface/ffi/build.zig` (root-cause `__zig_probe_stack`
+  unresolved-symbol when Rust statically links libpt.a) (PR #45,
+  superseded the per-shell workaround in PR #43).
+- Idris CI: purge stale `.ttc`/`build` directories from `~/.idris2` before
+  `idris2 --check` (cached compiled modules hid the post-PR-#19 `TileHandle`
+  additions, leaving Foreign.idr unable to resolve them) (PR #44).
 
 #### Docs
 - EXPLAINME path fixes + v0.2.0 marked current (PR #26).
 - Status docs synced after PRs #27 / #28 / #29 (PR #30).
+- Post-15-PR comprehensive doc sync across README / EXPLAINME / TOPOLOGY /
+  ROADMAP / READINESS / PROOF-NEEDS / QUICKSTART-* / `.machine_readable/*` /
+  `docs/STATE-VISUALIZER.adoc` / `Justfile` (PR #46).
 
 #### Chore
 - Scorecard schedule aligned to weekly Mondays `'23 4 * * 1'` (PR #41).
