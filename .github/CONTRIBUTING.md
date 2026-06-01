@@ -13,11 +13,8 @@ environment, submit changes, and navigate the codebase.
 git clone https://github.com/JoshuaJewell/paint-type.git
 cd paint-type
 
-# Using Guix (preferred)
+# Reproducible dev shell (Guix is the only supported vehicle)
 guix shell
-
-# Or using Nix (fallback)
-nix develop
 
 # Verify setup
 just doctor
@@ -65,8 +62,7 @@ paint-type/
 ├── LICENSE
 ├── README.adoc
 ├── SECURITY.md
-├── flake.nix             # Nix flake — fallback (Perimeter 1)
-├── guix.scm              # Guix package — primary (Perimeter 1)
+├── guix.scm              # Guix package — canonical (Perimeter 1)
 └── Justfile              # Task runner (Perimeter 1)
 ```
 

@@ -40,9 +40,3 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-
-  # Nix flakes
-  - package-ecosystem: "nix"
-    directory: "/"
-    schedule:
-      interval: "weekly"

@@ -207,7 +207,10 @@ pub fn f16_bits_to_f32(bits: u16) -> f32 {
         // Inf or NaN.
         (sign << 31) | 0x7F80_0000 | (mant << 13)
     } else {
-        let new_exp = exp - 15 + 127;
+        // exp is in [1,30] so the algebraic value exp - 15 + 127 is in
+        // [113,142]; compute as exp + 112 to avoid a u32 underflow when
+        // exp < 15.
+        let new_exp = exp + 112;
         (sign << 31) | (new_exp << 23) | (mant << 13)
     };
 

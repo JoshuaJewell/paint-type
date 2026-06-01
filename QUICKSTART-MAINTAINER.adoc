@@ -13,7 +13,7 @@ on your platform.
 At v0.1.0 (current), paint-type is a library/bridge crate, not a standalone binary.
 Runtime dependencies will be specified at v0.3.0 (Gossamer shell integration).
 
-For build dependencies, see: `guix.scm` (Guix) or `flake.nix` (Nix).
+For build dependencies, see: `guix.scm`.
 
 == Build from Source
 
@@ -56,13 +56,6 @@ cargo build --release
 [source,bash]
 ----
 guix build -f guix.scm
-----
-
-=== Nix
-
-[source,bash]
-----
-nix build
 ----
 
 === Container (Stapeln)

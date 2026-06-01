@@ -13,10 +13,13 @@ Thumbs.db
 
 # Build
 /target/
+**/target/
 /_build/
 /build/
 /dist/
 /out/
+**/zig-out/
+**/.zig-cache/
 
 # Dependencies
 /node_modules/

@@ -30,6 +30,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
+        .link_libc = true,
     });
 
     //--------------------------------------------------------------------------
@@ -51,6 +52,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
+        .link_libc = true,
     });
     const static = b.addLibrary(.{
         .name = "pt",
@@ -75,6 +77,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
+        .link_libc = true,
     });
     const unit_tests = b.addTest(.{
         .root_module = unit_test_module,
@@ -89,6 +92,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("test/integration_test.zig"),
         .target = target,
         .optimize = optimize,
+        .link_libc = true,
     });
     const integration_tests = b.addTest(.{
         .root_module = integration_module,
