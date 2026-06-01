@@ -19,7 +19,7 @@ are in place. Architecture is locked; no user-visible functionality yet.
 
 === v0.2.0 - Core Image Operations (current; tracked: #12)
 
-* [-] Ephapax brush engine — compositing primitives **done** (PR #20: Porter-Duff over, masked blend, flatten_layer_stack); tile-level non-uniform composite **done** (PR #21); brush-stroke / kernel sampling remains
+* [x] Ephapax brush engine — compositing primitives **done** (PR #20: Porter-Duff over, masked blend, flatten_layer_stack); tile-level non-uniform composite **done** (PR #21); brush-stroke / kernel sampling **done** (PR #29: BrushTip soft/hard round, Brush::stamp with mask-modulated blend, Stroke point interpolation with spacing carryover)
 * [x] Non-destructive undo graph (persistent, O(1) branch) — PR #21
 * [x] Basic layer model — new, flatten, delete, reorder — PR #23
 * [ ] AffineScript → typed-wasm bindings for the tile API (gated on typed-wasm emitter stability)

@@ -34,6 +34,9 @@ pub mod undo;
 /// Layer model: sparse tile maps + a stable-ID layer stack.
 pub mod layer;
 
+/// Brush engine: tip masks, stroke sampling, tile-local stamping.
+pub mod brush;
+
 //==============================================================================
 // FFI declarations (must match libpt — see src/interface/ffi/src/main.zig)
 //==============================================================================
