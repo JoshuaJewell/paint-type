@@ -1,0 +1,174 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# coverage.yml — Coverage reporting for paint-type.
+#
+# - Rust:  `cargo-llvm-cov` over `src/ephapax/` (LCOV + console report).
+# - Zig:   `kcov` over the Zig integration-test binary (best-effort; Zig
+#          0.15+ ships its own coverage story so this is reporting-only
+#          and `continue-on-error` to avoid gating merges).
+#
+# Outputs are uploaded as build artifacts so reviewers can inspect them
+# without needing a third-party SaaS. Codecov upload is optional and
+# only runs when a `CODECOV_TOKEN` secret is present, so forks and
+# unconfigured environments never see a red status from a missing token.
+#
+# This workflow is intentionally REPORTING-ONLY: no coverage threshold
+# is enforced. TEST-NEEDS P1 only requires that coverage be wired into
+# CI; gating is a separate (later) decision.
+name: Coverage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    name: Rust + Zig coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
+        with:
+          components: llvm-tools-preview
+
+      - name: Cache cargo registry and build
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
+        with:
+          workspaces: src/ephapax
+
+      - name: Install Zig 0.15
+        uses: mlugg/setup-zig@8d6198c65fb0feaa111df26e6b467fea8345e46f # v1
+        with:
+          version: 0.15.1
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+
+      - name: Install kcov (best-effort, Zig coverage)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y kcov
+
+      - name: Build libpt (Zig static library)
+        run: |
+          cd src/interface/ffi
+          zig build -Doptimize=Debug
+
+      - name: Run Rust coverage (cargo-llvm-cov → LCOV)
+        working-directory: src/ephapax
+        run: |
+          cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+
+      - name: Print Rust coverage summary
+        working-directory: src/ephapax
+        run: |
+          cargo llvm-cov report
+
+      - name: Append Rust coverage to step summary
+        if: always()
+        working-directory: src/ephapax
+        run: |
+          {
+            echo "## Rust coverage (cargo-llvm-cov)"
+            echo ""
+            echo '```'
+            cargo llvm-cov report 2>&1 || echo "(report unavailable)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build Zig integration-test binary
+        id: zig_build_test
+        continue-on-error: true
+        run: |
+          cd src/interface/ffi
+          # Force the test runner binary onto disk under zig-out/ without
+          # running it, so kcov can wrap it. `zig test --test-no-exec`
+          # produces an executable we can invoke directly.
+          mkdir -p zig-out/test
+          zig test test/integration_test.zig \
+            -L zig-out/lib \
+            -lpt \
+            -lc \
+            --test-no-exec \
+            -femit-bin=zig-out/test/integration_test
+
+      - name: Run Zig integration tests under kcov (best-effort)
+        id: zig_kcov
+        continue-on-error: true
+        run: |
+          mkdir -p coverage/zig
+          if [ -x src/interface/ffi/zig-out/test/integration_test ]; then
+            kcov \
+              --include-path=src/interface/ffi \
+              coverage/zig \
+              src/interface/ffi/zig-out/test/integration_test || {
+                echo "kcov run reported failure; uploading whatever output exists."
+              }
+          else
+            echo "Zig test binary not built; skipping kcov."
+            exit 0
+          fi
+
+      - name: Append Zig coverage status to step summary
+        if: always()
+        run: |
+          {
+            echo ""
+            echo "## Zig coverage (kcov)"
+            echo ""
+            if [ "${{ steps.zig_kcov.outcome }}" = "success" ]; then
+              echo "kcov run completed; see uploaded artifact \`zig-coverage\`."
+            else
+              echo "kcov run did not complete cleanly (Zig 0.15 test runners"
+              echo "are awkward for kcov). This step is intentionally"
+              echo "non-blocking; follow-up is tracked in TEST-NEEDS.md."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Rust LCOV artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: rust-coverage-lcov
+          path: src/ephapax/lcov.info
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload Zig kcov artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: zig-coverage
+          path: coverage/zig
+          if-no-files-found: warn
+          retention-days: 30
+
+      # Codecov upload is opt-in: only runs when a CODECOV_TOKEN secret
+      # is present. Forks and unconfigured repos must not be gated by a
+      # missing token, so we guard explicitly and never fail.
+      - name: Publish to Codecov (optional)
+        if: ${{ env.CODECOV_TOKEN != '' }}
+        uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: src/ephapax/lcov.info
+          fail_ci_if_error: false

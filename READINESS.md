@@ -71,6 +71,14 @@ To reach C:
 - 7 additional compositing operators landed (lerp, multiply, screen,
   in_op, out_op, atop, xor) — PR #27.
 - pt_layer_* cross-language FFI surface landed — PR #28 (closes #25).
+- Coverage reporting wired into CI for both Rust and Zig
+  (`.github/workflows/coverage.yml`, local: `bash tests/coverage.sh`).
+  Rust side uses `cargo-llvm-cov` → LCOV + console report from
+  `src/ephapax/`; Zig side uses `kcov` over the integration-test
+  binary as a best-effort, non-blocking step (Zig 0.15 test runners
+  are not always kcov-friendly). Both outputs upload as artifacts
+  every run; Codecov upload is opt-in via a `CODECOV_TOKEN` secret.
+  Reporting only — no threshold gate.
 
 ---
 

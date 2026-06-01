@@ -12,6 +12,7 @@
 | **E2E tests** | 1 | `tests/e2e.sh` (scaffold); `tests/e2e/template_instantiation_test.sh` (structure validation) |
 | **Aspect tests** | 1 | `tests/aspect_tests.sh` — 7 aspects, 0 fail (SPDX, dangerous-pattern, ABI/FFI contract, Rust panic-safety, RGBA16F constants, Idris2 ABI check, file-I/O deferred) |
 | **Workflow tests** | 1 | `tests/workflows/validate_workflows_test.sh` (validates CI workflow presence and structure) |
+| **Coverage tooling** | 1 | `.github/workflows/coverage.yml` + `tests/coverage.sh` — Rust `cargo-llvm-cov` (LCOV + console report, gated on `src/ephapax/`); Zig `kcov` over the integration-test binary (best-effort, non-blocking). Reporting only — no threshold gate. |
 | **Bench harnesses** | 1 | `src/ephapax/benches/undo.rs` — 88 ns/commit, 2 ns/checkout (hand-rolled `Instant` timer) |
 | **Fuzz tests** | 0 | `tests/fuzz/README.adoc` scaffold; harness not yet wired |
 
@@ -68,6 +69,23 @@ Run with: `cargo test` from `src/ephapax/`. Benches via `cargo bench`.
 - Checks SPDX headers on workflow files
 - Verifies required `name:` field in each workflow
 
+### Coverage Reporting (WIRED — reporting only, no gate)
+
+`.github/workflows/coverage.yml` + `tests/coverage.sh`:
+
+- **Rust**: `cargo llvm-cov --all-features --workspace --lcov` from
+  `src/ephapax/`. Console summary printed to the job log and to
+  `$GITHUB_STEP_SUMMARY`. LCOV file uploaded as artifact
+  `rust-coverage-lcov` (30-day retention).
+- **Zig**: `kcov --include-path=src/interface/ffi` over the integration
+  test binary built via `zig test --test-no-exec`. Best-effort and
+  non-blocking — Zig 0.15 test runners are awkward for kcov; uploaded
+  as artifact `zig-coverage` whenever output exists.
+- **Codecov**: opt-in. Upload step only runs when a `CODECOV_TOKEN`
+  secret is configured; forks and unconfigured repos see no failure.
+- **No threshold enforced** — this is reporting infrastructure, not a
+  gate. Locally: `bash tests/coverage.sh` (`rust` | `zig` | `all`).
+
 ## What Is Missing (Priority Order)
 
 ### P1 — Required for CRG Grade C
@@ -76,7 +94,7 @@ Run with: `cargo test` from `src/ephapax/`. Benches via `cargo bench`.
 - [x] Idris2 ABI proof check integrated into CI — `.github/workflows/idris-ci.yml`. PR #8 (2026-06-01). Verified modules: `src/interface/Abi/{Types,Layout,Foreign}.idr` + `verification/proofs/idris2/{ABI/Platform.idr, Pixel.idr}`.
 - [ ] File I/O round-trip aspect — deferred to v0.3.0 (native RGBA16F save/load surface needed first).
 - [ ] E2E test: end-to-end tile alloc → composite → free pipeline via the Zig FFI
-- [ ] Coverage reporting wired into CI for both Zig and Rust
+- [x] Coverage reporting wired into CI for both Zig and Rust — `.github/workflows/coverage.yml` + `tests/coverage.sh` land Rust LCOV via `cargo-llvm-cov` (hard requirement) plus best-effort Zig kcov; both artifacts uploaded each run. Reporting only — no threshold gate. PR for issue #12.
 
 ### P2 — Required for CRG Grade B
 
@@ -98,6 +116,7 @@ Rust Ephapax Unit Tests:      PASS (cargo test — 98/98 + 1 doctest)
 Workflow Validation:          PASS (validate_workflows_test.sh)
 Aspect Tests:                 PASS (7 aspects, 0 fail; 7 Idris2 imports ⊆ 23 Zig exports)
 Idris2 ABI Check (CI):        WIRED (.github/workflows/idris-ci.yml; 3 modules + 3 verification modules)
+Coverage Reporting (CI):      WIRED (.github/workflows/coverage.yml — Rust cargo-llvm-cov LCOV + Zig kcov best-effort; artifacts uploaded; reporting only, no gate)
 Undo-graph benches:           PASS (88 ns/commit, 2 ns/checkout)
 panic-attack scan:            3 weak points, all pre-existing false-positive heuristics
 E2E Tests:                    STUB (compositing + brush primitive E2E available now via brush::Brush::stamp + Tile::composite_over)
@@ -107,6 +126,6 @@ Fuzz Tests:                   NOT STARTED
 ## Next Steps
 
 - [ ] Add fuzz harness for `pt_tile_blit` / `pt_tile_write_pixel` (TEST-NEEDS P2)
-- [ ] Set up coverage reporting for Zig (kcov) and Rust (cargo-llvm-cov) (TEST-NEEDS P2)
+- [x] Set up coverage reporting for Zig (kcov) and Rust (cargo-llvm-cov) — `.github/workflows/coverage.yml` + `tests/coverage.sh`; reporting only (no threshold). Zig side is best-effort and a follow-up may switch from kcov to Zig 0.15 native `-fprofile-instr-generate` once stable.
 - [ ] Populate E2E test with a real tile-alloc → composite_over → free flow now that compositing has landed (PR #20/#21)
 - [ ] Layer-model property tests (e.g. proptest for reorder commutativity)
