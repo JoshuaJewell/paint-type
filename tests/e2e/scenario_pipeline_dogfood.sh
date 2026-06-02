@@ -22,7 +22,10 @@ fi
 # Invoke cargo with --nocapture so test stdout / stderr is preserved.
 # Test paths use `expect()` for failure-clarity, so the only stdout
 # noise we expect is the standard `test result:` line.
-LOG="/tmp/pt-e2e-scenario-pipeline.log"
+# PT_TMPDIR overrides the log location for sandboxed or read-only-/tmp/
+# environments (closes the panic-attack PathTraversal medium finding).
+PT_TMPDIR="${PT_TMPDIR:-/tmp}"
+LOG="${PT_TMPDIR}/pt-e2e-scenario-pipeline.log"
 if ! (cd "$EPHAPAX_DIR" && cargo test --test e2e_pipeline -- --nocapture --test-threads=1) \
         >"$LOG" 2>&1; then
     echo "FAIL: cargo test --test e2e_pipeline failed."

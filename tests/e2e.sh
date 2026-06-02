@@ -38,6 +38,12 @@ set -eu
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# PT_TMPDIR overrides the per-stage log directory. Default /tmp/ is fine
+# for normal hosts; CI sandboxes / read-only /tmp/ / container builds
+# can point this elsewhere. Closes the panic-attack PathTraversal medium
+# finding without breaking the developer-discoverable log-path convention.
+PT_TMPDIR="${PT_TMPDIR:-/tmp}"
+
 PASS=0
 FAIL=0
 
@@ -98,12 +104,12 @@ echo ""
 # ─── Stage 1: build libpt ────────────────────────────────────────────
 bold "Stage 1: build libpt"
 
-if (cd "$PROJECT_DIR/src/interface/ffi" && zig build -Doptimize=ReleaseSafe) >/tmp/pt-e2e-zig-build.log 2>&1; then
+if (cd "$PROJECT_DIR/src/interface/ffi" && zig build -Doptimize=ReleaseSafe) >"${PT_TMPDIR}/pt-e2e-zig-build.log" 2>&1; then
     stage_pass "zig build (static + shared libpt)"
 else
     stage_fail "zig build"
     yellow "    --- zig build log (last 40 lines) ---"
-    tail -40 /tmp/pt-e2e-zig-build.log || true
+    tail -40 "${PT_TMPDIR}/pt-e2e-zig-build.log" || true
     yellow "    -------------------------------------"
     exit 1
 fi
@@ -119,12 +125,12 @@ echo ""
 # ─── Stage 2: Zig integration tests ──────────────────────────────────
 bold "Stage 2: Zig integration smoke (zig build test)"
 
-if (cd "$PROJECT_DIR/src/interface/ffi" && zig build test) >/tmp/pt-e2e-zig-test.log 2>&1; then
+if (cd "$PROJECT_DIR/src/interface/ffi" && zig build test) >"${PT_TMPDIR}/pt-e2e-zig-test.log" 2>&1; then
     stage_pass "zig build test"
 else
     stage_fail "zig build test"
     yellow "    --- zig build test log (last 40 lines) ---"
-    tail -40 /tmp/pt-e2e-zig-test.log || true
+    tail -40 "${PT_TMPDIR}/pt-e2e-zig-test.log" || true
     yellow "    ------------------------------------------"
     exit 1
 fi
@@ -134,15 +140,15 @@ echo ""
 bold "Stage 3: cargo test --test e2e_pipeline (full pipeline scenario)"
 
 if (cd "$PROJECT_DIR/src/paint_core" && cargo test --test e2e_pipeline -- --test-threads=1) \
-        >/tmp/pt-e2e-cargo.log 2>&1; then
+        >"${PT_TMPDIR}/pt-e2e-cargo.log" 2>&1; then
     stage_pass "cargo test --test e2e_pipeline"
     yellow "    --- last 10 lines of cargo output ---"
-    tail -10 /tmp/pt-e2e-cargo.log || true
+    tail -10 "${PT_TMPDIR}/pt-e2e-cargo.log" || true
     yellow "    -------------------------------------"
 else
     stage_fail "cargo test --test e2e_pipeline"
     yellow "    --- cargo log (last 60 lines) ---"
-    tail -60 /tmp/pt-e2e-cargo.log || true
+    tail -60 "${PT_TMPDIR}/pt-e2e-cargo.log" || true
     yellow "    --------------------------------"
     exit 1
 fi
@@ -157,13 +163,13 @@ for scenario in "$SCRIPT_DIR"/e2e/scenario_*.sh; do
     [ -e "$scenario" ] || continue
     SCENARIO_COUNT=$((SCENARIO_COUNT + 1))
     name="$(basename "$scenario")"
-    if bash "$scenario" "$PROJECT_DIR" >/tmp/pt-e2e-scenario.log 2>&1; then
+    if bash "$scenario" "$PROJECT_DIR" >"${PT_TMPDIR}/pt-e2e-scenario.log" 2>&1; then
         stage_pass "scenario: $name"
     else
         stage_fail "scenario: $name"
         SCENARIO_FAIL=$((SCENARIO_FAIL + 1))
         yellow "    --- $name log (last 40 lines) ---"
-        tail -40 /tmp/pt-e2e-scenario.log || true
+        tail -40 "${PT_TMPDIR}/pt-e2e-scenario.log" || true
         yellow "    ---------------------------------"
     fi
 done

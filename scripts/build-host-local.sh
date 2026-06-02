@@ -17,7 +17,11 @@ set -o pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SYSROOT="${PT_SYSROOT:-$HOME/.cache/pt-wk-sysroot}"
-DEBS="${PT_DEBS:-/tmp/pt-debs}"
+# PT_TMPDIR override (PathTraversal hardening) — switches /tmp/pt-* working
+# files to a configurable location. Default /tmp/ preserves the existing
+# developer convention; CI sandboxes / read-only-/tmp/ hosts can redirect.
+PT_TMPDIR="${PT_TMPDIR:-/tmp}"
+DEBS="${PT_DEBS:-${PT_TMPDIR}/pt-debs}"
 LIBDIR="$SYSROOT/usr/lib/x86_64-linux-gnu"
 SYSLIB="/usr/lib/x86_64-linux-gnu"
 GOSS_LIB="$ROOT/third_party/gossamer/src/interface/ffi/zig-out/lib"
@@ -35,17 +39,17 @@ build_sysroot() {
     apt-get install -y --no-install-recommends --print-uris \
         libwebkit2gtk-4.1-dev libgtk-3-dev 2>/dev/null \
         | grep -oE "'http[^']+'" | tr -d "'" \
-        | grep -E '_(amd64|all)\.deb$' > /tmp/pt-uris.txt
+        | grep -E '_(amd64|all)\.deb$' > "${PT_TMPDIR}/pt-uris.txt"
     # The closure omits -dev packages apt believes are already installed; pull
     # every -dev in the recursive dependency tree so all headers are present.
     apt-cache depends --recurse --no-recommends --no-suggests --no-conflicts \
         --no-breaks --no-replaces --no-enhances --no-pre-depends \
         libgtk-3-dev libwebkit2gtk-4.1-dev 2>/dev/null \
-        | grep -E '^[a-z0-9].*-dev$' | sort -u > /tmp/pt-devpkgs.txt
-    echo "Downloading base closure ($(wc -l < /tmp/pt-uris.txt) urls)..."
-    xargs -P8 -I{} curl -fsSL --max-time 120 -O "{}" < /tmp/pt-uris.txt 2>/dev/null
-    echo "Downloading -dev headers ($(wc -l < /tmp/pt-devpkgs.txt) packages)..."
-    while read -r p; do apt-get download "$p" >/dev/null 2>&1; done < /tmp/pt-devpkgs.txt
+        | grep -E '^[a-z0-9].*-dev$' | sort -u > "${PT_TMPDIR}/pt-devpkgs.txt"
+    echo "Downloading base closure ($(wc -l < "${PT_TMPDIR}/pt-uris.txt") urls)..."
+    xargs -P8 -I{} curl -fsSL --max-time 120 -O "{}" < "${PT_TMPDIR}/pt-uris.txt" 2>/dev/null
+    echo "Downloading -dev headers ($(wc -l < "${PT_TMPDIR}/pt-devpkgs.txt") packages)..."
+    while read -r p; do apt-get download "$p" >/dev/null 2>&1; done < "${PT_TMPDIR}/pt-devpkgs.txt"
     echo "Extracting $(ls -1 ./*.deb | wc -l) packages into $SYSROOT ..."
     for d in "$DEBS"/*.deb; do dpkg-deb -x "$d" "$SYSROOT" 2>/dev/null; done
     # The -dev .so files symlink to runtime .so.N that live on the host; point

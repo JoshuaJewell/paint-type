@@ -34,9 +34,27 @@ fn main() -> Result<(), gossamer_rs::Error> {
 
     // Load the UI. By default the bundled, self-contained HTML is used;
     // setting PT_UI_FILE loads HTML from disk instead, which is handy for
-    // iterating on the front end without recompiling.
+    // iterating on the front end without recompiling. The hot-reload path
+    // is dev-only; a size cap (default 10 MiB, tunable via
+    // PT_UI_FILE_MAX_BYTES) bounds the read so a huge file — accidental
+    // or hostile — cannot exhaust host RAM. Closes the
+    // panic-attack UnboundedAllocation finding on this file.
+    const PT_UI_FILE_MAX_BYTES_DEFAULT: u64 = 10 * 1024 * 1024;
     match std::env::var("PT_UI_FILE") {
         Ok(path) => {
+            let max_bytes: u64 = std::env::var("PT_UI_FILE_MAX_BYTES")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(PT_UI_FILE_MAX_BYTES_DEFAULT);
+            let meta = std::fs::metadata(&path)
+                .map_err(|e| gossamer_rs::Error::InvalidString(format!("{path}: {e}")))?;
+            if meta.len() > max_bytes {
+                return Err(gossamer_rs::Error::InvalidString(format!(
+                    "{path}: file size {} exceeds PT_UI_FILE_MAX_BYTES ({})",
+                    meta.len(),
+                    max_bytes
+                )));
+            }
             let html = std::fs::read_to_string(&path)
                 .map_err(|e| gossamer_rs::Error::InvalidString(format!("{path}: {e}")))?;
             app.load_html(&html)?;
