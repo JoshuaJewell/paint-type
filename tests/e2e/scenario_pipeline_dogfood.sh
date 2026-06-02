@@ -12,7 +12,7 @@
 set -eu
 
 PROJECT_DIR="${1:-.}"
-EPHAPAX_DIR="$PROJECT_DIR/src/ephapax"
+EPHAPAX_DIR="$PROJECT_DIR/src/paint_core"
 
 if [ ! -f "$EPHAPAX_DIR/Cargo.toml" ]; then
     echo "FAIL: $EPHAPAX_DIR/Cargo.toml missing — repo layout broken."

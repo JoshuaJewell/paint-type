@@ -1,0 +1,392 @@
+= Gossamer ABI/FFI Documentation
+// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+
+== Overview
+
+Gossamer follows the **Hyperpolymath RSR Standard** for ABI and FFI design:
+
+- **ABI (Application Binary Interface)** defined in **Idris2** with formal proofs
+- **FFI (Foreign Function Interface)** implemented in **Zig** for C compatibility
+- **Generated C headers** bridge Idris2 ABI to Zig FFI
+- **Any language** can call through standard C ABI
+
+== Architecture
+
+```
+┌─────────────────────────────────────────────┐
+│  ABI Definitions (Idris2)                   │
+│  src/interface/abi/                          │
+│  - Types.idr      (Type definitions)        │
+│  - Layout.idr     (Memory layout proofs)    │
+│  - Foreign.idr    (FFI declarations)        │
+└─────────────────┬───────────────────────────┘
+                  │
+                  │ generates (at compile time)
+                  ▼
+┌─────────────────────────────────────────────┐
+│  C Headers (auto-generated)                 │
+│  src/interface/generated/abi/gossamer.h     │
+└─────────────────┬───────────────────────────┘
+                  │
+                  │ imported by
+                  ▼
+┌─────────────────────────────────────────────┐
+│  FFI Implementation (Zig)                   │
+│  src/interface/ffi/src/main.zig             │
+│  - 25+ exported C-compatible functions      │
+│  - Platform dispatch (GTK, Cocoa, Win32,    │
+│    iOS, Android)                            │
+│  - Zero-cost abstractions                   │
+│  - Memory-safe by default                   │
+└─────────────────┬───────────────────────────┘
+                  │
+                  │ compiled to libgossamer.so/.a/.dylib
+                  ▼
+┌─────────────────────────────────────────────┐
+│  Any Language via C ABI                     │
+│  - Ephapax, Rust, ReScript, Julia, etc.    │
+└─────────────────────────────────────────────┘
+```
+
+== Directory Structure
+
+```
+gossamer/
+├── src/
+│   ├── core/                     # Ephapax application modules
+│   │   ├── Shell.eph             # Webview lifecycle (create/run/destroy)
+│   │   ├── Bridge.eph            # Typed IPC channels
+│   │   └── Capabilities.eph     # Linear capability tokens
+│   │
+│   └── interface/
+│       ├── abi/                  # ABI definitions (Idris2)
+│       │   ├── Types.idr         # Core types with dependent-type proofs
+│       │   ├── Layout.idr        # Memory layout verification
+│       │   └── Foreign.idr       # FFI function declarations
+│       │
+│       ├── ffi/                  # FFI implementation (Zig)
+│       │   ├── build.zig         # Build configuration (Zig 0.15)
+│       │   ├── build.zig.zon     # Dependencies
+│       │   ├── src/
+│       │   │   ├── main.zig          # Core FFI + platform dispatch
+│       │   │   ├── webview_gtk.zig   # Linux/BSD (WebKitGTK)
+│       │   │   ├── webview_cocoa.zig # macOS (WKWebView)
+│       │   │   ├── webview_win32.zig # Windows (WebView2)
+│       │   │   ├── webview_ios.zig   # iOS (WKWebView/UIKit)
+│       │   │   └── webview_android.zig # Android (JNI)
+│       │   └── test/
+│       │       └── integration_test.zig
+│       │
+│       └── generated/            # Auto-generated files
+│           └── abi/
+│               └── gossamer.h    # Generated from Idris2 ABI
+│
+├── examples/
+│   ├── hello/main.eph           # Minimal webview example
+│   ├── ipc/main.eph             # Typed IPC with command handlers
+│   └── SafeDOMExample.res       # ReScript SafeDOM integration
+│
+└── bindings/                     # Language-specific wrappers (optional)
+    ├── rust/
+    ├── rescript/
+    └── julia/
+```
+
+== Why Idris2 for ABI?
+
+=== 1. Formal Verification
+
+Idris2's dependent types prove properties about the ABI at compile-time:
+
+```idris
+-- Prove Result fits in a C int (4 bytes)
+resultSize : HasSize Result 4
+
+-- Prove WindowConfig is 32 bytes with 8-byte alignment
+windowConfigSize : HasSize WindowConfig 32
+windowConfigAlign : HasAlignment WindowConfig 8
+
+-- Prove all result codes fit in Bits32
+resultFitsInBits32 : (r : Result) -> So (resultToInt r <= 4294967295)
+
+-- Full C ABI compliance certificate
+resultCompliant : CABICompliant Result 4 4
+```
+
+=== 2. Linear Resource Safety
+
+Encode resource ownership that C/Zig cannot express:
+
+```idris
+-- Non-null pointer guaranteed at type level
+data WebviewHandle : Type where
+  MkWebview : (ptr : Bits64)
+            -> {auto 0 nonNull : So (ptr /= 0)}
+            -> {auto 0 onMainThread : MainThreadProof}
+            -> WebviewHandle
+
+-- Linear capability tokens (cannot be duplicated or forged)
+data Cap : (resource : ResourceKind) -> Type where
+  MkCap : (token : Bits64) -> Cap resource
+  -- MkCap is NOT exported — cannot be forged externally
+```
+
+=== 3. Platform Abstraction
+
+Platform-specific types with compile-time selection:
+
+```idris
+CInt : Platform -> Type
+CInt _ = Bits32
+
+CSize : Platform -> Type
+CSize WASM = Bits32
+CSize _    = Bits64
+
+ptrSize : Platform -> Nat
+ptrSize WASM = 32
+ptrSize _    = 64
+```
+
+=== 4. Lifecycle State Machine
+
+Webview state transitions enforced at the type level:
+
+```idris
+data ValidTransition : WebviewState -> WebviewState -> Type where
+  CreateToLoad    : ValidTransition Created Loaded
+  ReLoad          : ValidTransition Loaded Loaded
+  LoadToRun       : ValidTransition Loaded Running
+  RunToDestroy    : ValidTransition Running Destroyed
+  CreateToDestroy : ValidTransition Created Destroyed
+  LoadToDestroy   : ValidTransition Loaded Destroyed
+```
+
+== Why Zig for FFI?
+
+=== 1. C ABI Compatibility
+
+Zig exports C-compatible functions naturally:
+
+```zig
+export fn gossamer_create(
+    title: [*:0]const u8,
+    width: u32, height: u32,
+    resizable: u8, decorations: u8, fullscreen: u8,
+) ?*GossamerHandle { ... }
+```
+
+`gossamer_create_ex` extends the same launch path with min/max size bounds and
+initial visibility. `gossamer_create` remains as the compatibility shim.
+
+=== 2. Compile-Time Platform Dispatch
+
+No runtime overhead for platform selection:
+
+```zig
+const platform = switch (builtin.os.tag) {
+    .linux, .freebsd, .openbsd, .netbsd => @import("webview_gtk.zig"),
+    .macos => @import("webview_cocoa.zig"),
+    .windows => @import("webview_win32.zig"),
+    .ios => @import("webview_ios.zig"),
+    else => @compileError("Unsupported platform"),
+};
+```
+
+=== 3. Cross-Compilation
+
+Built-in cross-compilation to any platform:
+
+```bash
+zig build -Dtarget=x86_64-linux
+zig build -Dtarget=aarch64-macos
+zig build -Dtarget=x86_64-windows
+```
+
+=== 4. Zero Dependencies
+
+No runtime, no libc required (unless platform libs need it).
+
+== Building
+
+=== Build FFI Library
+
+```bash
+cd src/interface/ffi
+zig build                         # Build debug (libgossamer.so + libgossamer.a)
+zig build -Doptimize=ReleaseFast  # Build optimized
+zig build test                    # Run unit tests
+```
+
+=== Generate C Header from Idris2 ABI
+
+```bash
+cd src/interface/abi
+idris2 --cg c-header Types.idr -o ../../generated/abi/gossamer.h
+```
+
+=== Cross-Compile
+
+```bash
+cd src/interface/ffi
+
+# Linux x86_64
+zig build -Dtarget=x86_64-linux
+
+# macOS ARM64
+zig build -Dtarget=aarch64-macos
+
+# Windows x86_64
+zig build -Dtarget=x86_64-windows
+```
+
+== Usage
+
+=== From Ephapax
+
+```eph
+// Shell.eph — linear webview lifecycle
+fn create(title: String, width: I32, height: I32): I64 =
+  __ffi("gossamer_create", title, width, height, 1, 1, 0)
+
+fn loadHTML(handle: I64, html: String): I32 =
+  __ffi("gossamer_load_html", handle, html)
+
+fn run(handle: I64): () =
+  __ffi("gossamer_run", handle)
+```
+
+=== From C
+
+```c
+#include "gossamer.h"
+
+int main() {
+    void* handle = gossamer_create("Hello", 800, 600, 1, 1, 0);
+    if (!handle) return 1;
+
+    int result = gossamer_load_html((uint64_t)handle, "<h1>Hello</h1>");
+    if (result != 0) {
+        const char* err = gossamer_last_error();
+        fprintf(stderr, "Error: %s\n", err);
+    }
+
+    gossamer_run((uint64_t)handle); // Blocks until window closed
+    return 0;
+}
+```
+
+Compile with:
+```bash
+gcc -o example example.c -lgossamer -L./src/interface/ffi/zig-out/lib
+```
+
+=== From Idris2
+
+```idris
+import Gossamer.ABI.Foreign
+import Gossamer.ABI.Types
+
+main : IO ()
+main = do
+  Right wv <- create defaultConfig
+    | Left err => putStrLn $ "Error: " ++ errorDescription err
+
+  (wv', Right ()) <- loadHTML wv "<h1>Hello from Idris2</h1>"
+    | (wv', Left err) => do destroy wv'
+                            putStrLn $ "Load error: " ++ errorDescription err
+
+  run wv' -- Consumes the handle
+```
+
+=== From Rust
+
+```rust
+#[link(name = "gossamer")]
+extern "C" {
+    fn gossamer_create(
+        title: *const i8, width: u32, height: u32,
+        resizable: u8, decorations: u8, fullscreen: u8,
+    ) -> *mut std::ffi::c_void;
+    fn gossamer_load_html(handle: u64, html: *const i8) -> i32;
+    fn gossamer_run(handle: u64);
+    fn gossamer_last_error() -> *const i8;
+}
+
+fn main() {
+    unsafe {
+        let title = std::ffi::CString::new("Hello").unwrap();
+        let handle = gossamer_create(title.as_ptr(), 800, 600, 1, 1, 0);
+        assert!(!handle.is_null());
+
+        let html = std::ffi::CString::new("<h1>Hello</h1>").unwrap();
+        gossamer_load_html(handle as u64, html.as_ptr());
+        gossamer_run(handle as u64);
+    }
+}
+```
+
+== Testing
+
+=== Unit Tests (Zig)
+
+```bash
+cd src/interface/ffi
+zig build test
+```
+
+=== Integration Tests
+
+```bash
+cd src/interface/ffi
+zig build test-integration
+```
+
+=== ABI Verification (Idris2)
+
+```idris
+-- Compile-time verification — these are checked by the compiler
+resultSize      : HasSize Result 4              -- ✓
+windowConfigSize : HasSize WindowConfig 48       -- ✓
+resultCompliant : CABICompliant Result 4 4       -- ✓
+```
+
+== Contributing
+
+When modifying the ABI/FFI:
+
+1. **Update ABI first** (`src/interface/abi/*.idr`)
+   - Modify type definitions
+   - Update proofs
+   - Ensure backward compatibility
+
+2. **Generate C header**
+   ```bash
+   idris2 --cg c-header src/interface/abi/Types.idr -o src/interface/generated/abi/gossamer.h
+   ```
+
+3. **Update FFI implementation** (`src/interface/ffi/src/main.zig`)
+   - Implement new functions
+   - Match ABI types exactly (Result enum values, struct layouts)
+
+4. **Add tests**
+   - Unit tests in main.zig
+   - Integration tests in test/integration_test.zig
+   - ABI verification via Idris2 proofs
+
+5. **Update documentation**
+   - Function signatures
+   - Usage examples
+   - Migration guide (if breaking changes)
+
+== License
+
+MPL-2.0
+
+== See Also
+
+- https://idris2.readthedocs.io[Idris2 Documentation]
+- https://ziglang.org/documentation/master/[Zig Documentation]
+- https://github.com/hyperpolymath/rhodium-standard-repositories[Rhodium Standard Repositories]
+- https://github.com/hyperpolymath/gossamer[Gossamer Repository]

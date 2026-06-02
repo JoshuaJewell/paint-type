@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>paint.type</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: #1e1e1e; color: #ddd; display: flex; height: 100vh; }
+  #toolbar { width: 220px; padding: 12px; background: #252526; display: flex; flex-direction: column; gap: 12px; }
+  #toolbar label { display: flex; flex-direction: column; font-size: 12px; gap: 4px; }
+  #stage { flex: 1; display: grid; place-items: center; overflow: auto; }
+  #canvas { background: #fff; box-shadow: 0 0 0 1px #000, 0 8px 24px rgba(0,0,0,.5); image-rendering: pixelated; cursor: crosshair; }
+  button { padding: 6px 10px; background: #0e639c; color: #fff; border: 0; border-radius: 3px; cursor: pointer; }
+  #status { font-size: 11px; color: #888; min-height: 14px; }
+  .size-row { display: flex; align-items: center; gap: 8px; }
+  #size-val { font-variant-numeric: tabular-nums; min-width: 42px; }
+  #brush-preview { width: 72px; height: 72px; display: grid; place-items: center; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; }
+  #brush-dot { border-radius: 50%; }
+</style>
+</head>
+<body>
+  <div id="toolbar">
+    <strong>paint.type</strong>
+    <label>Colour <input id="colour" type="color" value="#cc0000"></label>
+    <label>Brush size
+      <span class="size-row">
+        <input id="size" type="range" min="1" max="64" value="16">
+        <output id="size-val">16 px</output>
+      </span>
+    </label>
+    <label>Preview
+      <span id="brush-preview"><span id="brush-dot"></span></span>
+    </label>
+    <button id="save">Save PNG...</button>
+    <div id="status">Starting...</div>
+  </div>
+  <div id="stage"><canvas id="canvas" width="1024" height="768"></canvas></div>
+<script>
+(function () {
+  "use strict";
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+  const status = document.getElementById("status");
+  const colourEl = document.getElementById("colour");
+  const sizeEl = document.getElementById("size");
+  const sizeVal = document.getElementById("size-val");
+  const dot = document.getElementById("brush-dot");
+  const DOC_W = canvas.width, DOC_H = canvas.height;
+
+  function bridgeReady() { return typeof window.__gossamer_invoke === "function"; }
+
+  function invoke(payload) {
+    if (!bridgeReady()) return Promise.reject(new Error("Gossamer runtime unavailable"));
+    return window.__gossamer_invoke("dispatch", payload);
+  }
+
+  function hexToRgba(hex) {
+    return {
+      r: parseInt(hex.slice(1, 3), 16) / 255,
+      g: parseInt(hex.slice(3, 5), 16) / 255,
+      b: parseInt(hex.slice(5, 7), 16) / 255,
+      a: 1.0
+    };
+  }
+
+  // Show what the current brush actually looks like: a soft disc of the
+  // chosen diameter in the chosen colour, so size is legible before painting.
+  function updatePreview() {
+    const d = Number(sizeEl.value);
+    sizeVal.textContent = d + " px";
+    dot.style.width = d + "px";
+    dot.style.height = d + "px";
+    dot.style.background = "radial-gradient(circle, " + colourEl.value + " 0%, " +
+      colourEl.value + " 35%, transparent 70%)";
+  }
+
+  function blit(dirty) {
+    if (!dirty) return;
+    const bytes = Uint8ClampedArray.from(atob(dirty.rgba_base64), (c) => c.charCodeAt(0));
+    ctx.putImageData(new ImageData(bytes, dirty.w, dirty.h), dirty.x, dirty.y);
+  }
+
+  function canvasPos(ev) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (ev.clientX - rect.left) * (DOC_W / rect.width),
+      y: (ev.clientY - rect.top) * (DOC_H / rect.height)
+    };
+  }
+
+  async function waitForBridge() {
+    for (let i = 0; i < 200 && !bridgeReady(); i++) {
+      await new Promise((r) => setTimeout(r, 25));
+    }
+    return bridgeReady();
+  }
+
+  async function boot() {
+    updatePreview();
+    if (!(await waitForBridge())) {
+      status.textContent = "IPC bridge unavailable - is this running inside Gossamer?";
+      return;
+    }
+    await invoke({ cmd: "new_doc", w: DOC_W, h: DOC_H });
+    const c = hexToRgba(colourEl.value);
+    await invoke({ cmd: "set_colour", r: c.r, g: c.g, b: c.b, a: c.a });
+    await invoke({ cmd: "set_brush", diameter: Number(sizeEl.value) });
+    status.textContent = "Ready - drag on the canvas to paint.";
+  }
+
+  colourEl.addEventListener("input", () => {
+    updatePreview();
+    const c = hexToRgba(colourEl.value);
+    invoke({ cmd: "set_colour", r: c.r, g: c.g, b: c.b, a: c.a }).catch(() => {});
+  });
+  sizeEl.addEventListener("input", () => {
+    updatePreview();
+    invoke({ cmd: "set_brush", diameter: Number(sizeEl.value) }).catch(() => {});
+  });
+
+  // Coalesce pointer moves: keep only the latest position and run at most one
+  // invoke in flight, so a fast drag never queues behind the IPC channel. The
+  // core interpolates between samples, so dropping intermediate moves is lossless.
+  let painting = false;
+  let pendingMove = null;
+  let draining = false;
+
+  async function drainMoves() {
+    if (draining) return;
+    draining = true;
+    while (pendingMove !== null) {
+      const p = pendingMove;
+      pendingMove = null;
+      try {
+        const res = await invoke({ cmd: "pointer_move", x: p.x, y: p.y });
+        if (res && res.ok === "painted") blit(res.dirty);
+      } catch (e) { /* ignore */ }
+    }
+    draining = false;
+  }
+
+  canvas.addEventListener("pointerdown", async (ev) => {
+    if (!bridgeReady()) return;
+    painting = true;
+    canvas.setPointerCapture(ev.pointerId);
+    const p = canvasPos(ev);
+    try {
+      const res = await invoke({ cmd: "pointer_down", x: p.x, y: p.y });
+      if (res && res.ok === "painted") blit(res.dirty);
+    } catch (e) { /* ignore */ }
+  });
+  canvas.addEventListener("pointermove", (ev) => {
+    if (!painting) return;
+    pendingMove = canvasPos(ev);
+    drainMoves();
+  });
+  canvas.addEventListener("pointerup", async () => {
+    if (!painting) return;
+    painting = false;
+    while (draining || pendingMove !== null) {
+      await new Promise((r) => setTimeout(r, 4));
+      drainMoves();
+    }
+    try { await invoke({ cmd: "pointer_up" }); } catch (e) { /* ignore */ }
+  });
+
+  document.getElementById("save").addEventListener("click", async () => {
+    if (!bridgeReady()) { status.textContent = "Cannot save - bridge unavailable."; return; }
+    let path = "/tmp/painting.png";
+    try {
+      const chosen = await window.__gossamer_invoke("__gossamer_dialog_save", { defaultPath: path });
+      if (chosen && typeof chosen === "string") path = chosen;
+    } catch (e) { /* fall back to default path */ }
+    const res = await invoke({ cmd: "save_png", path });
+    status.textContent = (res && res.ok === "saved") ? "Saved " + res.path : "Save failed";
+  });
+
+  window.addEventListener("load", boot);
+})();
+</script>
+</body>
+</html>

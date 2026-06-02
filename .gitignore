@@ -107,3 +107,4 @@ sync_report*.txt
 # Hypatia scan cache (local-only)
 .hypatia/
 .zig-cache/
+third_party/gossamer/
