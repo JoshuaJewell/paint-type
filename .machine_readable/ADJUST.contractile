@@ -1,8 +1,8 @@
 ; SPDX-License-Identifier: PMPL-1.0-or-later
-; ADJUST.contractile — Accessibility invariants for rsr-template-repo
+; ADJUST.contractile — Accessibility invariants for paint-type
 ; "ADJUST" = Accessibility & Digital Justice for Universal Software & Technology
 ;
-; Part of the contractile family: MUST, TRUST, DUST, INTENT, ADJUST
+; Part of the contractile family: MUST, TRUST, DUST, INTENT, ADJUST, BUST
 ; This file is machine-readable. LLM/SLM agents MUST NOT violate these invariants.
 
 ; ── Definitions ──────────────────────────────────────────────────

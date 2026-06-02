@@ -150,6 +150,8 @@ Formal proofs and safety cases:
 `.machine_readable/TRUST.contractile`:: AI agent trust level and permitted actions.
 `.machine_readable/INTENT.contractile`:: Project purpose and anti-purpose.
 `.machine_readable/ADJUST.contractile`:: Accessibility invariants (WCAG 2.2 AA).
+`.machine_readable/DUST.contractile`:: Recovery pipelines + elaborative error feedback catalogue (FIXME instruction sets for each `DUST-*-NNNN` code; emitted on tile-alloc / FFI-mismatch / undo-divergence / composite-precision / plugin-sandbox failures).
+`.machine_readable/BUST.contractile`:: Hard-stop / reintroduction-guard / must-not-run declarations (forbids hand-authored JS, ReScript, TypeScript, Python, C, non-FFI Zig in source tree; npm-without-fallback-order; canvas mutation from LLM channel without invocation; unsigned plugins).
 
 == Session Protocol
 

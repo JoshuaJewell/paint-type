@@ -1,8 +1,8 @@
 ; SPDX-License-Identifier: PMPL-1.0-or-later
-; MUST.contractile — Baseline invariants for rsr-template-repo
+; MUST.contractile — Baseline invariants for paint-type
 ; These constraints MUST NOT be violated. K9 validators enforce them.
 ;
-; Part of the contractile family: MUST, TRUST, DUST, INTENT, ADJUST
+; Part of the contractile family: MUST, TRUST, DUST, INTENT, ADJUST, BUST
 
 ; ── Definitions ──────────────────────────────────────────────────
 ;

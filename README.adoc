@@ -170,6 +170,76 @@ License across the ecosystem: PMPL-1.0-or-later. See https://github.com/hyperpol
 
 ---
 
+== Language + seam compliance
+
+paint-type adheres to a strict per-tier language policy. The mapping is load-bearing — every tier picks the language that gives the tier its safety property.
+
+[cols="1,1,2"]
+|===
+| Tier | Language | Why this language
+
+| Application + image core
+| Rust
+| Linear types via `!Copy + !Clone` `Tile`; no aliased mutable access; cargo-fuzz for FFI surface
+
+| FFI bridge
+| Zig (FFI directory only)
+| C ABI compatibility without C foot-guns; libpt is pure Zig, Rust links via `extern "C"`
+
+| ABI definitions + proofs
+| Idris2
+| Dependent types prove pointer non-nullability, layout correctness, ABI compliance
+
+| UI bridge schemas
+| AffineScript → typed-wasm
+| Algebraic effects separate latency-critical brush commands from throughput-oriented tile delivery; multi-module type safety across the IPC boundary
+
+| Build orchestration
+| `just` + bash
+| Recipe-based, no Python, no `make`
+
+| Container runtime
+| podman + Chainguard Wolfi
+| Rootless containers; ML-DSA-87 signed
+|===
+
+Forbidden in the source tree (enforced by `BUST.contractile` reintroduction guards):
+
+* Hand-authored JavaScript (must come from AffineScript codegen)
+* TypeScript / ReScript (use AffineScript)
+* Python (use Rust or shell)
+* C / C++ / `.h` / `.hpp` (use Zig)
+* Zig outside the FFI directories (use Rust)
+
+Package manager preference for any npm-style need: **Deno first, Bun second, pnpm third, Yarn fourth — npm only as a last resort.**
+
+---
+
+== Seams
+
+paint-type has four named seams. Each has a typed contract:
+
+[cols="1,3"]
+|===
+| Seam | Contract
+
+| Internal: `paint_core` ↔ `libpt`
+| Rust `extern "C"` declarations in `src/paint_core/src/lib.rs` mirror Zig `pub export fn` in `src/interface/ffi/src/main.zig`. ABI-compatibility proven in `src/interface/Abi/Foreign.idr`.
+
+| Internal: `host` ↔ `paint_core`
+| Pure Rust calls through `host_core::dispatch::dispatch`; shared `Document` behind `Arc<Mutex<_>>` for the Gossamer command thread.
+
+| External: Gossamer shell ↔ webview
+| JSON-encoded `Command` / `Response` via `window.__gossamer_invoke("dispatch", ...)`. CSP-locked to own origin + inline UI script.
+
+| External: paint-type ↔ Burble / Groove
+| Service discovery via `.well-known/groove/manifest.json`; collaboration via Burble WebRTC (CRDT tile mutations).
+|===
+
+The proximal seams (within paint-type) are size-checked, layout-proven, and panic-attack-scanned. The distal seams (to ecosystem peers) are protocol-versioned and version-guarded — see `DUST-ABI-0001` for the recovery path on libpt ABI mismatch.
+
+---
+
 == Quick links
 
 * https://github.com/JoshuaJewell/paint-type/wiki[Wiki Home] — single-page routing hub pointing at the in-repo source of truth
