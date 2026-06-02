@@ -52,7 +52,7 @@ region TileHeader {
 // A full tile: 32 KiB pixel buffer + 16 B header = 32784 B.
 // Mirror of struct `Tile` in src/interface/ffi/src/main.zig + the
 // constants TILE_SIZE / TILE_CHANNELS / TILE_PIXEL_BYTES in
-// src/ephapax/src/lib.rs.
+// src/paint_core/src/lib.rs.
 region Tile {
     header: @TileHeader;        // embedded
     pixels: @RGBA16F[64 * 64];  // 4096 pixels × 8 B = 32768 B

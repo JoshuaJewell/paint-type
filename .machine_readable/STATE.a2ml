@@ -15,7 +15,7 @@
     (milestone "v0.2.0 Core Image Operations — in-repo work complete; only AffineScript→typed-wasm bridge remains (gated upstream)"))
   (testing-summary
     (zig-ffi-tests "src/interface/ffi/: PASS (zig build test — 29/29; pt_tile_* + pt_layer_*)")
-    (rust-tests "src/ephapax/: PASS (cargo test — 98/98 + 1 doctest across lib/composite/undo/layer/brush)")
+    (rust-tests "src/paint_core/: PASS (cargo test — 98/98 + 1 doctest across lib/composite/undo/layer/brush)")
     (workflow-tests "tests/workflows/validate_workflows_test.sh: PASS")
     (aspect-tests "tests/aspect_tests.sh: PASS (7 aspects)")
     (e2e-tests "tests/e2e.sh + cargo --test e2e_pipeline: PASS (9 stages; 2 Rust scenarios; 2 scenario_*.sh probes)")

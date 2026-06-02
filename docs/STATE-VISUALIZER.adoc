@@ -33,7 +33,7 @@
                     │  RGBA16F tiles · 11 compositing ops · UndoGraph  │
                     │  Layer / LayerStack · Brush engine               │
                     │  linear types · no aliased mutable tile refs     │
-                    │  src/ephapax/  (lib + composite + undo + layer + │
+                    │  src/paint_core/  (lib + composite + undo + layer + │
                     │                 brush — 98/98 tests + 1 doctest) │
                     └──────────────────────┬──────────────────────────┘
                                            │

@@ -107,7 +107,7 @@ documented plan. No proof content is added or removed.
 
 After each removal, the build and the kept gates must still pass:
 
-- cargo test from src/ephapax (links libpt via build.rs)
+- cargo test from src/paint_core (links libpt via build.rs)
 - zig build test from src/interface/ffi
 - idris2 type-check of the ABI modules (proof-check-idris2)
 - scripts/validate-template.sh exits clean (the deletions touch no file on its

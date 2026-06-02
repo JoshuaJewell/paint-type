@@ -28,8 +28,8 @@ Expected: all packages install without error. Confirm Zig 0.15+ with `zig versio
 ## File structure (what each new file is responsible for)
 
 - Create: `third_party/gossamer/` — vendored Gossamer (git submodule); source of `libgossamer` and the `gossamer-rs` crate.
-- Create: `src/ephapax/src/render.rs` — `render_region`: flatten the visible layer stack over a rectangle into straight-alpha RGBA8 bytes. One responsibility: pixels out.
-- Modify: `src/ephapax/src/lib.rs` — add `pub mod render;`.
+- Create: `src/paint_core/src/render.rs` — `render_region`: flatten the visible layer stack over a rectangle into straight-alpha RGBA8 bytes. One responsibility: pixels out.
+- Modify: `src/paint_core/src/lib.rs` — add `pub mod render;`.
 - Create: `src/host_core/Cargo.toml`, `src/host_core/src/lib.rs` — pure library crate root.
 - Create: `src/host_core/src/protocol.rs` — `Command` and `Response` serde types (the wire contract).
 - Create: `src/host_core/src/document.rs` — `Document`: canvas state, brush state, stroke handling, tile-aware stamping, dirty tracking.
@@ -96,13 +96,13 @@ git commit -m "build: vendor gossamer v0.3.1 as submodule for the desktop shell"
 ### Task 2: `render_region` in ephapax
 
 **Files:**
-- Create: `src/ephapax/src/render.rs`
-- Modify: `src/ephapax/src/lib.rs` (add `pub mod render;`)
+- Create: `src/paint_core/src/render.rs`
+- Modify: `src/paint_core/src/lib.rs` (add `pub mod render;`)
 - Test: inline `#[cfg(test)]` in `render.rs`
 
 - [ ] **Step 1: Write the failing test**
 
-Create `src/ephapax/src/render.rs` with only the test module and a stub:
+Create `src/paint_core/src/render.rs` with only the test module and a stub:
 
 ```rust
 // SPDX-License-Identifier: PMPL-1.0-or-later
@@ -189,11 +189,11 @@ mod tests {
 }
 ```
 
-Add `pub mod render;` to `src/ephapax/src/lib.rs` next to the other `pub mod` declarations.
+Add `pub mod render;` to `src/paint_core/src/lib.rs` next to the other `pub mod` declarations.
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `cargo test --manifest-path src/ephapax/Cargo.toml render::`
+Run: `cargo test --manifest-path src/paint_core/Cargo.toml render::`
 Expected: FAIL — `not implemented` panic from `unimplemented!()` (or the empty-stack test fails first).
 
 - [ ] **Step 3: Implement `render_region`**
@@ -278,18 +278,18 @@ pub fn render_region(stack: &LayerStack, ox: u32, oy: u32, w: u32, h: u32) -> Ve
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
-Run: `cargo test --manifest-path src/ephapax/Cargo.toml render::`
+Run: `cargo test --manifest-path src/paint_core/Cargo.toml render::`
 Expected: PASS (3 tests; the libpt-dependent two are no-ops only if libpt is unavailable, which it is not in CI).
 
 - [ ] **Step 5: Verify the whole crate still passes**
 
-Run: `cargo test --manifest-path src/ephapax/Cargo.toml`
+Run: `cargo test --manifest-path src/paint_core/Cargo.toml`
 Expected: the existing 98 tests plus the new render tests all PASS.
 
 - [ ] **Step 6: Commit** (requires owner git authorisation)
 
 ```bash
-git add src/ephapax/src/render.rs src/ephapax/src/lib.rs
+git add src/paint_core/src/render.rs src/paint_core/src/lib.rs
 git commit -m "feat(ephapax): add render_region to flatten the visible stack to RGBA8"
 ```
 
@@ -662,7 +662,7 @@ fn union(a: Rect, b: Rect) -> Rect {
 }
 ```
 
-This requires `ephapax`'s modules to be public. Confirm `src/ephapax/src/lib.rs` declares `pub mod brush;`, `pub mod layer;`, `pub mod composite;`, and (from Task 2) `pub mod render;`, and that `Tile`, `TileError`, `TILE_SIZE`, `f16_bits_to_f32`, `f32_to_f16_bits` are `pub`. They are already used across modules, so they are public; if any module is declared `mod` rather than `pub mod`, change it to `pub mod` in this step and note it in the commit.
+This requires `ephapax`'s modules to be public. Confirm `src/paint_core/src/lib.rs` declares `pub mod brush;`, `pub mod layer;`, `pub mod composite;`, and (from Task 2) `pub mod render;`, and that `Tile`, `TileError`, `TILE_SIZE`, `f16_bits_to_f32`, `f32_to_f16_bits` are `pub`. They are already used across modules, so they are public; if any module is declared `mod` rather than `pub mod`, change it to `pub mod` in this step and note it in the commit.
 
 - [ ] **Step 6: Implement dispatch**
 
@@ -1158,7 +1158,7 @@ In `Justfile`, change the `build` recipe to also build the host crates, and the 
 build *args:
     @echo "Building {{project}} (debug)..."
     cd src/interface/ffi && zig build {{args}}
-    cargo build --manifest-path src/ephapax/Cargo.toml {{args}}
+    cargo build --manifest-path src/paint_core/Cargo.toml {{args}}
     cargo build --manifest-path src/host_core/Cargo.toml {{args}}
     cargo build --manifest-path src/host/Cargo.toml {{args}}
     @echo "Build complete"
@@ -1167,7 +1167,7 @@ build *args:
 test *args:
     @echo "Running tests..."
     cd src/interface/ffi && zig build test {{args}}
-    cargo test --manifest-path src/ephapax/Cargo.toml {{args}}
+    cargo test --manifest-path src/paint_core/Cargo.toml {{args}}
     cargo test --manifest-path src/host_core/Cargo.toml {{args}}
     @echo "Tests passed!"
 ```
@@ -1272,7 +1272,7 @@ on:
     paths:
       - 'src/host/**'
       - 'src/host_core/**'
-      - 'src/ephapax/**'
+      - 'src/paint_core/**'
       - 'src/ui/**'
       - 'third_party/gossamer/**'
       - '.github/workflows/host.yml'

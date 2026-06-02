@@ -42,7 +42,7 @@ forbidden = ["Node.js", "npm", "TypeScript", "Python", "Go"]
 [golden-path]
 smoke-test-command = [
   "cd src/interface/ffi && zig build test",
-  "cd src/ephapax && cargo test",
+  "cd src/paint_core && cargo test",
   "just quality",
 ]
 

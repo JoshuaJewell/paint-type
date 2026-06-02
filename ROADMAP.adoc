@@ -21,7 +21,7 @@ Architecture remains locked.
 * [x] Tile primitive (RGBA16F, 64×64 tiles)
 * [x] Idris2 ABI definitions (`src/interface/Abi/Types.idr`, `Layout.idr`, `Foreign.idr`)
 * [x] Zig FFI bridge (`src/interface/ffi/`) with integration tests
-* [x] Rust Ephapax crate skeleton (`src/ephapax/`)
+* [x] Rust Ephapax crate skeleton (`src/paint_core/`)
 * [x] CI/CD pipeline (GitHub Actions, OpenSSF scorecard, SPDX compliance)
 * [x] Repository governance and machine-readable metadata
 

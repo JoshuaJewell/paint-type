@@ -42,7 +42,7 @@
   (ask-before-touching
     "src/interface/Abi/ — formal proofs; changes require re-verification with idris2 --check"
     "src/interface/ffi/ — C ABI boundary; changes affect all language bindings"
-    "src/ephapax/src/lib.rs — tile primitive and linear type invariants"
+    "src/paint_core/src/lib.rs — tile primitive and linear type invariants"
     ".machine_readable/ — checkpoint files; format is specified"
     ".github/workflows/ — CI gate; changes need explicit approval"
   )

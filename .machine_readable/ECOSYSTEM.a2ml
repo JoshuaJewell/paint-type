@@ -8,7 +8,7 @@
   (purpose "Cross-platform open-source image editor — RGBA16F tile engine, formally-verified ABI bridge, Gossamer shell integration")
   (related-projects
     (gossamer "linearly-typed webview shell — desktop container for paint-type UI (v0.3.0 dependency)")
-    (ephapax "Rust image core (this repo's `src/ephapax/` crate; SEPARATE from the hyperpolymath/ephapax LANGUAGE) — RGBA16F tiles, 11 compositing ops, brush engine, persistent UndoGraph, Layer/LayerStack")
+    (ephapax "Rust image core (this repo's `src/paint_core/` crate; SEPARATE from the hyperpolymath/ephapax LANGUAGE) — RGBA16F tiles, 11 compositing ops, brush engine, persistent UndoGraph, Layer/LayerStack")
     (typed-wasm "Cross-language bridge target. paint-type consumes `typed-wasm-verify` for `.twasm` schema verification at the AffineScript boundary; v0.2.0 draft schemas live at `src/bridges/paint-type-{tile,layer}.twasm`; full `tw build` compilation gated on hyperpolymath/typed-wasm#127 + #130")
     (affinescript "Bridge language emitted to .twasm; paint-type#39 tracks the integration")
     (burble "WebRTC collaboration layer — sub-10ms shared canvas (v0.5.0 dependency)")

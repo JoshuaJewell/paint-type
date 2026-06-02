@@ -18,7 +18,7 @@ For the full directory guide, see link:../EXPLAINME.adoc[EXPLAINME.adoc].
 |===
 | Directory | Contents
 
-| `src/ephapax/`
+| `src/paint_core/`
 | Rust image core — RGBA16F tile engine, compositing, undo graph (linear types)
 
 | `src/interface/Abi/`

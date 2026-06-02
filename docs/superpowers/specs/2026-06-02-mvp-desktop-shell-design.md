@@ -38,7 +38,7 @@ These were chosen deliberately and are the frame for everything below:
 
 ## What exists today (the MVP builds on this, not from scratch)
 
-- `src/ephapax/` (Rust): `Tile`, eleven compositing operators
+- `src/paint_core/` (Rust): `Tile`, eleven compositing operators
   (`over_premultiplied`, `masked_blend`, `flatten_layer_stack`, `lerp`,
   `multiply`, `screen`, `in_op`, `out_op`, `atop`, `xor`, plus
   `Tile::composite_over`), a persistent branching `UndoGraph`, a `LayerStack`

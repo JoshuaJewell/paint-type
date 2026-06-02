@@ -36,7 +36,7 @@ Audit scope:
 
 | Ephapax Rust crate
 | `TOPOLOGY.md`, `ROADMAP.adoc`
-| `src/ephapax/`
+| `src/paint_core/`
 | exists (v0.2.0 in-repo complete)
 | 5 modules (lib, composite, undo, layer, brush). 11 compositing ops, persistent UndoGraph, Layer/LayerStack, Brush engine. cargo test 98/98 + 1 doctest. Rust CI green on main.
 | Keep; bridge work remaining for v0.2.0 close.

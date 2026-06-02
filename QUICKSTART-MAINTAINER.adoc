@@ -47,7 +47,7 @@ zig build -Doptimize=ReleaseSafe
 
 [source,bash]
 ----
-cd src/ephapax
+cd src/paint_core
 cargo build --release
 ----
 
@@ -77,7 +77,7 @@ Container is based on Chainguard Wolfi, signed with ML-DSA-87 via cerro-torre.
 just doctor            # Full diagnostic
 just test              # Run test suite
 cd src/interface/ffi && zig build test   # Zig FFI tests
-cd src/ephapax && cargo test             # Rust unit tests
+cd src/paint_core && cargo test             # Rust unit tests
 ----
 
 == Updating

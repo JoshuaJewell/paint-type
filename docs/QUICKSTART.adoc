@@ -33,7 +33,7 @@ zig build test
 
 [source,bash]
 ----
-cd src/ephapax
+cd src/paint_core
 cargo test
 ----
 

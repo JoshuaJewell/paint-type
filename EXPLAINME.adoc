@@ -30,9 +30,9 @@ Part of the hyperpolymath/palimpsest ecosystem.
 
 == Source Tree (`src/`)
 
-=== `src/ephapax/` — Native Image Core (Rust)
+=== `src/paint_core/` — Native Image Core (Rust)
 
-`src/ephapax/` is paint-type's Rust crate (named "ephapax" for the role
+`src/paint_core/` is paint-type's Rust crate (named "ephapax" for the role
 it plays as the image core, not because it is the
 `hyperpolymath/ephapax` language — those are SEPARATE things; the
 language has sublanguages `ephapax-linear` + `ephapax-proven`, and this
@@ -58,8 +58,8 @@ Modules:
            blending, `Stroke` point interpolation with spacing carry-over).
 
 Linear types enforce no aliased mutable tile access — `Tile` is `!Copy
-+ !Clone`. Build with `cargo test` from `src/ephapax/`. Benches in
-`src/ephapax/benches/`.
++ !Clone`. Build with `cargo test` from `src/paint_core/`. Benches in
+`src/paint_core/benches/`.
 
 === `src/interface/Abi/` — Formally Verified ABI Definitions (Idris2)
 
@@ -179,10 +179,10 @@ Key workflows:
 
 `rust.yml`:: Rust build / clippy / test for Ephapax (builds libpt via Zig
             first, then runs `cargo check/fmt/clippy/test` against
-            `src/ephapax/`). Green on main since 2026-06-01 (PRs #36/#37/#38).
+            `src/paint_core/`). Green on main since 2026-06-01 (PRs #36/#37/#38).
 `idris-ci.yml`:: Idris2 ABI proof type-check (`idris2 --check`) on ABI module + `verification/proofs/idris2/` changes.
 `coverage.yml`:: `cargo-llvm-cov` LCOV + console summary for Rust (gated on
-                 `src/ephapax/`) plus best-effort `kcov` for the Zig
+                 `src/paint_core/`) plus best-effort `kcov` for the Zig
                  integration-test binary. Reporting only — no threshold
                  gate; uploads `rust-coverage-lcov` and `zig-coverage`
                  artifacts each run. PR #32 + #34.

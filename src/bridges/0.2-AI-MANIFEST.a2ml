@@ -36,4 +36,4 @@ gates:
   - JoshuaJewell/paint-type#39
 mirrors:
   - src/interface/ffi/src/main.zig
-  - src/ephapax/src/lib.rs
+  - src/paint_core/src/lib.rs

@@ -32,7 +32,7 @@ v0.3.0 with the Gossamer shell.
 ## Key Commands
 
 - `zig build test` from `src/interface/ffi/` — build and run Zig FFI tests
-- `cargo test` from `src/ephapax/` — build and run Rust Ephapax tests
+- `cargo test` from `src/paint_core/` — build and run Rust Ephapax tests
 - `just build` — build everything
 - `just test` — run all tests
 - `just doctor` — diagnose issues
@@ -49,12 +49,12 @@ v0.3.0 with the Gossamer shell.
 - `src/interface/ffi/src/main.zig` — Zig libpt (23 exports)
 - `src/interface/ffi/build.zig` — Zig build file
 - `src/interface/ffi/test/integration_test.zig` — 29/29 integration tests
-- `src/ephapax/src/{lib,composite,undo,layer,brush}.rs` — full v0.2.0
+- `src/paint_core/src/{lib,composite,undo,layer,brush}.rs` — full v0.2.0
   in-repo image core; cargo test 98/98 + 1 doctest
 - `src/bridges/paint-type-{tile,layer}.twasm` — DRAFT typed-wasm schemas
 - `tests/aspect_tests.sh` — 7 aspects PASS
-- `tests/e2e.sh` + `src/ephapax/tests/e2e_pipeline.rs` — E2E pipeline (PR #33)
-- `src/ephapax/fuzz/` — 3 cargo-fuzz targets (PR #35)
+- `tests/e2e.sh` + `src/paint_core/tests/e2e_pipeline.rs` — E2E pipeline (PR #33)
+- `src/paint_core/fuzz/` — 3 cargo-fuzz targets (PR #35)
 - `.github/workflows/{rust,coverage,e2e,fuzz-smoke,idris-ci}.yml` — green CI
 
 ## Key Invariants

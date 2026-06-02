@@ -9,7 +9,7 @@ paint-type follows the **Hyperpolymath RSR Standard** for ABI and FFI design:
 
 * **ABI (Application Binary Interface)** defined in **Idris2** with formal proofs
 * **FFI (Foreign Function Interface)** implemented in **Zig** for C compatibility
-* **Native Rust consumer** wraps the FFI as a safe API in `src/ephapax/`
+* **Native Rust consumer** wraps the FFI as a safe API in `src/paint_core/`
 * **Any language** can call through the standard C ABI exposed by libpt
 
 The native C symbol prefix is `pt_`; the shared library is `libpt.{so,a,dylib}`.
@@ -38,7 +38,7 @@ The native C symbol prefix is `pt_`; the shared library is `libpt.{so,a,dylib}`.
                   │ compiled to libpt.{so,a}
                   ▼
 ┌─────────────────────────────────────────────┐
-│  Native Rust consumer (`src/ephapax/`)      │
+│  Native Rust consumer (`src/paint_core/`)      │
 │  + Any other language via C ABI             │
 └─────────────────────────────────────────────┘
 ----
@@ -201,7 +201,7 @@ CI runs these via `.github/workflows/idris-ci.yml`.
 
 [source,bash]
 ----
-cd src/ephapax
+cd src/paint_core
 cargo build
 cargo test
 ----
@@ -253,7 +253,7 @@ main = do
   pt_tile_free tile.ptr
 ----
 
-=== From Rust (via `src/ephapax/`)
+=== From Rust (via `src/paint_core/`)
 
 [source,rust]
 ----
@@ -272,7 +272,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 == Testing
 
 * **Zig unit + integration**: `cd src/interface/ffi && zig build test`
-* **Rust**: `cd src/ephapax && cargo test`
+* **Rust**: `cd src/paint_core && cargo test`
 * **Idris2 proofs**: see "Idris2 ABI Type-Check" above; CI runs it via
   `.github/workflows/idris-ci.yml`.
 * **Aspect tests**: `bash tests/aspect_tests.sh` — checks SPDX, banned
@@ -291,13 +291,13 @@ When modifying the ABI/FFI boundary:
 . **Implement the Zig side** (`src/interface/ffi/src/main.zig`).
    * Match the Idris2 `%foreign "C:pt_X,libpt"` symbols exactly
    * Validate inputs; never trust the caller
-. **Mirror the extern in Rust** (`src/ephapax/src/lib.rs`).
+. **Mirror the extern in Rust** (`src/paint_core/src/lib.rs`).
    * Add the `unsafe extern "C"` declaration
    * Expose a safe `Tile::*` method with `// SAFETY:` comments
 . **Add tests**
    * Zig inline unit test in `main.zig`
    * Zig integration test in `test/integration_test.zig`
-   * Rust unit test in `src/ephapax/src/lib.rs` or relevant module
+   * Rust unit test in `src/paint_core/src/lib.rs` or relevant module
 . **Add aspect-test coverage** — Aspect 3 in `tests/aspect_tests.sh`
    verifies the ABI ⊆ FFI inclusion; if your new symbol breaks the
    pattern, fix the aspect test first.

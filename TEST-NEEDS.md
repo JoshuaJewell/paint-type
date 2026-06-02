@@ -9,12 +9,12 @@
 | **Source modules** | 11 | 3 Idris2 ABI (Foreign, Layout, Types) + 3 verification proof modules (ABI/Platform, ABI/Compliance, Pixel), 2 Zig FFI (build, main), 1 Zig integration test, 1 Rust Ephapax crate with 5 modules (lib, composite, undo, layer, brush) |
 | **Unit tests** | 98 + 29 | 98 Rust unit tests across lib/composite/undo/layer/brush; 29 Zig inline + integration tests (incl. 11 pt_layer_* integration tests) |
 | **Integration tests** | 1 | `src/interface/ffi/test/integration_test.zig` — lifecycle, blit, memory safety, version checks |
-| **E2E tests** | 4 | `tests/e2e.sh` (full pipeline orchestrator); `src/ephapax/tests/e2e_pipeline.rs` (2 Rust scenarios driving the full Tile→composite→UndoGraph→pt_layer_*→Brush stack); `tests/e2e/scenario_libpt_artifacts.sh` (artifact + symbol probe); `tests/e2e/scenario_pipeline_dogfood.sh` (verbose cargo replay); `tests/e2e/template_instantiation_test.sh` (structure validation) |
+| **E2E tests** | 4 | `tests/e2e.sh` (full pipeline orchestrator); `src/paint_core/tests/e2e_pipeline.rs` (2 Rust scenarios driving the full Tile→composite→UndoGraph→pt_layer_*→Brush stack); `tests/e2e/scenario_libpt_artifacts.sh` (artifact + symbol probe); `tests/e2e/scenario_pipeline_dogfood.sh` (verbose cargo replay); `tests/e2e/template_instantiation_test.sh` (structure validation) |
 | **Aspect tests** | 1 | `tests/aspect_tests.sh` — 7 aspects, 0 fail (SPDX, dangerous-pattern, ABI/FFI contract, Rust panic-safety, RGBA16F constants, Idris2 ABI check, file-I/O deferred) |
 | **Workflow tests** | 1 | `tests/workflows/validate_workflows_test.sh` (validates CI workflow presence and structure) |
-| **Coverage tooling** | 1 | `.github/workflows/coverage.yml` + `tests/coverage.sh` — Rust `cargo-llvm-cov` (LCOV + console report, gated on `src/ephapax/`); Zig `kcov` over the integration-test binary (best-effort, non-blocking). Reporting only — no threshold gate. |
-| **Bench harnesses** | 1 | `src/ephapax/benches/undo.rs` — 88 ns/commit, 2 ns/checkout (hand-rolled `Instant` timer) |
-| **Fuzz tests** | 3 | `src/ephapax/fuzz/fuzz_targets/{pt_tile_blit,pt_tile_write_pixel,pt_layer_opacity}.rs` — WIRED; 30 s smoke-test per target in CI (`.github/workflows/fuzz-smoke.yml`) |
+| **Coverage tooling** | 1 | `.github/workflows/coverage.yml` + `tests/coverage.sh` — Rust `cargo-llvm-cov` (LCOV + console report, gated on `src/paint_core/`); Zig `kcov` over the integration-test binary (best-effort, non-blocking). Reporting only — no threshold gate. |
+| **Bench harnesses** | 1 | `src/paint_core/benches/undo.rs` — 88 ns/commit, 2 ns/checkout (hand-rolled `Instant` timer) |
+| **Fuzz tests** | 3 | `src/paint_core/fuzz/fuzz_targets/{pt_tile_blit,pt_tile_write_pixel,pt_layer_opacity}.rs` — WIRED; 30 s smoke-test per target in CI (`.github/workflows/fuzz-smoke.yml`) |
 
 ## What Exists and Passes
 
@@ -32,7 +32,7 @@ Run with: `zig build test` from `src/interface/ffi/`
 
 ### Rust Ephapax Unit Tests (PASSING — 98/98 + 1 doctest)
 
-`src/ephapax/src/{lib,composite,undo,layer,brush}.rs`:
+`src/paint_core/src/{lib,composite,undo,layer,brush}.rs`:
 
 - `lib.rs` — Tile header construction, RGBA16F arithmetic, tile buffer
   alloc/dealloc, f16↔f32 round-trip, `pt_tile_write_pixel`, pt_layer_*
@@ -59,7 +59,7 @@ Run with: `zig build test` from `src/interface/ffi/`
   NaN handling, visibility round-trip, post-free safety, null-stack
   uniform errors.
 
-Run with: `cargo test` from `src/ephapax/`. Benches via `cargo bench`.
+Run with: `cargo test` from `src/paint_core/`. Benches via `cargo bench`.
 
 ### Workflow Validation Tests (PASSING)
 
@@ -74,7 +74,7 @@ Run with: `cargo test` from `src/ephapax/`. Benches via `cargo bench`.
 `.github/workflows/coverage.yml` + `tests/coverage.sh`:
 
 - **Rust**: `cargo llvm-cov --all-features --workspace --lcov` from
-  `src/ephapax/`. Console summary printed to the job log and to
+  `src/paint_core/`. Console summary printed to the job log and to
   `$GITHUB_STEP_SUMMARY`. LCOV file uploaded as artifact
   `rust-coverage-lcov` (30-day retention).
 - **Zig**: `kcov --include-path=src/interface/ffi` over the integration
@@ -98,7 +98,7 @@ Run with: `cargo test` from `src/ephapax/`. Benches via `cargo bench`.
 
 ### P2 — Required for CRG Grade B
 
-- [x] Fuzz harness for `pt_tile_blit` (inputs: arbitrary src/dst dimensions, offsets) — `src/ephapax/fuzz/fuzz_targets/pt_tile_blit.rs` plus `pt_tile_write_pixel.rs` and `pt_layer_opacity.rs`; 30 s smoke per target in CI via `.github/workflows/fuzz-smoke.yml` (PR: feat/fuzz-harness-pt-tile).
+- [x] Fuzz harness for `pt_tile_blit` (inputs: arbitrary src/dst dimensions, offsets) — `src/paint_core/fuzz/fuzz_targets/pt_tile_blit.rs` plus `pt_tile_write_pixel.rs` and `pt_layer_opacity.rs`; 30 s smoke per target in CI via `.github/workflows/fuzz-smoke.yml` (PR: feat/fuzz-harness-pt-tile).
 - [ ] Property-based tests for RGBA16F arithmetic (Rust + `proptest`)
 - [ ] Performance regression tests: tile alloc throughput baseline, blit throughput baseline
 

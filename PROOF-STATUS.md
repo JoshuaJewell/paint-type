@@ -54,7 +54,7 @@
 | INV-2 | Undo graph monotonicity | INV | Lean4 | P2 | 4h |
 | INV-3 | Compositing blend function totality | INV | Agda | P2 | 4h |
 
-Note: INV-2 has Rust implementation ground-truth in `src/ephapax/src/undo.rs` (the 4-clause English monotonicity invariant documented on `UndoGraph<T>`); the Lean4 mechanisation just needs to follow that contract.
+Note: INV-2 has Rust implementation ground-truth in `src/paint_core/src/undo.rs` (the 4-clause English monotonicity invariant documented on `UndoGraph<T>`); the Lean4 mechanisation just needs to follow that contract.
 
 ## Echo-types audit log
 
@@ -77,7 +77,7 @@ cd ../../verification/proofs/idris2 && idris2 --check ABI/Platform.idr ABI/Compl
 cd src/interface/ffi && zig build test
 
 # Run Rust Ephapax tests
-cd src/ephapax && cargo test
+cd src/paint_core && cargo test
 
 # Run aspect tests (SPDX, dangerous-pattern, ABI/FFI contract, RGBA16F constants, …)
 bash tests/aspect_tests.sh

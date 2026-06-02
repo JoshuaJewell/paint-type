@@ -6,7 +6,7 @@
 == Status
 
 Three `cargo-fuzz` (libFuzzer) targets are wired under
-`src/ephapax/fuzz/fuzz_targets/`, exercising the pure-Zig libpt FFI
+`src/paint_core/fuzz/fuzz_targets/`, exercising the pure-Zig libpt FFI
 surface (`pt_tile_*` and `pt_layer_*`):
 
 [cols="1,3"]
@@ -42,7 +42,7 @@ Prerequisites:
 * `cargo install cargo-fuzz --locked`
 * `zig` 0.15.x on PATH (so the `ephapax` build script can locate / build libpt)
 
-From `src/ephapax/`:
+From `src/paint_core/`:
 
 [source,bash]
 ----
@@ -64,14 +64,14 @@ cargo +nightly fuzz run pt_layer_opacity -- -max_total_time=30 -timeout=10
 cargo +nightly fuzz run pt_tile_write_pixel -- -max_total_time=300 -timeout=10
 ----
 
-Crashes land in `src/ephapax/fuzz/artifacts/<target>/`; re-run a single
+Crashes land in `src/paint_core/fuzz/artifacts/<target>/`; re-run a single
 input via `cargo +nightly fuzz run <target> artifacts/<target>/crash-<hash>`.
 
-== Why cargo-fuzz Lives Under `src/ephapax/fuzz/`
+== Why cargo-fuzz Lives Under `src/paint_core/fuzz/`
 
 `cargo-fuzz` expects the `fuzz/` directory to sit next to the crate it
 exercises (it reads the parent `Cargo.toml` to discover the crate
-under test). Keeping the harness under `src/ephapax/fuzz/` follows that
+under test). Keeping the harness under `src/paint_core/fuzz/` follows that
 convention; this `tests/fuzz/` README is the discoverable pointer for
 the RSR directory layout.
 

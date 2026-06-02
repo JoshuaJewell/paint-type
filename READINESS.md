@@ -30,7 +30,7 @@
 - Repository follows RSR standards (CI/CD, SPDX, machine-readable metadata, CRG structure)
 - `src/interface/Abi/` — Idris2 types and layout proofs compile and typecheck
 - `src/interface/ffi/` — Zig libpt builds and integration tests pass (29/29)
-- `src/ephapax/` — Rust crate builds with `cargo test` (98/98 + 1 doctest); `cargo clippy --all-targets -- -D warnings` clean
+- `src/paint_core/` — Rust crate builds with `cargo test` (98/98 + 1 doctest); `cargo clippy --all-targets -- -D warnings` clean
 - dogfood-gate, hypatia-scan, static-analysis-gate workflows all green
 - **Rust CI green on `main` since 2026-06-01** (`.github/workflows/rust.yml` — PRs #36/#37/#38)
 - idris-ci, coverage, e2e, and fuzz-smoke workflows wired and exercising the v0.2.0 surface
@@ -51,7 +51,7 @@ To reach C:
 6. Generate AffineScript → typed-wasm bridge from Idris2 ABI (gated on typed-wasm emitter stability)
 7. Integrate with Gossamer shell for a runnable application (v0.3.0, issue #13)
 8. ~~Wire integration tests into CI~~ — DONE (idris-ci.yml + aspect tests + reused tile tests)
-9. ~~Populate E2E test with the full pipeline scenario~~ — DONE (PR #33): `tests/e2e.sh` orchestrator + `src/ephapax/tests/e2e_pipeline.rs` (2 Rust scenarios driving Tile lifecycle + composite_over + UndoGraph + pt_layer_* + Brush::stamp) + `tests/e2e/scenario_*.sh` probes + `.github/workflows/e2e.yml`.
+9. ~~Populate E2E test with the full pipeline scenario~~ — DONE (PR #33): `tests/e2e.sh` orchestrator + `src/paint_core/tests/e2e_pipeline.rs` (2 Rust scenarios driving Tile lifecycle + composite_over + UndoGraph + pt_layer_* + Brush::stamp) + `tests/e2e/scenario_*.sh` probes + `.github/workflows/e2e.yml`.
 10. Update this file with evidence
 
 ### Closed prerequisites (2026-06-01)
@@ -77,7 +77,7 @@ To reach C:
 - Coverage reporting wired into CI for both Rust and Zig
   (`.github/workflows/coverage.yml`, local: `bash tests/coverage.sh`).
   Rust side uses `cargo-llvm-cov` → LCOV + console report from
-  `src/ephapax/`; Zig side uses `kcov` over the integration-test
+  `src/paint_core/`; Zig side uses `kcov` over the integration-test
   binary as a best-effort, non-blocking step (Zig 0.15 test runners
   are not always kcov-friendly). Both outputs upload as artifacts
   every run; Codecov upload is opt-in via a `CODECOV_TOKEN` secret.

@@ -5,48 +5,61 @@
 
 [metadata]
 project = "paint-type"
-version = "0.1.0"
-last-updated = "2026-05-11"
+version = "0.2.0-dev"
+last-updated = "2026-06-02"
 status = "active"  # active | paused | archived
 
 [project-context]
 name = "paint-type"
 purpose = "Cross-platform open-source image editor. Capable enough for real work, simple enough to reach for without thinking. RGBA16F tile engine with formally-verified ABI bridge, Gossamer shell integration, and Burble collaboration."
-completion-percentage = 10
+completion-percentage = 22
+notes = "v0.2.0 closing — in-repo work complete (compositing primitives + UndoGraph + Layer model + brush engine + pt_layer_* FFI all landed; ABI category fully proven; Rust CI green on main since 2026-06-01). Only AffineScript → typed-wasm bridge remains, gated upstream on hyperpolymath/typed-wasm#127 + #130 (paint-type#39)."
 
 [position]
 phase = "implementation"   # design | implementation | testing | maintenance | archived
 maturity = "experimental"  # experimental | alpha | beta | production | lts
+runnable-desktop-mvp = true  # PR #48 (2026-06-02): src/host/ + src/host_core/ + src/ui/
 
 [route-to-mvp]
 milestones = [
-  { name = "v0.1.0: Tile primitive, Idris2 ABI, Zig FFI, Ephapax skeleton", completion = 100 },
-  { name = "v0.2.0: Ephapax brush engine, compositing, undo graph, AffineScript bridge", completion = 0 },
-  { name = "v0.3.0: Gossamer shell integration, web UI chrome, file I/O", completion = 0 },
+  { name = "v0.1.0: Tile primitive, Idris2 ABI, Zig FFI, paint_core skeleton", completion = 100 },
+  { name = "v0.2.0: paint_core brush engine, compositing, undo graph, AffineScript bridge", completion = 95 },
+  { name = "v0.3.0: Gossamer shell integration, web UI chrome, file I/O", completion = 5 },
   { name = "v0.4.0: Plugin system (WASM sandbox, signing, browser)", completion = 0 },
   { name = "v0.5.0: Collaboration (Burble WebRTC, Groove discovery, LLM channel)", completion = 0 },
   { name = "v1.0.0: Stable release, comprehensive tests, file format spec", completion = 0 },
 ]
 
+[testing-summary]
+zig-ffi-tests = "src/interface/ffi/: PASS (zig build test — 29/29; pt_tile_* + pt_layer_*)"
+rust-tests = "src/paint_core/: PASS (cargo test — 98/98 + 1 doctest across lib/composite/undo/layer/brush)"
+workflow-tests = "tests/workflows/validate_workflows_test.sh: PASS"
+aspect-tests = "tests/aspect_tests.sh: PASS (7 aspects)"
+e2e-tests = "tests/e2e.sh + cargo --test e2e_pipeline: PASS (9 stages; 2 Rust scenarios; 2 scenario_*.sh probes)"
+fuzz = "cargo-fuzz: 3 targets (pt_tile_blit / pt_tile_write_pixel / pt_layer_opacity); 30 s CI smoke per target"
+coverage = "cargo-llvm-cov: WIRED (Rust regions ~94.53%); kcov for Zig: best-effort on Ubuntu noble; reporting only, no gate"
+rust-ci = "GREEN on main since 2026-06-01 (PRs #36/#37/#38)"
+runnable-desktop = "PR #48 (2026-06-02): src/host_core + src/host + src/ui/{index.html,style.css,app.js}; CSP-locked webview"
+
 [blockers-and-issues]
-# No active blockers — architecture specified, first code landed
+# No active blockers — architecture specified, MVP runnable on desktop
 
 [critical-next-actions]
 actions = [
-  "Implement Ephapax brush engine and tile compositing (v0.2.0)",
-  "Generate AffineScript → typed-wasm bridge from Idris2 ABI",
-  "Wire idris2 --check into CI for ABI proof validation",
-  "Add fuzz harness for pt_tile_blit",
+  "Land AffineScript → typed-wasm bridge once hyperpolymath/typed-wasm#127 + #130 unblock (paint-type#39)",
+  "Replace hand-authored src/ui/app.js with AffineScript-generated artifact (forbidden-language remediation)",
+  "Add DUST.contractile + BUST.contractile with elaborative error feedback (currently missing — only MUST/TRUST/ADJUST/INTENT exist)",
+  "Wire hexadeca unified Zig API per estate standard (Justfile already removed V-lang in favour of zig-unified-api-adapter)",
   "Begin Gossamer shell integration planning (v0.3.0)",
 ]
 
 [maintenance-status]
-last-run-utc = "never"
+last-run-utc = "2026-06-02T00:00:00Z"
 last-report = "docs/reports/maintenance/latest.json"
-last-result = "unknown"
-open-warnings = 0
+last-result = "panic-attack assail: 48 weak points (37 in vendored third_party/gossamer; 11 paint-type-owned: 1 Critical UnboundedAllocation in src/host/src/main.rs PT_UI_FILE read, 5 High unsafe blocks, 3 Medium PathTraversal hardcoded /tmp/, 1 Medium PanicPath, 1 Medium duplicate)"
+open-warnings = 11
 open-failures = 0
 
 [ecosystem]
 part-of = ["palimpsest", "hyperpolymath estate"]
-depends-on = ["gossamer", "burble", "groove", "proven", "stapeln"]
+depends-on = ["gossamer", "burble", "groove", "proven", "paint_core"]

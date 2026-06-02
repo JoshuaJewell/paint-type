@@ -5,7 +5,7 @@
 
 == Tech Stack
 
-* **Rust** (stable) — Ephapax image core (`src/ephapax/`)
+* **Rust** (stable) — Ephapax image core (`src/paint_core/`)
 * **Idris2** — ABI type definitions and layout proofs (`src/interface/Abi/`)
 * **Zig** 0.15+ — FFI bridge to C ABI (`src/interface/ffi/`)
 * **AffineScript → typed-wasm** — bridge layer (DRAFT `.twasm` schemas at `src/bridges/`; compilation gated on `hyperpolymath/typed-wasm#127` + `#130`, tracked in paint-type#39)
@@ -51,7 +51,7 @@ zig build
 
 [source,bash]
 ----
-cd src/ephapax
+cd src/paint_core
 cargo build
 ----
 
@@ -76,7 +76,7 @@ zig build test
 
 [source,bash]
 ----
-cd src/ephapax
+cd src/paint_core
 cargo test
 ----
 
