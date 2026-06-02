@@ -44,7 +44,7 @@ concurrency:
 
 jobs:
   e2e:
-    name: E2E — Full Pipeline (libpt + ephapax)
+    name: E2E — Full Pipeline (libpt + paint_core)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -62,7 +62,7 @@ jobs:
       - name: Cache cargo registry and build
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5  # v2
         with:
-          workspaces: src/ephapax -> target
+          workspaces: src/paint_core -> target
 
       - name: Run end-to-end pipeline (tests/e2e.sh)
         run: bash tests/e2e.sh

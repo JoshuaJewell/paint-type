@@ -124,11 +124,11 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════
-# Aspect 4: Rust error handling — no unaudited .unwrap() in Ephapax core
+# Aspect 4: Rust error handling — no unaudited .unwrap() in Paint Core core
 # ═══════════════════════════════════════════════════════════════════════
-bold "Aspect 4: Rust error handling (src/ephapax/)"
+bold "Aspect 4: Rust error handling (src/paint_core/)"
 
-if [ -d "src/ephapax/src" ]; then
+if [ -d "src/paint_core/src" ]; then
     # Allow .unwrap() inside `#[cfg(test)] mod tests { ... }` blocks and
     # inside doctests; flag elsewhere.
     #
@@ -145,16 +145,16 @@ if [ -d "src/ephapax/src" ]; then
             | { grep -vE '^[[:space:]]*///' || true; } \
             | wc -l)
         UNWRAP_PROD=$((UNWRAP_PROD + N))
-    done < <(find src/ephapax/src -type f -name '*.rs' -print0 2>/dev/null)
+    done < <(find src/paint_core/src -type f -name '*.rs' -print0 2>/dev/null)
     set -o pipefail
 
     if [ "$UNWRAP_PROD" -gt 0 ]; then
-        warn "$UNWRAP_PROD .unwrap() call(s) in non-test Ephapax code — review for panic-safety"
+        warn "$UNWRAP_PROD .unwrap() call(s) in non-test Paint Core code — review for panic-safety"
     else
-        pass "No .unwrap() in non-test Ephapax code"
+        pass "No .unwrap() in non-test Paint Core code"
     fi
 else
-    warn "src/ephapax/src not present — skipping Rust error-handling aspect"
+    warn "src/paint_core/src not present — skipping Rust error-handling aspect"
 fi
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -174,7 +174,7 @@ fi
 if grep -qE '\b(8192|32768|0x8000)\b' "$ZIG_FILE" 2>/dev/null; then
     TILE_OK=$((TILE_OK + 1))
 fi
-if grep -rqE '\b(64|RGBA16F|TILE_SIZE|TILE_BYTES)\b' src/ephapax/src/ 2>/dev/null; then
+if grep -rqE '\b(64|RGBA16F|TILE_SIZE|TILE_BYTES)\b' src/paint_core/src/ 2>/dev/null; then
     TILE_OK=$((TILE_OK + 1))
 fi
 

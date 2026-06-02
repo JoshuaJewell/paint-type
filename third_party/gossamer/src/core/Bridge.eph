@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+//
+// Gossamer.Bridge — Typed IPC channel between frontend (JS) and backend (Ephapax).
+//
+// The IPC channel is a LINEAR resource:
+// - open returns a linear channel handle (must be closed)
+// - bind borrows the channel (returns it back)
+// - close CONSUMES the channel handle
+
+// Open a typed IPC channel on the webview.
+// FFI: gossamer_channel_open(webview_handle) -> channel_handle
+fn open(webviewHandle: I64): I64 =
+  __ffi("gossamer_channel_open", webviewHandle)
+
+// Bind a named command handler to the IPC channel. Borrows the channel.
+// FFI: gossamer_channel_bind(channel, name, callback, user_data) -> result
+// user_data is passed through to callback on each invocation — enables
+// language bindings (Rust, etc.) to pass closure context through the C ABI.
+fn bind(channelHandle: I64, name: String, callback: I64, userData: I64): I32 =
+  __ffi("gossamer_channel_bind", channelHandle, name, callback, userData)
+
+// Close the IPC channel. CONSUMES the channel handle.
+// FFI: gossamer_channel_close(channel) -> void
+fn close(channelHandle: I64): () =
+  __ffi("gossamer_channel_close", channelHandle)

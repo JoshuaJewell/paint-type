@@ -1,0 +1,21 @@
+// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+//
+// Gossamer Hello World — minimal webview application.
+//
+// The webview handle is linear: Shell.run() consumes it.
+// Attempting to use the handle after run is a compile error.
+
+fn main(): I32 =
+  region app {
+    // Create window — returns a LINEAR handle
+    let! webview = Shell.create("Hello Gossamer", 800, 600) in
+
+    // Load HTML — BORROWS the handle (returns it)
+    let! webview = Shell.loadHTML(webview, "<html><body><h1>Hello Gossamer!</h1><p>A linearly-typed webview shell.</p></body></html>") in
+
+    // Run event loop — CONSUMES the handle
+    let! _ = Shell.run(webview) in
+
+    0
+  }

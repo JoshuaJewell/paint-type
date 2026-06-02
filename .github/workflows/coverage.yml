@@ -3,7 +3,7 @@
 #
 # coverage.yml — Coverage reporting for paint-type.
 #
-# - Rust:  `cargo-llvm-cov` over `src/ephapax/` (LCOV + console report).
+# - Rust:  `cargo-llvm-cov` over `src/paint_core/` (LCOV + console report).
 # - Zig:   `kcov` over the Zig integration-test binary (best-effort; Zig
 #          0.15+ ships its own coverage story so this is reporting-only
 #          and `continue-on-error` to avoid gating merges).
@@ -50,7 +50,7 @@ jobs:
       - name: Cache cargo registry and build
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
         with:
-          workspaces: src/ephapax
+          workspaces: src/paint_core
 
       - name: Install Zig 0.15
         uses: mlugg/setup-zig@8d6198c65fb0feaa111df26e6b467fea8345e46f # v1
@@ -83,18 +83,18 @@ jobs:
           zig build -Doptimize=Debug
 
       - name: Run Rust coverage (cargo-llvm-cov → LCOV)
-        working-directory: src/ephapax
+        working-directory: src/paint_core
         run: |
           cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
 
       - name: Print Rust coverage summary
-        working-directory: src/ephapax
+        working-directory: src/paint_core
         run: |
           cargo llvm-cov report
 
       - name: Append Rust coverage to step summary
         if: always()
-        working-directory: src/ephapax
+        working-directory: src/paint_core
         run: |
           {
             echo "## Rust coverage (cargo-llvm-cov)"
@@ -163,7 +163,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: rust-coverage-lcov
-          path: src/ephapax/lcov.info
+          path: src/paint_core/lcov.info
           if-no-files-found: warn
           retention-days: 30
 
@@ -185,5 +185,5 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
-          files: src/ephapax/lcov.info
+          files: src/paint_core/lcov.info
           fail_ci_if_error: false

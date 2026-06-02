@@ -5,7 +5,7 @@
 # coverage.sh — Local coverage harness for paint-type.
 #
 # Mirrors `.github/workflows/coverage.yml`:
-#   - Rust:  `cargo llvm-cov` → src/ephapax/lcov.info  +  console report
+#   - Rust:  `cargo llvm-cov` → src/paint_core/lcov.info  +  console report
 #   - Zig:   best-effort kcov over the integration-test binary
 #
 # Usage:
@@ -42,13 +42,13 @@ run_rust_coverage() {
         cargo install cargo-llvm-cov --locked
     fi
 
-    cd "$PROJECT_DIR/src/ephapax"
+    cd "$PROJECT_DIR/src/paint_core"
     cargo llvm-cov --all-features --workspace --lcov \
         --output-path lcov.info
     echo ""
     cargo llvm-cov report
     echo ""
-    green "  LCOV written to src/ephapax/lcov.info"
+    green "  LCOV written to src/paint_core/lcov.info"
 }
 
 # ─── Zig coverage ────────────────────────────────────────────────────

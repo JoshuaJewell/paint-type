@@ -251,6 +251,47 @@ export fn pt_tile_read_pixel(
     return @intFromEnum(Result.ok);
 }
 
+/// Bulk-read the whole tile pixel buffer (TILE_PIXEL_SCALARS f16 bit
+/// patterns) into a caller-provided u16 array. One FFI crossing instead of
+/// one per pixel: the per-pixel ABI is far too slow for hot render/brush
+/// loops, so callers copy the tile out, work in their own language, and
+/// copy back with pt_tile_write_buffer.
+export fn pt_tile_read_buffer(tile_ptr: u64, out_ptr: u64) u32 {
+    if (tile_ptr == 0 or out_ptr == 0) {
+        setError("pt_tile_read_buffer: null pointer");
+        return @intFromEnum(Result.invalid_param);
+    }
+    const tile: *PtTile = @ptrFromInt(tile_ptr);
+    if (!tile.isLive()) {
+        setError("pt_tile_read_buffer: invalid tile (bad magic)");
+        return @intFromEnum(Result.invalid_param);
+    }
+    const out: [*]u16 = @ptrFromInt(out_ptr);
+    const src: [*]const u16 = @ptrCast(&tile.pixels);
+    @memcpy(out[0..TILE_PIXEL_SCALARS], src[0..TILE_PIXEL_SCALARS]);
+    clearError();
+    return @intFromEnum(Result.ok);
+}
+
+/// Bulk-write the whole tile pixel buffer from a caller-provided u16 array.
+/// The counterpart to pt_tile_read_buffer.
+export fn pt_tile_write_buffer(tile_ptr: u64, in_ptr: u64) u32 {
+    if (tile_ptr == 0 or in_ptr == 0) {
+        setError("pt_tile_write_buffer: null pointer");
+        return @intFromEnum(Result.invalid_param);
+    }
+    const tile: *PtTile = @ptrFromInt(tile_ptr);
+    if (!tile.isLive()) {
+        setError("pt_tile_write_buffer: invalid tile (bad magic)");
+        return @intFromEnum(Result.invalid_param);
+    }
+    const in: [*]const u16 = @ptrFromInt(in_ptr);
+    const dst: [*]u16 = @ptrCast(&tile.pixels);
+    @memcpy(dst[0..TILE_PIXEL_SCALARS], in[0..TILE_PIXEL_SCALARS]);
+    clearError();
+    return @intFromEnum(Result.ok);
+}
+
 /// Write a single pixel (px, py) on the tile with RGBA16F bit patterns.
 /// Channel arguments carry the bit patterns of f16 values.
 /// Returns RESULT_OK on success, RESULT_INVALID_PARAM on null / OOB / bad magic.

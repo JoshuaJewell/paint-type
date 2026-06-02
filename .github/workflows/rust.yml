@@ -2,9 +2,9 @@
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # rust-ci.yml — Cargo build, test, clippy, and fmt for paint-type.
-# paint-type's Cargo.toml lives at src/ephapax/Cargo.toml; the workflow
+# paint-type's Cargo.toml lives at src/paint_core/Cargo.toml; the workflow
 # builds libpt (Zig static library) first so cargo can link it, then
-# runs check / fmt / clippy / test against the ephapax crate.
+# runs check / fmt / clippy / test against the paint_core crate.
 name: Rust CI
 
 on:
@@ -38,7 +38,7 @@ jobs:
       - name: Cache cargo registry and build
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
         with:
-          workspaces: src/ephapax
+          workspaces: src/paint_core
 
       - name: Build libpt (Zig static library)
         run: |
@@ -46,15 +46,15 @@ jobs:
           zig build
 
       - name: Cargo check
-        working-directory: src/ephapax
+        working-directory: src/paint_core
         run: cargo check --all-targets
 
       - name: Cargo fmt
-        working-directory: src/ephapax
+        working-directory: src/paint_core
         run: cargo fmt --all -- --check
 
       - name: Cargo clippy
-        working-directory: src/ephapax
+        working-directory: src/paint_core
         run: cargo clippy --all-targets -- -D warnings
 
   test:
@@ -77,7 +77,7 @@ jobs:
       - name: Cache cargo registry and build
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
         with:
-          workspaces: src/ephapax
+          workspaces: src/paint_core
 
       - name: Build libpt (Zig static library)
         run: |
@@ -85,7 +85,7 @@ jobs:
           zig build
 
       - name: Run tests
-        working-directory: src/ephapax
+        working-directory: src/paint_core
         run: cargo test --all-targets
 
       - name: Write summary

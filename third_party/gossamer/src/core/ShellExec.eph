@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+//
+// Gossamer.ShellExec — Shell command execution guarded by capability tokens.
+//
+// All shell operations require a valid RESOURCE_SHELL capability token.
+// The token is borrowed (not consumed) by execute operations.
+//
+// This module is named ShellExec to avoid collision with Shell (webview lifecycle).
+
+// Execute a shell command and return stdout as a string pointer.
+// Requires a valid shell capability token.
+// Returns 0 on error (check Shell.lastError for details).
+// FFI: gossamer_shell_execute(program, args_json, cap_token) -> result_json_ptr
+fn execute(program: String, argsJson: String, capToken: I64): I64 =
+  __ffi("gossamer_shell_execute", program, argsJson, capToken)
+
+// Open a URL or file with the system's default handler.
+// Requires a valid shell capability token.
+// Uses xdg-open (Linux), open (macOS), or start (Windows).
+// FFI: gossamer_shell_open(url, cap_token) -> result
+fn openUrl(url: String, capToken: I64): I32 =
+  __ffi("gossamer_shell_open", url, capToken)
+
+// Spawn a shell command in the background and return an opaque child
+// handle. The command runs via /bin/sh -c (POSIX) or cmd /c (Windows)
+// with stdin/stdout/stderr inherited from the caller. The handle is
+// only valid until passed to spawnKill; do not use it for anything else.
+// Requires a valid shell capability token.
+// Returns 0 on error (check Shell.lastError for details).
+// FFI: gossamer_shell_spawn(command, cap_token) -> opaque_handle
+fn spawn(command: String, capToken: I64): I64 =
+  __ffi("gossamer_shell_spawn", command, capToken)
+
+// Terminate a previously-spawned background child and wait for it to
+// exit. Idempotent on 0 (no-op). The handle is invalid after this call.
+// Requires a valid shell capability token.
+// Returns 0 (ok) or non-zero error code.
+// FFI: gossamer_shell_kill(opaque_handle, cap_token) -> result
+fn spawnKill(handle: I64, capToken: I64): I32 =
+  __ffi("gossamer_shell_kill", handle, capToken)

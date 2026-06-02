@@ -1,0 +1,129 @@
+# SPDX-License-Identifier: MPL-2.0
+# RSR-compliant .gitignore
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+.direnv/
+
+# Build
+/target/
+/_build/
+/build/
+/dist/
+/out/
+
+# Dependencies
+/node_modules/
+/vendor/
+/deps/
+/.elixir_ls/
+
+# Rust
+# Cargo.lock  # Keep for binaries
+
+# Elixir
+/cover/
+/doc/
+*.ez
+erl_crash.dump
+
+# Julia
+*.jl.cov
+*.jl.mem
+/Manifest.toml
+
+# ReScript
+/lib/bs/
+/.bsb.lock
+
+# Python (SaltStack only)
+__pycache__/
+*.py[cod]
+.venv/
+
+# Ada/SPARK
+*.ali
+/obj/
+/bin/
+
+# Haskell
+/.stack-work/
+/dist-newstyle/
+
+# Chapel
+*.chpl.tmp.*
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+# Test/Coverage
+/coverage/
+htmlcov/
+
+# Logs
+*.log
+/logs/
+
+# Maintenance local artifacts
+.maintenance-perms-state.tsv
+docs/reports/maintenance/*.json
+
+# Machine-readable locks
+.machine_readable/.locks/
+
+# Temp
+/tmp/
+*.tmp
+*.bak
+
+# Crash recovery artifacts
+ai-cli-crash-capture/
+
+# KDE metadata
+.directory
+
+# Sync artifacts
+sync_report*.txt
+
+# Hypatia scan cache (local-only)
+.hypatia/
+# Zig build artifacts (all locations — matches nested dirs too)
+**/.zig-cache/
+**/zig-out/
+
+# Compiled paper PDFs and LaTeX build intermediates (source .tex is tracked; artefacts are not)
+docs/whitepapers/*.pdf
+docs/whitepapers/*.aux
+docs/whitepapers/*.out
+docs/whitepapers/*.fls
+docs/whitepapers/*.fdb_latexmk
+docs/whitepapers/*.synctex.gz
+
+# SSG generated output
+site/dist/
+
+# asdf version manager
+.tool-versions
+generated/
+# Exception: directory README and tlaiser specs are source-controlled
+!generated/README.adoc
+!generated/tlaiser/
+!generated/tlaiser/**
+target/
+node_modules/
+_build/
+deps/
+.elixir_ls/
+.cache/
+build/
+dist/

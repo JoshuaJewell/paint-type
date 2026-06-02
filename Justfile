@@ -596,14 +596,15 @@ verify:
 build *args:
     @echo "Building {{project}} (debug)..."
     cd src/interface/ffi && zig build {{args}}
-    cargo build --manifest-path src/ephapax/Cargo.toml {{args}}
+    cargo build --manifest-path src/paint_core/Cargo.toml {{args}}
+    cargo build --manifest-path src/host_core/Cargo.toml {{args}}
     @echo "Build complete"
 
 # Build in release mode with optimizations
 build-release *args:
     @echo "Building {{project}} (release)..."
     cd src/interface/ffi && zig build -Doptimize=ReleaseFast {{args}}
-    cargo build --release --manifest-path src/ephapax/Cargo.toml {{args}}
+    cargo build --release --manifest-path src/paint_core/Cargo.toml {{args}}
     @echo "Release build complete"
 
 # Build and watch for changes (requires entr)
@@ -614,7 +615,7 @@ build-watch:
 clean:
     @echo "Cleaning..."
     rm -rf src/interface/ffi/zig-out/ src/interface/ffi/.zig-cache/
-    cargo clean --manifest-path src/ephapax/Cargo.toml
+    cargo clean --manifest-path src/paint_core/Cargo.toml
 
 # Deep clean including caches [reversible: rebuild]
 clean-all: clean
@@ -628,13 +629,14 @@ clean-all: clean
 test *args:
     @echo "Running tests..."
     cd src/interface/ffi && zig build test {{args}}
-    cargo test --manifest-path src/ephapax/Cargo.toml {{args}}
+    cargo test --manifest-path src/paint_core/Cargo.toml {{args}}
+    cargo test --manifest-path src/host_core/Cargo.toml {{args}}
     @echo "Tests passed!"
 
 # Run tests with verbose output
 test-verbose:
     cd src/interface/ffi && zig build test 2>&1
-    cargo test --manifest-path src/ephapax/Cargo.toml -- --nocapture
+    cargo test --manifest-path src/paint_core/Cargo.toml -- --nocapture
 
 # Smoke test: build succeeds and static library is present
 test-smoke:
@@ -702,15 +704,15 @@ fix: fmt
 
 # Format all source files [reversible: git checkout]
 fmt:
-    cargo fmt --manifest-path src/ephapax/Cargo.toml
+    cargo fmt --manifest-path src/paint_core/Cargo.toml
 
 # Check formatting without changes
 fmt-check:
-    cargo fmt --manifest-path src/ephapax/Cargo.toml --check
+    cargo fmt --manifest-path src/paint_core/Cargo.toml --check
 
 # Run linter (Rust clippy; zig fmt check on FFI source)
 lint:
-    cargo clippy --manifest-path src/ephapax/Cargo.toml -- -D warnings
+    cargo clippy --manifest-path src/paint_core/Cargo.toml -- -D warnings
     zig fmt --check src/interface/ffi/src/main.zig src/interface/ffi/test/integration_test.zig
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -742,13 +744,13 @@ deps:
     @echo "Checking dependencies..."
     @command -v zig >/dev/null 2>&1 && echo "  [OK] zig $(zig version)" || echo "  [FAIL] zig not found — install from https://ziglang.org/download/"
     @command -v cargo >/dev/null 2>&1 && echo "  [OK] cargo $(cargo --version)" || echo "  [FAIL] cargo not found — install from https://rustup.rs/"
-    cargo check --manifest-path src/ephapax/Cargo.toml
+    cargo check --manifest-path src/paint_core/Cargo.toml
     @echo "All dependencies satisfied"
 
 # Audit dependencies for vulnerabilities
 deps-audit:
     @echo "Auditing for vulnerabilities..."
-    @command -v cargo-audit >/dev/null && cargo audit --manifest-path src/ephapax/Cargo.toml || true
+    @command -v cargo-audit >/dev/null && cargo audit --manifest-path src/paint_core/Cargo.toml || true
     @command -v trivy >/dev/null && trivy fs --severity HIGH,CRITICAL --quiet . || true
     @command -v gitleaks >/dev/null && gitleaks detect --source . --no-git --quiet || true
     @echo "Audit complete"

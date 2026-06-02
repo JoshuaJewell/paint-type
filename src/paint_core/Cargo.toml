@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+#
+# Ephapax — the native image core for paint.type.
+# Consumes libpt (the Zig FFI implementation) via static linking.
+
+[package]
+name = "paint_core"
+version = "0.1.0"
+edition = "2021"
+license = "PMPL-1.0-or-later"
+description = "Native image core for paint.type. Bridges Idris2-defined ABI to the Rust runtime."
+links = "pt"
+build = "build.rs"
+
+[lib]
+name = "paint_core"
+crate-type = ["rlib"]
+
+# Exclude the cargo-fuzz scaffold from the parent crate's build. The
+# fuzz/ directory contains a standalone workspace-of-one (see
+# fuzz/Cargo.toml) that requires nightly Rust + libfuzzer-sys; we
+# don't want `cargo check`/`cargo test` in this crate to pull it in.
+[workspace]
+exclude = ["fuzz"]
+
+[[bench]]
+name = "undo"
+harness = false
+path = "benches/undo.rs"
+
+[build-dependencies]
+
+[dependencies]
+
+[dev-dependencies]

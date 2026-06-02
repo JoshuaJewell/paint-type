@@ -67,6 +67,10 @@ pub fn build(b: *std.Build) void {
         .linkage = .static,
         .root_module = static_module,
     });
+    // Bundle compiler_rt into the static archive so symbols Zig expects its
+    // own runtime to supply (such as __zig_probe_stack on Zig 0.15.2+) are
+    // present when the Rust crate links libpt.a with a non-Zig linker.
+    static.bundle_compiler_rt = true;
     b.installArtifact(static);
 
     //--------------------------------------------------------------------------

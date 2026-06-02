@@ -8,7 +8,7 @@
 #
 #   1. Build the Zig FFI library (libpt) — `zig build` in
 #      src/interface/ffi/. Produces both static (libpt.a, linked into
-#      ephapax) and shared (libpt.so / .dylib / .dll, used by other
+#      paint_core) and shared (libpt.so / .dylib / .dll, used by other
 #      embedders) artifacts.
 #   2. Run the existing Zig integration-test target (`zig build test`)
 #      as a smoke check that the FFI exports we are about to drive
@@ -88,8 +88,8 @@ if [ ! -d "$PROJECT_DIR/src/interface/ffi" ]; then
     red "  src/interface/ffi missing — repo layout broken?"
     exit 2
 fi
-if [ ! -d "$PROJECT_DIR/src/ephapax" ]; then
-    red "  src/ephapax missing — repo layout broken?"
+if [ ! -d "$PROJECT_DIR/src/paint_core" ]; then
+    red "  src/paint_core missing — repo layout broken?"
     exit 2
 fi
 stage_pass "source tree layout intact"
@@ -133,7 +133,7 @@ echo ""
 # ─── Stage 3: Rust e2e_pipeline integration test ─────────────────────
 bold "Stage 3: cargo test --test e2e_pipeline (full pipeline scenario)"
 
-if (cd "$PROJECT_DIR/src/ephapax" && cargo test --test e2e_pipeline -- --test-threads=1) \
+if (cd "$PROJECT_DIR/src/paint_core" && cargo test --test e2e_pipeline -- --test-threads=1) \
         >/tmp/pt-e2e-cargo.log 2>&1; then
     stage_pass "cargo test --test e2e_pipeline"
     yellow "    --- last 10 lines of cargo output ---"
