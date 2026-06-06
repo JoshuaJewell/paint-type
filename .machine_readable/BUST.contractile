@@ -1,0 +1,171 @@
+; SPDX-License-Identifier: PMPL-1.0-or-later
+; BUST.contractile — Hard-stop / expiry / must-not-run declarations for paint-type
+;
+; Part of the contractile family: MUST, TRUST, DUST, INTENT, ADJUST, BUST
+
+; ── Definitions ──────────────────────────────────────────────────
+;
+; BUST (noun/verb)
+;   The hard-stop contractile. Defines:
+;     1. *Deprecated paths* — code paths or features scheduled for
+;        removal, with an expiry date and a replacement.
+;     2. *Must-not-run* declarations — code paths that must NOT execute
+;        under specific conditions (legal, safety, contract).
+;     3. *Reintroduction guards* — patterns that must never re-enter
+;        the tree once removed (e.g. hand-authored JS in src/ui/).
+;
+; Scope:
+;   BUST is the BLOCKING-AUTHORITY counterpart to MUST. Where MUST says
+;   "this invariant always holds", BUST says "this path is closed (or
+;   closing on date D)". The asymmetry matters: MUST stops correctness
+;   regressions; BUST stops time-bombs and zombie-resurrection.
+;
+; Relationship to other contractiles:
+;   - MUST: BUST and MUST are both blocking authorities. A failing
+;     BUST blocks merge the same as a failing MUST.
+;   - TRUST: BUST is enforced regardless of trust level. Even maximal-
+;     trust agents cannot reintroduce a busted path.
+;   - DUST: When BUST declares a deprecation expired, DUST handles the
+;     actual recovery pipeline (rollback target, audit trail, message).
+;   - INTENT: BUST protects the anti-purpose section of INTENT — the
+;     "what this software is NOT" — from drift.
+;
+; Authority: BLOCKING (gating = hard, exit-nonzero).
+;   A BUST violation fails CI immediately. There is no "advisory BUST".
+;
+; Tier: Hunt-read-only.
+;   The contractile lives in the tree and is read by Hypatia rules;
+;   the rules do not modify it autonomously.
+;
+; ── End Definitions ──────────────────────────────────────────────
+
+(bust-contractile
+  (version "1.0.0")
+  (repo "paint-type")
+
+  ; === Policy ===
+  (policy
+    (default-authority "blocking")
+    (gating "hard")
+    (allow-temporary-suppression false)
+    (require-expiry-on-deprecations true)
+    (require-replacement-on-deprecations true))
+
+  ; === Reintroduction guards ===
+  ; Patterns that must NEVER re-enter the tree once removed. Each guard
+  ; specifies the pattern, the replacement, and the rationale.
+  (reintroduction-guards
+    (guard
+      (name "no-hand-authored-js")
+      (pattern "src/ui/**/*.js where SPDX-File-Origin != 'codegen'")
+      (replacement "AffineScript source under src/ui/affine/ → codegen via `just ui-build`")
+      (rationale "Hand-authored JS drifts from the typed-wasm bridge schema. UI must be generated from AffineScript so type-safety crosses the IPC boundary.")
+      (since "2026-06-02")
+      (transition "src/ui/app.js currently exists as a build artifact / human-readable bridge mirror; will be reclassified as codegen output when AffineScript→JS lowering lands. New files MUST NOT be hand-authored."))
+
+    (guard
+      (name "no-rescript")
+      (pattern "**/*.res, **/*.resi")
+      (replacement "AffineScript")
+      (rationale "ReScript is being retired estate-wide in favour of AffineScript (standards#252 megaport). paint-type adopted AffineScript from day 1 — no ReScript should ever enter.")
+      (since "2026-06-02")
+      (transition "third_party/gossamer/bindings/rescript/ is vendored and exempt; remove guard only if Gossamer drops the ReScript binding upstream."))
+
+    (guard
+      (name "no-typescript")
+      (pattern "**/*.ts, **/*.tsx")
+      (replacement "AffineScript (with typed-wasm codegen target)")
+      (rationale "TypeScript types are erased at runtime; the typed-wasm boundary needs compile-time guarantees that survive the IPC bridge.")
+      (since "2026-06-02"))
+
+    (guard
+      (name "no-python")
+      (pattern "**/*.py")
+      (replacement "Rust binary or shell, depending on scope")
+      (rationale "Python has been retired estate-wide. The closest tooling slots are Rust (build/codegen) or POSIX shell (scripts).")
+      (since "2026-06-02"))
+
+    (guard
+      (name "no-c-or-h-files")
+      (pattern "**/*.c, **/*.h, **/*.cpp, **/*.hpp")
+      (replacement "Zig (via `zig build` + `zig translate-c` when interfacing with system headers)")
+      (rationale "Zig provides C ABI compatibility without the foot-guns. paint-type's libpt is pure Zig; new low-level code follows the same rule.")
+      (since "2026-06-02"))
+
+    (guard
+      (name "non-ffi-zig")
+      (pattern "**/*.zig where NOT (path contains '/ffi/' OR path contains '/interface/ffi/' OR path startswith 'third_party/')")
+      (replacement "Rust (linear types, paint_core convention)")
+      (rationale "Zig is the FFI bridge language ONLY. Application code is Rust; UI is AffineScript; FFI shim is Zig. Mixing tiers loses the safety story.")
+      (since "2026-06-02"))
+
+    (guard
+      (name "no-npm-without-fallback-order")
+      (pattern "package-lock.json without preceding deno.lock OR bun.lockb OR pnpm-lock.yaml OR yarn.lock")
+      (replacement "Deno first, Bun second, pnpm third, Yarn fourth — npm only as last resort")
+      (rationale "Estate package-manager preference is Deno > Bun > pnpm > Yarn > npm. A package-lock.json with no higher-priority lockfile signals a violation of that order.")
+      (since "2026-06-02")))
+
+  ; === Deprecated paths ===
+  ; Code paths scheduled for removal. Each must have a replacement +
+  ; an expiry date; missing either fails BUST validation.
+  (deprecated
+    ; Currently empty — no deprecations scheduled for paint-type at
+    ; this snapshot. Future entries follow the shape:
+    ;   (deprecation
+    ;     (name "<short-id>")
+    ;     (path "<file or symbol>")
+    ;     (replacement "<what to use instead>")
+    ;     (expiry "<YYYY-MM-DD>")
+    ;     (since "<YYYY-MM-DD>")
+    ;     (recovery "<how DUST handles the post-expiry case>"))
+    )
+
+  ; === Must-not-run declarations ===
+  ; Code paths that must NOT execute under specific conditions.
+  (must-not-run
+    (declaration
+      (name "no-network-during-tests")
+      (condition "CI environment OR `cargo test` invocation")
+      (rationale "Tests must be hermetic. Network access during tests is non-deterministic and an exfiltration risk.")
+      (enforcement "Hypatia rule + sandbox layer + test harness env var PT_NO_NETWORK=1"))
+
+    (declaration
+      (name "no-telemetry-without-consent")
+      (condition "user has not opted in via Help → Diagnostics → Allow feedback-o-tron")
+      (rationale "Telemetry without consent is hostile. Opt-in is the only acceptable default.")
+      (enforcement "feedback-o-tron client checks consent flag before every emit"))
+
+    (declaration
+      (name "no-canvas-mutation-from-llm-channel")
+      (condition "session has an LLM participant")
+      (rationale "The LLM channel is a participant, not an operator. It can hold context, mediate conflicts, answer when addressed — it MUST NOT mutate the canvas without explicit user invocation.")
+      (enforcement "session protocol gates Command::* dispatch; LLM-origin commands rejected at dispatch.rs"))
+
+    (declaration
+      (name "no-plugin-execution-without-manifest-signature")
+      (condition "plugin manifest signature missing or fails verification")
+      (rationale "Signed packages are how integrity scales without gatekeeping; an unsigned plugin is undistinguishable from a malicious one.")
+      (enforcement "plugin loader rejects load; emit DUST-PLUG-0002 (manifest unsigned)")))
+
+  ; === Reintroduction-guard exception process ===
+  ; If a guard MUST be lifted, the process is:
+  (exception-process
+    (step 1 "File issue on JoshuaJewell/paint-type with the guard name + the precise file the exception applies to")
+    (step 2 "Get explicit owner sign-off in the issue comment (Joshua Jewell OR Jonathan Jewell)")
+    (step 3 "Open PR that EITHER (a) carves out an exact-path exemption in this file OR (b) removes the guard with rationale")
+    (step 4 "PR must reference the issue; CI checks for the issue link before merging the guard exception")
+    (step 5 "Guard exceptions are logged in CHANGELOG.md under BUST EXCEPTIONS — no silent carve-outs"))
+
+  ; === Diagnostic emission ===
+  (diagnostics
+    (on-guard-trip
+      (emit "guard name + offending file path + commit author + PR number")
+      (route-to "Hypatia + CI summary + DUST-BUST-0001"))
+    (on-deprecation-near-expiry
+      (window-days 30)
+      (emit "deprecation name + days until expiry + replacement + uses-in-tree count")
+      (route-to "Hypatia + maintainer mention"))
+    (on-must-not-run-violation
+      (emit "declaration name + invocation context + caller stack")
+      (route-to "Hypatia (severity=critical) + DUST-BUST-0002"))))
