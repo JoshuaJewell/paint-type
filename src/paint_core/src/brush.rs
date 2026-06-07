@@ -23,10 +23,10 @@
 // All operations work on the existing safe `Tile` API. No new FFI
 // surface — the brush engine is pure-Rust above libpt.
 
-use crate::{composite::masked_blend, f32_to_f16_bits, Tile, TileError, TILE_SCALARS, TILE_SIZE};
-
-#[cfg(test)]
-use crate::f16_bits_to_f32;
+use crate::{
+    composite::masked_blend, f16_bits_to_f32, f32_to_f16_bits, Tile, TileError, TILE_SCALARS,
+    TILE_SIZE,
+};
 
 //==============================================================================
 // BrushTip
@@ -230,6 +230,52 @@ impl Brush {
                 buf[idx + 1] = blended[1];
                 buf[idx + 2] = blended[2];
                 buf[idx + 3] = blended[3];
+                written += 1;
+            }
+        }
+
+        if written > 0 {
+            tile.write_buffer(&buf)?;
+        }
+        Ok(written)
+    }
+
+    /// Erase from `tile` centred at tile-local `(cx, cy)`. The tip mask
+    /// drives the erase strength: each channel of the destination pixel is
+    /// scaled by `(1 - mask_alpha)`, removing premultiplied colour and alpha
+    /// in proportion to the tip. Pixels where the mask is zero are left
+    /// untouched. Only calls `write_buffer` when at least one pixel changed.
+    pub fn erase_stamp(&self, tile: &Tile, cx: f32, cy: f32) -> Result<u32, TileError> {
+        let d = self.tip.diameter() as i64;
+        let half = (d as f32) * 0.5_f32;
+        let top_left_x = (cx - half).floor() as i64;
+        let top_left_y = (cy - half).floor() as i64;
+
+        let mut buf = [0u16; TILE_SCALARS];
+        tile.read_buffer(&mut buf)?;
+
+        let mut written: u32 = 0;
+        for ty in 0..d {
+            let py = top_left_y + ty;
+            if py < 0 || py >= TILE_SIZE as i64 {
+                continue;
+            }
+            for tx in 0..d {
+                let px = top_left_x + tx;
+                if px < 0 || px >= TILE_SIZE as i64 {
+                    continue;
+                }
+                let mask_value = self.tip.sample(tx as u32, ty as u32);
+                if mask_value == 0 {
+                    continue;
+                }
+                let mask_alpha = f16_bits_to_f32(mask_value);
+                let scale = 1.0_f32 - mask_alpha;
+                let idx = ((py as usize) * TILE_SIZE as usize + (px as usize)) * 4;
+                buf[idx]     = f32_to_f16_bits(f16_bits_to_f32(buf[idx])     * scale);
+                buf[idx + 1] = f32_to_f16_bits(f16_bits_to_f32(buf[idx + 1]) * scale);
+                buf[idx + 2] = f32_to_f16_bits(f16_bits_to_f32(buf[idx + 2]) * scale);
+                buf[idx + 3] = f32_to_f16_bits(f16_bits_to_f32(buf[idx + 3]) * scale);
                 written += 1;
             }
         }
