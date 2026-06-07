@@ -1,10 +1,7 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
-# MAINTAINERS - Project maintainers and contact information
-#
-# Format: Name <email> (role)
-# Replace placeholders with actual maintainer information.
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Project maintainers and contact information.
 
-Joshua Jewell <paint-type@pm.me> (Lead Maintainer)
+Joshua Jewell <paint-type@pm.me> (@JoshuaJewell, lead maintainer)
 
-# Additional maintainers:
-# Name <email> (role)
+# Additional maintainers are added here after the governance process in
+# .github/GOVERNANCE.md grants repository access.

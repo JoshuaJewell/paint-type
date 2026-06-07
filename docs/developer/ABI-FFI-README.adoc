@@ -53,32 +53,28 @@ This library follows the **Hyperpolymath RSR Standard** for ABI and FFI design:
 ```
 paint-type/
 ├── src/
-│   ├── abi/                    # ABI definitions (Idris2)
-│   │   ├── Types.idr           # Core type definitions with proofs
-│   │   ├── Layout.idr          # Memory layout verification
-│   │   └── Foreign.idr         # FFI function declarations
-│   └── lib/                    # Core library (any language)
-│
-├── ffi/
-│   └── zig/                    # FFI implementation (Zig)
-│       ├── build.zig           # Build configuration
-│       ├── build.zig.zon       # Dependencies
-│       ├── src/
-│       │   └── main.zig        # C-compatible FFI implementation
-│       ├── test/
-│       │   └── integration_test.zig
-│       └── include/
-│           └── paint-type.h   # C header (optional, can be generated)
-│
-├── generated/                  # Auto-generated files
-│   └── abi/
-│       └── paint-type.h       # Generated from Idris2 ABI
-│
-└── bindings/                   # Language-specific wrappers (optional)
-    ├── rust/
-    ├── rescript/
-    └── julia/
-```
+│   ├── interface/
+│   │   ├── Abi/                        # Idris2 ABI definitions
+│   │   │   ├── Types.idr               # Core types + proofs (ABI-1, TP-1)
+│   │   │   ├── Layout.idr              # Memory layout proofs (ABI-2)
+│   │   │   └── Foreign.idr             # %foreign declarations (ABI-4)
+│   │   └── ffi/                        # Zig FFI implementation
+│   │       ├── build.zig               # Zig 0.15.x build (link_libc = true)
+│   │       ├── src/main.zig            # pt_* exports
+│   │       └── test/integration_test.zig
+│   └── paint_core/                     # Rust crate consuming libpt
+│       ├── Cargo.toml
+│       ├── build.rs                    # Links against ../interface/ffi/zig-out/lib/libpt
+│       └── src/
+│           ├── lib.rs                  # Safe Tile API
+│           ├── composite.rs            # Compositing operators
+│           └── undo.rs                 # Persistent undo graph
+└── verification/proofs/idris2/         # Standalone Idris2 proofs (CI-checked)
+    ├── ABI/
+    │   ├── Platform.idr                # ABI-3: per-platform sizes
+    │   └── Compliance.idr              # ABI-5: C ABI compliance
+    └── Pixel.idr                       # TP-3: RGBA16F bit-pattern classifier
+----
 
 ## Why Idris2 for ABI?
 

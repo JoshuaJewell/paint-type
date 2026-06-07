@@ -71,44 +71,21 @@ Collaboration path (a specific network backend):
 ```
 paint-type/
 ├── src/
-│   ├── affinescript/            # The application — AffineScript source compiling to typed-wasm
-│   ├── api/                     # Unified Zig API surface
-│   │   ├── rest/                # REST adapter
-│   │   ├── graphql/             # GraphQL adapter
-│   │   ├── grpc/                # gRPC adapter
-│   │   ├── sse/                 # Server-Sent Events adapter
-│   │   ├── bebop/               # Bebop adapter
-│   │   └── common/              # Schema-from-Idris2, shared dispatch
-│   ├── backends/                # Concrete kernel backends (one Zig module each)
-│   │   ├── Abstract.idr         # Abstract operation surface + capability descriptor
-│   │   ├── dispatcher.zig       # Runtime selection, fallback, diagnostics
-│   │   ├── cpu/                 # CpuReferenceBackend (mandatory) + SIMD tiers
-│   │   ├── gpu/                 # CUDA / ROCm / Metal / Vulkan / WebGPU / WebGL2 / D3D12
-│   │   ├── tensor/              # ANE / Hexagon / Intel NPU / Rockchip NPU / TensorRT / MIGraphX / Core ML / ONNX Runtime
-│   │   ├── vector/              # AVX2/AVX-512, NEON/SVE/SME, RVV, VSX, Wasm SIMD128
-│   │   ├── dsp/                 # ALSA / PipeWire / JACK / CoreAudio / WASAPI / Oboe
-│   │   ├── fpga/                # Xilinx OpenCL / Intel oneAPI FPGA / OpenFPGA
-│   │   ├── physics/             # Bullet SIMD / PhysX / Jolt / WebGPU compute
-│   │   ├── crypto/              # AES-NI / ArmCE / RVV-VK / QAT / SEP / TPM
-│   │   ├── io/                  # io_uring / kqueue / IOCP / WASI / epoll
-│   │   ├── net/                 # QUIC / WebTransport / TCP / UDP / WebRTC (Burble) / mDNS (Groove)
-│   │   └── peripheral/          # display, printer, plotter, input
-│   ├── capability/              # Runtime capability + topology detection
-│   ├── wasm/                    # typed-wasm build glue, module manifest
-│   ├── interface/               # (Legacy) — single-tile Idris2 ABI + Zig FFI, retained as a backend ingredient
-│   │   ├── Abi/
-│   │   └── ffi/
-│   └── ephapax/                 # (Legacy) — Rust reference client, retained for now; not the primary path
-├── container/                   # Multi-arch container build (OCI)
-├── Containerfile                # Root multi-arch container definition (canonical artifact)
-├── docs/
-│   ├── decisions/               # ADRs — ADR-0002 governs this topology
-│   ├── architecture/
-│   └── …
-├── .machine_readable/           # Machine-readable metadata
-├── .github/                     # CI matrix across (os, arch, backend)
-├── verification/                # Formal proofs (Idris2 primary; Agda/Coq/Lean4/TLA+ for specific properties)
-└── tests/                       # Numerical-equivalence harness, integration, fuzz, E2E
+│   ├── paint_core/       # Rust image core crate
+│   ├── interface/
+│   │   ├── Abi/          # Idris2 ABI definitions (Types, Layout, Foreign)
+│   │   └── ffi/          # Zig FFI implementation and tests
+│   ├── aspects/          # Cross-cutting concerns (integrity, observability, security)
+│   ├── bridges/          # AffineScript → typed-wasm bridge (draft .twasm)
+│   ├── contracts/        # API contracts
+│   ├── core/             # Core abstractions (placeholder)
+│   ├── definitions/      # Shared type definitions
+│   └── errors/           # Error taxonomy
+├── docs/                 # Human-readable documentation
+├── .machine_readable/    # Machine-readable metadata (STATE, META, contractiles)
+├── .github/              # GitHub Actions workflows, issue templates
+├── container/            # Container build definitions (Stapeln)
+└── verification/         # Formal proofs (Agda, Coq, Lean4, TLA+)
 ```
 
 ## Integration points

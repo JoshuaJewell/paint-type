@@ -14,12 +14,12 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Enforce Guix primary / Nix fallback
         run: |
-          # Check for package manager files
-          HAS_GUIX=$(find . -name "*.scm" -o -name ".guix-channel" -o -name "guix.scm" 2>/dev/null | head -1)
-          HAS_NIX=$(find . -name "*.nix" 2>/dev/null | head -1)
-          
-          # Block new package-lock.json, yarn.lock, Gemfile.lock, etc.
-          NEW_LOCKS=$(git diff --name-only --diff-filter=A HEAD~1 2>/dev/null | grep -E 'package-lock\.json|yarn\.lock|Gemfile\.lock|Pipfile\.lock|poetry\.lock|cargo\.lock' || true)
+          # paint-type uses Guix as the sole reproducible-dev vehicle.
+          # Nix flakes are retired estate-wide (owner directive 2026-06-01).
+          HAS_GUIX=$(find . -name "guix.scm" 2>/dev/null | head -1)
+          NIX_LEAKS=$(find . -path "./third_party" -prune -o \( -name "flake.nix" -o -name "flake.lock" \) -print 2>/dev/null | head -5)
+
+          NEW_LOCKS=$(git diff --name-only --diff-filter=A HEAD~1 2>/dev/null | grep -E 'package-lock\.json|yarn\.lock|Gemfile\.lock|Pipfile\.lock|poetry\.lock' || true)
           if [ -n "$NEW_LOCKS" ]; then
             echo "⚠️ Lock files detected. Prefer Guix manifests for reproducibility."
           fi

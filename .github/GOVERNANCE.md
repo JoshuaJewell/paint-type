@@ -52,7 +52,8 @@ release schedules, contributor access, and community standards.
 
 ### BDFL (Benevolent Dictator For Life)
 
-- The project creator and ultimate decision-maker.
+- Joshua Jewell ([@JoshuaJewell](https://github.com/JoshuaJewell)), the project
+  creator and ultimate decision-maker.
 - Sets the project's technical direction and long-term vision.
 - Has final say on all matters, including maintainer appointments and removals.
 - Responsible for ensuring the project adheres to RSR standards.
@@ -63,7 +64,7 @@ release schedules, contributor access, and community standards.
 - Reviews and merges pull requests.
 - Triages issues and manages releases.
 - Upholds code quality, security standards, and the Code of Conduct.
-- Listed in [MAINTAINERS.md](MAINTAINERS.md).
+- Listed in [MAINTAINERS](MAINTAINERS).
 
 ### Contributor
 
@@ -74,7 +75,7 @@ release schedules, contributor access, and community standards.
 
 ### Bot
 
-- Automated agents managed via your bot orchestration system.
+- Automated agents managed through the project's bot orchestration system.
 - Perform automated code review, security scanning, dependency updates, and
   standards enforcement.
 - Bot actions are subject to the same quality and review standards as human
@@ -103,7 +104,7 @@ A contributor may be nominated to become a maintainer when they demonstrate:
 2. The BDFL reviews the candidate's contribution history and community interactions.
 3. The BDFL approves or declines the nomination, with reasoning provided to the
    nominator.
-4. If approved, the new maintainer is added to [MAINTAINERS.md](MAINTAINERS.md) and
+4. If approved, the new maintainer is added to [MAINTAINERS](MAINTAINERS) and
    granted appropriate repository access.
 
 ---
@@ -123,7 +124,7 @@ A maintainer may be removed under the following circumstances:
   documented privately.
 
 Removed maintainers are moved to the Emeritus section of
-[MAINTAINERS.md](MAINTAINERS.md) unless removal was due to a serious Code of Conduct
+[MAINTAINERS](MAINTAINERS) unless removal was due to a serious Code of Conduct
 violation.
 
 ---

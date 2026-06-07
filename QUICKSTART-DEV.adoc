@@ -100,7 +100,7 @@ just test
 ----
 paint-type/
 ├── src/
-│   ├── ephapax/            # Rust — RGBA16F tile engine (linear types)
+│   ├── paint_core/         # Rust — RGBA16F tile engine (linear types)
 │   ├── interface/
 │   │   ├── Abi/            # Idris2 — ABI types, layout proofs, FFI wrappers
 │   │   └── ffi/            # Zig — libpt C ABI bridge + integration tests
