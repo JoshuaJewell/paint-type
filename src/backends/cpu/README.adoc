@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= CpuReferenceBackend
+
+The mandatory, always-loaded backend. The oracle for every accelerated backend.
+
+== Properties
+
+* No SIMD assumptions. Plain scalar Zig.
+* Correct first. Fast nowhere on this path.
+* Implements every operation declared by `Abstract.idr`. If an operation is missing here, the dispatcher cannot fall back, and accelerated backends have nothing to verify against.
+
+SIMD-tiered CPU backends (NEON, AVX-512, RVV, …) live under link:../vector/[`../vector/`], not here.
+
+== Verification role
+
+The numerical-equivalence test harness runs every accelerated backend's output against this backend's output. Tolerated deltas are declared per operation in `Abstract.idr`.

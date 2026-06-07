@@ -1,10 +1,10 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 name: OSSF Scorecard
 on:
   push:
     branches: [main, master]
   schedule:
-    - cron: '23 4 * * 1'
+    - cron: '0 4 * * *'
   workflow_dispatch:
 
 permissions:

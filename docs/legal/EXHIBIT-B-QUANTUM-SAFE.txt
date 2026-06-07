@@ -1,8 +1,18 @@
-SPDX-License-Identifier: PMPL-1.0-or-later
+SPDX-License-Identifier: AGPL-3.0-or-later
 
 ================================================================================
-EXHIBIT B — QUANTUM-SAFE PROVENANCE SPECIFICATION
-Palimpsest-MPL License Version 1.0
+NOTICE: HISTORICAL EXHIBIT — NOT OPERATIVE
+================================================================================
+
+This exhibit was authored under the Palimpsest License (MPL-2.0).
+paint.type is now licensed under AGPL-3.0-or-later, which does not adopt
+PMPL's quantum-safe-provenance provisions. This file is retained for
+historical reference and to document the cryptographic provenance approach
+the project may still choose to implement voluntarily, but it imposes no
+licence obligations on contributors or users.
+
+================================================================================
+EXHIBIT B — QUANTUM-SAFE PROVENANCE SPECIFICATION (historical, PMPL-era)
 ================================================================================
 
 1. PURPOSE

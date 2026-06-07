@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
 # Cerro Torre manifest for paint-type .ctp bundle
 #
@@ -15,7 +15,7 @@ paint-type — cross-platform open-source image editor. Containerised service
 packaged as a verified cerro-torre .ctp bundle with ML-DSA-87 signing and
 full provenance tracking.
 """
-license = "PMPL-1.0-or-later"
+license = "AGPL-3.0-or-later"
 homepage = "https://github.com/JoshuaJewell/paint-type"
 maintainer = "Joshua Jewell <paint-type@pm.me>"
 

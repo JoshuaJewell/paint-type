@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (c) 2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me> -->
 <!-- Authoritative source: docs/AI-CONVENTIONS.md -->
 
@@ -11,7 +11,7 @@
 
 ## License
 
-- SPDX: `PMPL-1.0-or-later` on all new files.
+- SPDX: `AGPL-3.0-or-later` on all new files.
 - Never use AGPL-3.0.
 - Copyright: `Joshua Jewell (JoshuaJewell) <paint-type@pm.me>`
 

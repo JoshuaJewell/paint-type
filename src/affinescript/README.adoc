@@ -1,0 +1,29 @@
+// SPDX-License-Identifier: MPL-2.0
+= paint.type application — AffineScript
+
+The application proper. Tools, layer model, undo, sessions, plugin host, UI command layer. Compiles to typed-wasm; calls the abstract operation surface only.
+
+== Rules
+
+* Only imports from `src/backends/Abstract.idr`-derived headers (via the generated AffineScript bindings).
+* Never references a concrete backend name. Backend choice is the dispatcher's job.
+* Algebraic effects are used to keep latency-critical traffic (pointer-down → first stroke pixel) separate from throughput-oriented traffic (tile streaming, autosave, network sync).
+* Affine types track buffer ownership across compositing pipelines.
+
+== Layout (forthcoming)
+
+```
+src/affinescript/
+├── tools/         # Pencil, brush, eraser, fill, eyedropper, selection, shapes, text
+├── canvas/        # Canvas + viewport + zoom/pan + grid + guides
+├── layers/        # Layer model — add, delete, reorder, blend modes, opacity
+├── undo/          # Persistent undo graph
+├── io/            # Open / save / autosave, via the io_* + display_* operation surface
+├── session/       # Collaboration session bookkeeping
+├── effects/       # Algebraic-effect typeclasses for traffic classes
+└── ui/            # UI commands as values; UI rendering is itself a backend call
+```
+
+== Build
+
+The AffineScript compiler produces a typed-wasm module under link:../wasm/[`src/wasm/`], with the abstract operation surface as typed imports. The module is loaded by the dispatcher at runtime.

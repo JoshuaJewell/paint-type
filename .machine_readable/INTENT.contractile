@@ -1,8 +1,8 @@
-; SPDX-License-Identifier: PMPL-1.0-or-later
+; SPDX-License-Identifier: AGPL-3.0-or-later
 ; INTENT.contractile — Purpose and scope for paint-type
 ; Helps LLM/SLM agents understand what this repo IS and IS NOT.
 ;
-; Part of the contractile family: MUST, TRUST, DUST, INTENT, ADJUST, BUST
+; Part of the contractile family: MUST, TRUST, DUST, INTENT, ADJUST
 
 ; ── Definitions ──────────────────────────────────────────────────
 ;
@@ -42,7 +42,7 @@
   (ask-before-touching
     "src/interface/Abi/ — formal proofs; changes require re-verification with idris2 --check"
     "src/interface/ffi/ — C ABI boundary; changes affect all language bindings"
-    "src/paint_core/src/lib.rs — tile primitive and linear type invariants"
+    "src/ephapax/src/lib.rs — tile primitive and linear type invariants"
     ".machine_readable/ — checkpoint files; format is specified"
     ".github/workflows/ — CI gate; changes need explicit approval"
   )

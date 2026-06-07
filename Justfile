@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # RSR Standard Justfile Template
@@ -22,7 +22,7 @@ import? "contractile.just"
 project := "paint-type"
 OWNER := "JoshuaJewell"
 REPO := "paint-type"
-version := "0.2.0-dev"
+version := "0.1.0"
 tier := "1"
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -201,7 +201,7 @@ init:
         -e "s|${LB}DATE${RB}|${CURRENT_DATE}|g"
         -e "s|${LB}SECURITY_EMAIL${RB}|${SECURITY_EMAIL}|g"
         -e "s|${LB}CONDUCT_EMAIL${RB}|${CONDUCT_EMAIL}|g"
-        -e "s|${LB}LICENSE${RB}|PMPL-1.0-or-later|g"
+        -e "s|${LB}LICENSE${RB}|AGPL-3.0-or-later|g"
         -e "s|${LB}CONDUCT_TEAM${RB}|Code of Conduct Committee|g"
         -e "s|${LB}RESPONSE_TIME${RB}|48 hours|g"
         -e "s|${LB}MAIN_BRANCH${RB}|main|g"
@@ -221,7 +221,7 @@ init:
     # Replace in all text files (skip .git, LICENSE text, and binaries)
     find . -type f \
         -not -path './.git/*' \
-        -not -name 'PMPL-1.0-or-later.txt' \
+        -not -name 'AGPL-3.0-or-later.txt' \
         -not -name '*.png' -not -name '*.jpg' -not -name '*.gif' \
         -not -name '*.woff' -not -name '*.woff2' \
         | while read -r file; do
@@ -361,7 +361,7 @@ verify-template:
     fi
 
 # NOTE: gen-v-connector has been removed.
-# V-lang is banned in this estate — connectors are implemented via
+# zig is banned in this estate — connectors are implemented via
 # zig-unified-api-adapter instead. See .machine_readable/6a2/ECOSYSTEM.a2ml.
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -507,8 +507,8 @@ self-assess:
         echo "    ready for automated maintenance when the fleet arrives."
     fi
 
-    if [ -d ".machine_readable/agent_instructions" ]; then
-        echo "  ◆ agent_instructions/ — AI agent methodology config."
+    if [ -d ".machine_readable/bot_directives" ]; then
+        echo "  ◆ bot_directives/ — AI agent methodology config."
         echo "    Guides Claude/Gemini/etc on how to work in this repo."
         echo "    No cost to keep. Improves AI assistance quality."
     fi
@@ -596,15 +596,14 @@ verify:
 build *args:
     @echo "Building {{project}} (debug)..."
     cd src/interface/ffi && zig build {{args}}
-    cargo build --manifest-path src/paint_core/Cargo.toml {{args}}
-    cargo build --manifest-path src/host_core/Cargo.toml {{args}}
+    cargo build --manifest-path src/ephapax/Cargo.toml {{args}}
     @echo "Build complete"
 
 # Build in release mode with optimizations
 build-release *args:
     @echo "Building {{project}} (release)..."
     cd src/interface/ffi && zig build -Doptimize=ReleaseFast {{args}}
-    cargo build --release --manifest-path src/paint_core/Cargo.toml {{args}}
+    cargo build --release --manifest-path src/ephapax/Cargo.toml {{args}}
     @echo "Release build complete"
 
 # Build and watch for changes (requires entr)
@@ -615,7 +614,7 @@ build-watch:
 clean:
     @echo "Cleaning..."
     rm -rf src/interface/ffi/zig-out/ src/interface/ffi/.zig-cache/
-    cargo clean --manifest-path src/paint_core/Cargo.toml
+    cargo clean --manifest-path src/ephapax/Cargo.toml
 
 # Deep clean including caches [reversible: rebuild]
 clean-all: clean
@@ -629,14 +628,13 @@ clean-all: clean
 test *args:
     @echo "Running tests..."
     cd src/interface/ffi && zig build test {{args}}
-    cargo test --manifest-path src/paint_core/Cargo.toml {{args}}
-    cargo test --manifest-path src/host_core/Cargo.toml {{args}}
+    cargo test --manifest-path src/ephapax/Cargo.toml {{args}}
     @echo "Tests passed!"
 
 # Run tests with verbose output
 test-verbose:
     cd src/interface/ffi && zig build test 2>&1
-    cargo test --manifest-path src/paint_core/Cargo.toml -- --nocapture
+    cargo test --manifest-path src/ephapax/Cargo.toml -- --nocapture
 
 # Smoke test: build succeeds and static library is present
 test-smoke:
@@ -704,15 +702,15 @@ fix: fmt
 
 # Format all source files [reversible: git checkout]
 fmt:
-    cargo fmt --manifest-path src/paint_core/Cargo.toml
+    cargo fmt --manifest-path src/ephapax/Cargo.toml
 
 # Check formatting without changes
 fmt-check:
-    cargo fmt --manifest-path src/paint_core/Cargo.toml --check
+    cargo fmt --manifest-path src/ephapax/Cargo.toml --check
 
 # Run linter (Rust clippy; zig fmt check on FFI source)
 lint:
-    cargo clippy --manifest-path src/paint_core/Cargo.toml -- -D warnings
+    cargo clippy --manifest-path src/ephapax/Cargo.toml -- -D warnings
     zig fmt --check src/interface/ffi/src/main.zig src/interface/ffi/test/integration_test.zig
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -744,13 +742,13 @@ deps:
     @echo "Checking dependencies..."
     @command -v zig >/dev/null 2>&1 && echo "  [OK] zig $(zig version)" || echo "  [FAIL] zig not found — install from https://ziglang.org/download/"
     @command -v cargo >/dev/null 2>&1 && echo "  [OK] cargo $(cargo --version)" || echo "  [FAIL] cargo not found — install from https://rustup.rs/"
-    cargo check --manifest-path src/paint_core/Cargo.toml
+    cargo check --manifest-path src/ephapax/Cargo.toml
     @echo "All dependencies satisfied"
 
 # Audit dependencies for vulnerabilities
 deps-audit:
     @echo "Auditing for vulnerabilities..."
-    @command -v cargo-audit >/dev/null && cargo audit --manifest-path src/paint_core/Cargo.toml || true
+    @command -v cargo-audit >/dev/null && cargo audit --manifest-path src/ephapax/Cargo.toml || true
     @command -v trivy >/dev/null && trivy fs --severity HIGH,CRITICAL --quiet . || true
     @command -v gitleaks >/dev/null && gitleaks detect --source . --no-git --quiet || true
     @echo "Audit complete"
@@ -845,8 +843,8 @@ container-init:
     read -rp "Primary port [8080]: " _PORT
     PORT="${_PORT:-8080}"
 
-    read -rp "Container registry [ghcr.io/${OWNER:-JoshuaJewell}]: " _REGISTRY
-    REGISTRY="${_REGISTRY:-ghcr.io/${OWNER:-JoshuaJewell}}"
+    read -rp "Container registry [ghcr.io/${OWNER:-{{OWNER}}}]: " _REGISTRY
+    REGISTRY="${_REGISTRY:-ghcr.io/${OWNER:-{{OWNER}}}}"
 
     echo ""
     echo "  Service: $SERVICE_NAME"
@@ -1011,7 +1009,7 @@ validate-rsr:
     for f in .machine_readable/STATE.a2ml .machine_readable/META.a2ml .machine_readable/ECOSYSTEM.a2ml .machine_readable/anchors/ANCHOR.a2ml .machine_readable/policies/MAINTENANCE-AXES.a2ml .machine_readable/policies/MAINTENANCE-CHECKLIST.a2ml .machine_readable/policies/SOFTWARE-DEVELOPMENT-APPROACH.a2ml; do
         [ -f "$f" ] || MISSING="$MISSING $f"
     done
-    for f in licensing/exhibits/EXHIBIT-A-ETHICAL-USE.txt licensing/exhibits/EXHIBIT-B-QUANTUM-SAFE.txt licensing/texts/PMPL-1.0-or-later.txt; do
+    for f in licensing/exhibits/EXHIBIT-A-ETHICAL-USE.txt licensing/exhibits/EXHIBIT-B-QUANTUM-SAFE.txt licensing/texts/AGPL-3.0-or-later.txt; do
         [ -f "$f" ] || MISSING="$MISSING $f"
     done
     if [ ! -d "src/interface/Abi" ] && [ ! -d "src/interface/abi" ]; then
@@ -1179,7 +1177,7 @@ test-matrix suite="unit" verbosity="normal" parallel="true":
     @echo "Test matrix: suite={{suite}} verbosity={{verbosity}} parallel={{parallel}}"
 
 # Container matrix: [build|run|push|shell|scan] x [registry] x [tag]
-container-matrix action="build" registry="ghcr.io/JoshuaJewell" tag="latest":
+container-matrix action="build" registry="ghcr.io/{{OWNER}}" tag="latest":
     @echo "Container matrix: action={{action}} registry={{registry}} tag={{tag}}"
 
 # CI matrix: [lint|test|build|security|all] x [quick|full]
@@ -1289,7 +1287,7 @@ help-me:
     @echo "Shell: $SHELL"
     @echo ""
     @echo "To report an issue:"
-    @echo "  https://github.com/JoshuaJewell/paint-type/issues/new"
+    @echo "  https://github.com/{{OWNER}}/{{REPO}}/issues/new"
     @echo ""
     @echo "Include the output of 'just doctor' in your report."
 
