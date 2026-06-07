@@ -1,82 +1,190 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
-# e2e.yml — paint-type End-to-End Pipeline Workflow.
+# RSR Standard E2E + Aspect + Benchmark Workflow Template
 #
-# Exercises the full v0.2.0 editing pipeline on a single Linux runner:
-#   1. Build the Zig FFI library (static + shared libpt artifacts).
-#   2. Run the Zig integration test target (`zig build test`).
-#   3. Run the Rust `e2e_pipeline` integration test, which drives
-#      Tile::composite_over + UndoGraph + pt_layer_* + Brush::stamp end
-#      to end through libpt's static archive.
-#   4. Run any extra `tests/e2e/scenario_*.sh` script — currently
-#      `scenario_libpt_artifacts.sh` (artifact + symbol probe) and
-#      `scenario_pipeline_dogfood.sh` (verbose cargo replay).
+# Covers ALL merge requirement test categories:
+#   - E2E (end-to-end pipeline tests)
+#   - Aspect (cross-cutting concern validation)
+#   - Benchmarks (performance regression detection)
+#   - Readiness (Component Readiness Grade: D/C/B)
 #
-# Gating to push / PR to main keeps minutes-cost predictable; the full
-# script runs in <2 minutes on a fresh runner.
+# INSTRUCTIONS: Uncomment and customise the section matching your stack.
+# Delete sections that don't apply. See examples in each job.
 
-name: E2E Pipeline
+name: E2E + Aspect + Bench
 
 on:
   push:
-    branches: [main]
+    branches: [main, master, develop]
     paths:
       - 'src/**'
-      - 'tests/e2e.sh'
-      - 'tests/e2e/**'
+      - 'ffi/**'
+      - 'tests/**'
       - '.github/workflows/e2e.yml'
   pull_request:
-    branches: [main]
+    branches: [main, master]
     paths:
       - 'src/**'
-      - 'tests/e2e.sh'
-      - 'tests/e2e/**'
-      - '.github/workflows/e2e.yml'
+      - 'ffi/**'
+      - 'tests/**'
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: read-all
 
 concurrency:
-  group: e2e-pipeline-${{ github.ref }}
+  group: e2e-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  e2e:
-    name: E2E — Full Pipeline (libpt + paint_core)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+  # ─── End-to-End Tests ──────────────────────────────────────────────
+  # Uncomment ONE of the following e2e job blocks matching your stack.
 
-      - name: Install Zig 0.15
-        uses: goto-bus-stop/setup-zig@abea47f85e598557f500fa1fd2ab7464fcb39406  # v2.2.1
-        with:
-          version: 0.15.1
+  ## === RUST E2E ===
+  # e2e:
+  #   name: E2E — Full Pipeline
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 15
+  #   steps:
+  #     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+  #     - uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7  # stable
+  #     - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5  # v2
+  #     - run: cargo build --release
+  #     - run: bash tests/e2e.sh
+  #       # OR: cargo test --test end_to_end -- --nocapture
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7  # stable
+  ## === ZIG FFI E2E ===
+  # e2e:
+  #   name: E2E — FFI Pipeline
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 15
+  #   steps:
+  #     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+  #     - uses: goto-bus-stop/setup-zig@7ab2955eb728f5440978d7b4f723a50dea1f3608  # v2
+  #       with:
+  #         version: 0.15.0
+  #     - run: cd ffi/zig && zig build test
+  #     - run: bash tests/e2e.sh
 
-      - name: Cache cargo registry and build
-        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5  # v2
-        with:
-          workspaces: src/paint_core -> target
+  ## === ELIXIR E2E ===
+  # e2e:
+  #   name: E2E — Full Pipeline
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 15
+  #   steps:
+  #     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+  #     - uses: erlef/setup-beam@5a67e1a1dd86cae5e5bef84e2da5060406a66c07  # v1
+  #       with:
+  #         otp-version: '27.0'
+  #         elixir-version: '1.17'
+  #     - run: mix deps.get && mix compile --warnings-as-errors
+  #     - run: mix test test/integration/e2e_test.exs --trace
 
-      - name: Run end-to-end pipeline (tests/e2e.sh)
-        run: bash tests/e2e.sh
+  ## === DENO/RESCRIPT E2E ===
+  # e2e:
+  #   name: E2E — Full Pipeline
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 15
+  #   steps:
+  #     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+  #     - uses: denoland/setup-deno@5fae568d37c3b73e0e4ca63d4e2c4e324a2b3497  # v2
+  #       with:
+  #         deno-version: v2.x
+  #     - run: deno install --node-modules-dir=auto
+  #     - run: deno task res:build  # ReScript compile
+  #     - run: deno test tests/e2e/
 
-      - name: Write summary
-        if: always()
-        run: |
-          {
-            echo "## E2E Pipeline Results"
-            echo ""
-            echo "Stages exercised:"
-            echo "- Zig build (libpt static + shared artifacts)"
-            echo "- Zig integration test (\`zig build test\`)"
-            echo "- Rust e2e_pipeline integration test (\`cargo test --test e2e_pipeline\`)"
-            echo "- Artifact + symbol probe (scenario_libpt_artifacts.sh)"
-            echo "- Verbose cargo replay (scenario_pipeline_dogfood.sh)"
-          } >> "$GITHUB_STEP_SUMMARY"
+  ## === PLAYWRIGHT (Browser E2E) ===
+  # e2e-playwright:
+  #   name: Playwright — ${{ matrix.project }}
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 20
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       project: [chromium-1080p, firefox-1080p, webkit-1080p]
+  #   steps:
+  #     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+  #     - uses: denoland/setup-deno@5fae568d37c3b73e0e4ca63d4e2c4e324a2b3497  # v2
+  #       with:
+  #         deno-version: v2.x
+  #     - run: deno install --node-modules-dir=auto
+  #     - run: npx playwright install --with-deps
+  #     - run: npx playwright test --project=${{ matrix.project }}
+  #     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+  #       if: failure()
+  #       with:
+  #         name: playwright-traces-${{ matrix.project }}
+  #         path: test-results/**/trace.zip
+  #         retention-days: 7
+
+  ## === HASKELL E2E ===
+  # e2e:
+  #   name: E2E — Full Pipeline
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 15
+  #   steps:
+  #     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+  #     - uses: haskell-actions/setup@dd344bc1cec854a9b55c2b857c28b688010e4fce  # v2
+  #       with:
+  #         ghc-version: '9.6'
+  #         cabal-version: '3.10'
+  #     - run: cabal build all
+  #     - run: bash tests/integration-test.sh
+
+  # ─── Aspect Tests ──────────────────────────────────────────────────
+  # Cross-cutting concerns: thread safety, ABI contracts, SPDX, dangerous patterns
+  # Uncomment and customise:
+
+  # aspect-tests:
+  #   name: Aspect — Architectural Invariants
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 10
+  #   steps:
+  #     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+  #     - run: bash tests/aspect_tests.sh
+
+  # ─── Benchmarks ────────────────────────────────────────────────────
+  # Performance regression detection. Uncomment matching stack:
+
+  ## === RUST BENCH ===
+  # benchmarks:
+  #   name: Bench — Performance Regression
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 15
+  #   steps:
+  #     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+  #     - uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7  # stable
+  #     - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5  # v2
+  #     - run: cargo bench 2>&1 | tee /tmp/bench-results.txt
+  #     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+  #       if: always()
+  #       with:
+  #         name: benchmark-results
+  #         path: /tmp/bench-results.txt
+  #         retention-days: 30
+
+  ## === ZIG BENCH ===
+  # benchmarks:
+  #   name: Bench — Performance Regression
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 15
+  #   steps:
+  #     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+  #     - uses: goto-bus-stop/setup-zig@7ab2955eb728f5440978d7b4f723a50dea1f3608  # v2
+  #       with:
+  #         version: 0.15.0
+  #     - run: cd ffi/zig && zig build bench
+
+  # ─── Readiness (CRG) ──────────────────────────────────────────────
+  # Component Readiness Grade: D (runs) → C (correct) → B (edge cases)
+
+  # readiness:
+  #   name: Readiness — Grade D/C/B
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 10
+  #   steps:
+  #     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+  #     - uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7  # stable
+  #     - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5  # v2
+  #     - run: cargo test --test readiness -- --nocapture

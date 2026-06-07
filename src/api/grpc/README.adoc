@@ -1,0 +1,7 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= gRPC adapter
+
+gRPC + gRPC-Web. Protobuf schemas generated from `Abstract.idr`. Server reflection enabled.
+
+* Streaming methods for tile fetches and edit-event subscriptions.
+* gRPC-Web for browser clients without a sidecar.

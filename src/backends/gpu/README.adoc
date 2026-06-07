@@ -1,0 +1,21 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= GPU backends
+
+Graphics + compute backends across vendors and APIs.
+
+[cols="1,2"]
+|===
+| Backend | API
+
+| `NvidiaCudaBackend` | CUDA Driver + cuDNN / cuBLAS
+| `AmdRocmBackend` | HIP + MIOpen / rocBLAS
+| `AppleMetalBackend` | Metal + MPS
+| `IntelLevelZeroBackend` | Level Zero + oneDNN
+| `VulkanBackend` | Vulkan 1.3 compute + VK_KHR_video_*
+| `WebGpuBackend` | WebGPU (Dawn / wgpu-native / browser)
+| `WebGl2Backend` | WebGL2 fallback for older browsers
+| `OpenGl41Backend` | OpenGL 4.1 fallback (macOS-portable cap)
+| `D3d12Backend` | Direct3D 12 + DirectML
+|===
+
+Each backend's job: implement the operation surface using its vendor API, declare its capability flags (which precisions, which compute classes), play nice with the dispatcher's hot-plug events.

@@ -1,14 +1,14 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 = paint-type — Quick Start for Developers
 :toc:
 :toclevels: 2
 
 == Tech Stack
 
-* **Rust** (stable) — Ephapax image core (`src/paint_core/`)
+* **Rust** (stable) — Ephapax image core (`src/ephapax/`)
 * **Idris2** — ABI type definitions and layout proofs (`src/interface/Abi/`)
 * **Zig** 0.15+ — FFI bridge to C ABI (`src/interface/ffi/`)
-* **AffineScript → typed-wasm** — bridge layer (DRAFT `.twasm` schemas at `src/bridges/`; compilation gated on `hyperpolymath/typed-wasm#127` + `#130`, tracked in paint-type#39)
+* **AffineScript → typed-wasm** — bridge layer (stub, v0.2.0)
 * **Gossamer** — linearly-typed desktop shell (v0.3.0)
 * **just** — task runner
 
@@ -21,7 +21,14 @@
 guix shell
 ----
 
-=== Option B: Manual
+=== Option B: Nix (fallback)
+
+[source,bash]
+----
+nix develop
+----
+
+=== Option C: Manual
 
 Prerequisites:
 
@@ -51,7 +58,7 @@ zig build
 
 [source,bash]
 ----
-cd src/paint_core
+cd src/ephapax
 cargo build
 ----
 
@@ -76,7 +83,7 @@ zig build test
 
 [source,bash]
 ----
-cd src/paint_core
+cd src/ephapax
 cargo test
 ----
 
@@ -97,7 +104,7 @@ paint-type/
 │   ├── interface/
 │   │   ├── Abi/            # Idris2 — ABI types, layout proofs, FFI wrappers
 │   │   └── ffi/            # Zig — libpt C ABI bridge + integration tests
-│   ├── bridges/            # AffineScript → typed-wasm bridge — draft `.twasm` schemas (paint-type-{tile,layer}.twasm)
+│   ├── bridges/            # AffineScript → typed-wasm bridge stubs
 │   └── aspects/            # Cross-cutting: integrity, observability, security
 ├── verification/proofs/    # Formal proofs (Idris2, Lean4, Agda, Coq, TLA+)
 ├── tests/                  # Test suite

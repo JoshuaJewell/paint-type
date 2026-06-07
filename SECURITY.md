@@ -1,11 +1,11 @@
-<!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 # Security Policy
 
 ## Reporting a Vulnerability
 
 If you discover a security vulnerability, please report it responsibly.
 
-**Email:** paint-type@pm.me
+**Email:** j.d.a.jewell@open.ac.uk
 
 **Please include:**
 - Description of the vulnerability

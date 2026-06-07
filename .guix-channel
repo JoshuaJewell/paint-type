@@ -1,20 +1,20 @@
-;; SPDX-License-Identifier: PMPL-1.0-or-later
-;; Copyright (c) 2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me>
+;; SPDX-License-Identifier: AGPL-3.0-or-later
+;; Copyright (c) {{CURRENT_YEAR}} {{AUTHOR}} ({{OWNER}}) <{{AUTHOR_EMAIL}}>
 ;;
-;; Guix channel definition for paint-type
+;; Guix channel definition for {{PROJECT_NAME}}
 ;;
 ;; To use this channel, add to ~/.config/guix/channels.scm:
 ;;
 ;;   (channel
-;;     (name 'paint-type)
-;;     (url "https://github.com/JoshuaJewell/paint-type")
+;;     (name '{{PROJECT_NAME}})
+;;     (url "https://github.com/{{OWNER}}/{{PROJECT_NAME}}")
 ;;     (branch "main"))
 ;;
 ;; Then: guix pull
 
 (channel
   (version 0)
-  (url "https://github.com/JoshuaJewell/paint-type")
+  (url "https://github.com/{{OWNER}}/{{PROJECT_NAME}}")
   (dependencies
    (channel
      (name 'guix)

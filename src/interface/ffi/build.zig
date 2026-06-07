@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // Build configuration for libpt (paint.type native FFI).
 //
@@ -30,7 +30,6 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
-        .link_libc = true,
     });
 
     //--------------------------------------------------------------------------
@@ -48,29 +47,16 @@ pub fn build(b: *std.Build) void {
     // Static library: libpt.a (for the Rust crate)
     //--------------------------------------------------------------------------
 
-    // `stack_check = false` is load-bearing for Rust integration: Zig's
-    // default stack-probe inserts `__zig_probe_stack` references for
-    // functions with >4KB frames. Rust's lld cannot resolve that symbol
-    // when statically linking libpt.a from cargo, producing
-    //   rust-lld: error: undefined symbol: __zig_probe_stack
-    // The shared/test/unit builds keep defaults; only the static archive
-    // consumed by Rust needs the probe disabled.
     const static_module = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
-        .link_libc = true,
-        .stack_check = false,
     });
     const static = b.addLibrary(.{
         .name = "pt",
         .linkage = .static,
         .root_module = static_module,
     });
-    // Bundle compiler_rt into the static archive so symbols Zig expects its
-    // own runtime to supply (such as __zig_probe_stack on Zig 0.15.2+) are
-    // present when the Rust crate links libpt.a with a non-Zig linker.
-    static.bundle_compiler_rt = true;
     b.installArtifact(static);
 
     //--------------------------------------------------------------------------
@@ -89,7 +75,6 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
-        .link_libc = true,
     });
     const unit_tests = b.addTest(.{
         .root_module = unit_test_module,
@@ -104,7 +89,6 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("test/integration_test.zig"),
         .target = target,
         .optimize = optimize,
-        .link_libc = true,
     });
     const integration_tests = b.addTest(.{
         .root_module = integration_module,

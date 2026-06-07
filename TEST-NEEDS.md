@@ -2,19 +2,17 @@
 
 ## CRG Grade: D — current
 
-## Current State (Updated 2026-06-01)
+## Current State (Updated 2026-05-11)
 
 | Category | Count | Details |
 |----------|-------|---------|
-| **Source modules** | 11 | 3 Idris2 ABI (Foreign, Layout, Types) + 3 verification proof modules (ABI/Platform, ABI/Compliance, Pixel), 2 Zig FFI (build, main), 1 Zig integration test, 1 Rust Ephapax crate with 5 modules (lib, composite, undo, layer, brush) |
-| **Unit tests** | 98 + 29 | 98 Rust unit tests across lib/composite/undo/layer/brush; 29 Zig inline + integration tests (incl. 11 pt_layer_* integration tests) |
+| **Source modules** | 7 | 3 Idris2 ABI (Foreign, Layout, Types), 2 Zig FFI (build, main), 1 Zig integration test, 1 Rust Ephapax crate |
+| **Unit tests** | ~12 | Zig inline tests in `src/interface/ffi/src/main.zig`; Rust unit tests in `src/ephapax/src/` |
 | **Integration tests** | 1 | `src/interface/ffi/test/integration_test.zig` — lifecycle, blit, memory safety, version checks |
-| **E2E tests** | 4 | `tests/e2e.sh` (full pipeline orchestrator); `src/paint_core/tests/e2e_pipeline.rs` (2 Rust scenarios driving the full Tile→composite→UndoGraph→pt_layer_*→Brush stack); `tests/e2e/scenario_libpt_artifacts.sh` (artifact + symbol probe); `tests/e2e/scenario_pipeline_dogfood.sh` (verbose cargo replay); `tests/e2e/template_instantiation_test.sh` (structure validation) |
-| **Aspect tests** | 1 | `tests/aspect_tests.sh` — 7 aspects, 0 fail (SPDX, dangerous-pattern, ABI/FFI contract, Rust panic-safety, RGBA16F constants, Idris2 ABI check, file-I/O deferred) |
+| **E2E tests** | 1 | `tests/e2e.sh` (scaffold); `tests/e2e/template_instantiation_test.sh` (structure validation) |
+| **Aspect tests** | 1 | `tests/aspect_tests.sh` (scaffold — not yet populated with paint-type assertions) |
 | **Workflow tests** | 1 | `tests/workflows/validate_workflows_test.sh` (validates CI workflow presence and structure) |
-| **Coverage tooling** | 1 | `.github/workflows/coverage.yml` + `tests/coverage.sh` — Rust `cargo-llvm-cov` (LCOV + console report, gated on `src/paint_core/`); Zig `kcov` over the integration-test binary (best-effort, non-blocking). Reporting only — no threshold gate. |
-| **Bench harnesses** | 1 | `src/paint_core/benches/undo.rs` — 88 ns/commit, 2 ns/checkout (hand-rolled `Instant` timer) |
-| **Fuzz tests** | 3 | `src/paint_core/fuzz/fuzz_targets/{pt_tile_blit,pt_tile_write_pixel,pt_layer_opacity}.rs` — WIRED; 30 s smoke-test per target in CI (`.github/workflows/fuzz-smoke.yml`) |
+| **Fuzz tests** | 0 | `tests/fuzz/README.adoc` scaffold; harness not yet wired |
 
 ## What Exists and Passes
 
@@ -30,36 +28,16 @@
 
 Run with: `zig build test` from `src/interface/ffi/`
 
-### Rust Ephapax Unit Tests (PASSING — 98/98 + 1 doctest)
+### Rust Ephapax Unit Tests (PASSING)
 
-`src/paint_core/src/{lib,composite,undo,layer,brush}.rs`:
+`src/ephapax/src/lib.rs` and submodules:
 
-- `lib.rs` — Tile header construction, RGBA16F arithmetic, tile buffer
-  alloc/dealloc, f16↔f32 round-trip, `pt_tile_write_pixel`, pt_layer_*
-  FFI smoke (3 tests with /// SAFETY: comments).
-- `composite.rs` — Porter-Duff `over_premultiplied` / `over_unpremultiplied`,
-  `masked_blend`, `flatten_layer_stack`, `Tile::composite_over`, plus
-  `lerp`, `multiply`, `screen`, `in_op`, `out_op`, `atop`, `xor`.
-- `undo.rs` — `UndoGraph<T>` commit / branch / checkout / parent_of /
-  children_of / is_ancestor / monotonic-RevId invariant.
-- `layer.rs` — `Layer`, `LayerStack`, `LayerId`, push/delete/reorder_to/
-  get/iter/flatten; stable IDs across reorderings.
-- `brush.rs` — `BrushTip` (soft_round, hard_round), `Brush::stamp` with
-  mask-modulated blend + tile-boundary clipping, `Stroke` point
-  interpolation with spacing carry-over.
+- Tile header construction and field access
+- RGBA16F pixel arithmetic (add, multiply, clamp)
+- Tile buffer allocation and deallocation
+- Basic compositing: over operator, alpha premultiplication
 
-### Zig FFI Tests (PASSING — 29/29)
-
-`src/interface/ffi/src/main.zig` + `test/integration_test.zig`:
-
-- pt_tile_* — lifecycle, fill, read, write, version, double-free
-  detection, magic-word safety, null-pointer safety, blit operations.
-- pt_layer_* — stack lifecycle, push id-issuance + dense ordering,
-  delete-then-stable-siblings, reorder top↔bottom, opacity clamp +
-  NaN handling, visibility round-trip, post-free safety, null-stack
-  uniform errors.
-
-Run with: `cargo test` from `src/paint_core/`. Benches via `cargo bench`.
+Run with: `cargo test` from `src/ephapax/`
 
 ### Workflow Validation Tests (PASSING)
 
@@ -69,36 +47,19 @@ Run with: `cargo test` from `src/paint_core/`. Benches via `cargo bench`.
 - Checks SPDX headers on workflow files
 - Verifies required `name:` field in each workflow
 
-### Coverage Reporting (WIRED — reporting only, no gate)
-
-`.github/workflows/coverage.yml` + `tests/coverage.sh`:
-
-- **Rust**: `cargo llvm-cov --all-features --workspace --lcov` from
-  `src/paint_core/`. Console summary printed to the job log and to
-  `$GITHUB_STEP_SUMMARY`. LCOV file uploaded as artifact
-  `rust-coverage-lcov` (30-day retention).
-- **Zig**: `kcov --include-path=src/interface/ffi` over the integration
-  test binary built via `zig test --test-no-exec`. Best-effort and
-  non-blocking — Zig 0.15 test runners are awkward for kcov; uploaded
-  as artifact `zig-coverage` whenever output exists.
-- **Codecov**: opt-in. Upload step only runs when a `CODECOV_TOKEN`
-  secret is configured; forks and unconfigured repos see no failure.
-- **No threshold enforced** — this is reporting infrastructure, not a
-  gate. Locally: `bash tests/coverage.sh` (`rust` | `zig` | `all`).
-
 ## What Is Missing (Priority Order)
 
 ### P1 — Required for CRG Grade C
 
-- [x] Aspect tests populated — `tests/aspect_tests.sh` covers 7 aspects (SPDX, dangerous-pattern, ABI/FFI contract, Rust panic-safety, RGBA16F constants, Idris2 ABI check, file-I/O deferred). PR #9 (2026-06-01).
-- [x] Idris2 ABI proof check integrated into CI — `.github/workflows/idris-ci.yml`. PR #8 (2026-06-01). Verified modules: `src/interface/Abi/{Types,Layout,Foreign}.idr` + `verification/proofs/idris2/{ABI/Platform.idr, Pixel.idr}`.
-- [ ] File I/O round-trip aspect — deferred to v0.3.0 (native RGBA16F save/load surface needed first).
-- [x] E2E test: end-to-end tile alloc → composite → free pipeline via the Zig FFI — `tests/e2e.sh` orchestrates `zig build` + `zig build test` + `cargo test --test e2e_pipeline` (Rust integration scenarios driving Tile lifecycle + `Tile::composite_over` + `UndoGraph` snapshots + `pt_layer_*` push/reorder + `Brush::stamp`) + `tests/e2e/scenario_*.sh`. CI wired via `.github/workflows/e2e.yml`. PR #33 (2026-06-01).
-- [x] Coverage reporting wired into CI for both Zig and Rust — `.github/workflows/coverage.yml` + `tests/coverage.sh` land Rust LCOV via `cargo-llvm-cov` (hard requirement) plus best-effort Zig kcov; both artifacts uploaded each run. Reporting only — no threshold gate. PR #32 (2026-06-01).
+- [ ] Aspect tests with real paint-type assertions — `tests/aspect_tests.sh` needs population
+  - File I/O round-trip: create a tile, save, reload, verify bytes identical
+  - Idris2 ABI proof check integrated into CI (`idris2 --check` on ABI modules)
+- [ ] E2E test: end-to-end tile alloc → composite → free pipeline via the Zig FFI
+- [ ] Coverage reporting wired into CI for both Zig and Rust
 
 ### P2 — Required for CRG Grade B
 
-- [x] Fuzz harness for `pt_tile_blit` (inputs: arbitrary src/dst dimensions, offsets) — `src/paint_core/fuzz/fuzz_targets/pt_tile_blit.rs` plus `pt_tile_write_pixel.rs` and `pt_layer_opacity.rs`; 30 s smoke per target in CI via `.github/workflows/fuzz-smoke.yml` (PR: feat/fuzz-harness-pt-tile).
+- [ ] Fuzz harness for `pt_tile_blit` (inputs: arbitrary src/dst dimensions, offsets)
 - [ ] Property-based tests for RGBA16F arithmetic (Rust + `proptest`)
 - [ ] Performance regression tests: tile alloc throughput baseline, blit throughput baseline
 
@@ -111,21 +72,17 @@ Run with: `cargo test` from `src/paint_core/`. Benches via `cargo bench`.
 ## Test Results Summary
 
 ```
-Zig FFI Integration Tests:    PASS (zig build test — 29/29)
-Rust Ephapax Unit Tests:      PASS (cargo test — 98/98 + 1 doctest)
+Zig FFI Integration Tests:    PASS (zig build test)
+Rust Ephapax Unit Tests:      PASS (cargo test)
 Workflow Validation:          PASS (validate_workflows_test.sh)
-Aspect Tests:                 PASS (7 aspects, 0 fail; 7 Idris2 imports ⊆ 23 Zig exports)
-Idris2 ABI Check (CI):        WIRED (.github/workflows/idris-ci.yml; 3 modules + 3 verification modules)
-Coverage Reporting (CI):      WIRED (.github/workflows/coverage.yml — Rust cargo-llvm-cov LCOV + Zig kcov best-effort; artifacts uploaded; reporting only, no gate)
-Undo-graph benches:           PASS (88 ns/commit, 2 ns/checkout)
-panic-attack scan:            3 weak points, all pre-existing false-positive heuristics
-E2E Tests:                    PASS (`bash tests/e2e.sh` — 9 stages: zig build + zig test + cargo e2e_pipeline (2 scenarios) + 2 scenario_*.sh probes)
-Fuzz Tests:                   WIRED (3 targets — pt_tile_blit / pt_tile_write_pixel / pt_layer_opacity; 30 s smoke per target in CI)
+Aspect Tests:                 STUB (not yet populated)
+E2E Tests:                    STUB (structure test only)
+Fuzz Tests:                   NOT STARTED
 ```
 
 ## Next Steps
 
-- [x] Add fuzz harness for `pt_tile_blit` / `pt_tile_write_pixel` — 3 cargo-fuzz targets wired with 30 s CI smoke (PR #35).
-- [x] Set up coverage reporting for Zig (kcov) and Rust (cargo-llvm-cov) — `.github/workflows/coverage.yml` + `tests/coverage.sh`; reporting only (no threshold). Zig side is best-effort and a follow-up may switch from kcov to Zig 0.15 native `-fprofile-instr-generate` once stable. (PR #32 + #34)
-- [x] Populate E2E test with a real tile-alloc → composite_over → free flow now that compositing has landed — DONE in PR #33 (extends to Tile→composite→UndoGraph→pt_layer_*→Brush::stamp).
-- [ ] Layer-model property tests (e.g. proptest for reorder commutativity)
+- [ ] Populate `tests/aspect_tests.sh` with real paint-type assertions
+- [ ] Wire `idris2 --check src/interface/Abi/*.idr` into CI
+- [ ] Add fuzz harness for `pt_tile_blit`
+- [ ] Set up coverage reporting for Zig (kcov) and Rust (cargo-llvm-cov)

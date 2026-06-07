@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 = paint-type - Citation Guide
 :toc:
 
@@ -11,7 +11,7 @@
   title = {paint-type},
   year = {2026},
   url = {https://github.com/JoshuaJewell/paint-type},
-  license = {PMPL-1.0-or-later}
+  license = {AGPL-3.0-or-later}
 }
 ----
 

@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (c) 2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me>
 #
 # ANCHOR.a2ml — authoritative anchor for paint-type
@@ -42,7 +42,7 @@ forbidden = ["Node.js", "npm", "TypeScript", "Python", "Go"]
 [golden-path]
 smoke-test-command = [
   "cd src/interface/ffi && zig build test",
-  "cd src/paint_core && cargo test",
+  "cd src/ephapax && cargo test",
   "just quality",
 ]
 

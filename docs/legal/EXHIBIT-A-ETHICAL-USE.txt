@@ -1,8 +1,17 @@
-SPDX-License-Identifier: PMPL-1.0-or-later
+SPDX-License-Identifier: AGPL-3.0-or-later
 
 ================================================================================
-EXHIBIT A — ETHICAL USE GUIDELINES
-Palimpsest-MPL License Version 1.0
+NOTICE: HISTORICAL EXHIBIT — NOT OPERATIVE
+================================================================================
+
+This exhibit was authored under the Palimpsest License (MPL-2.0).
+paint.type is now licensed under AGPL-3.0-or-later, which contains no
+ethical-use covenant. The expectations below are retained for historical
+reference and as a non-binding statement of project values; they impose
+no licence obligations on contributors or users.
+
+================================================================================
+EXHIBIT A — ETHICAL USE GUIDELINES (historical, PMPL-era, non-binding)
 ================================================================================
 
 1. PURPOSE

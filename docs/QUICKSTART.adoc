@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 = paint-type — Quickstart
 :toc: preamble
 
@@ -33,7 +33,7 @@ zig build test
 
 [source,bash]
 ----
-cd src/paint_core
+cd src/ephapax
 cargo test
 ----
 

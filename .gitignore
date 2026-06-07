@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # RSR-compliant .gitignore
 
 # OS & Editor
@@ -13,13 +13,10 @@ Thumbs.db
 
 # Build
 /target/
-**/target/
 /_build/
 /build/
 /dist/
 /out/
-**/zig-out/
-**/.zig-cache/
 
 # Dependencies
 /node_modules/
@@ -107,4 +104,3 @@ sync_report*.txt
 # Hypatia scan cache (local-only)
 .hypatia/
 .zig-cache/
-third_party/gossamer/

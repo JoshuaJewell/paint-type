@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 = paint-type Standards Audit
 Codex
-v1.1, 2026-06-01
+v1.0, 2026-05-11
 :toc:
 :toclevels: 3
 :sectnums:
@@ -36,10 +36,10 @@ Audit scope:
 
 | Ephapax Rust crate
 | `TOPOLOGY.md`, `ROADMAP.adoc`
-| `src/paint_core/`
-| exists (v0.2.0 in-repo complete)
-| 5 modules (lib, composite, undo, layer, brush). 11 compositing ops, persistent UndoGraph, Layer/LayerStack, Brush engine. cargo test 98/98 + 1 doctest. Rust CI green on main.
-| Keep; bridge work remaining for v0.2.0 close.
+| `src/ephapax/`
+| exists (skeleton)
+| Crate compiles and `cargo test` passes. Feature work starts at v0.2.0.
+| Keep; develop in v0.2.0.
 
 | Idris2 layout proofs
 | `PROOF-NEEDS.md`, `TOPOLOGY.md`
@@ -50,10 +50,10 @@ Audit scope:
 
 | AffineScript bridge
 | `TOPOLOGY.md`
-| `src/bridges/paint-type-{tile,layer}.twasm`
-| draft .twasm landed (PR #40)
-| Hand-modelled `.twasm` schemas for `pt_tile_*` + `pt_layer_*` surfaces live in `src/bridges/`. Cannot yet be compiled by `tw build` (typed-wasm codegen v0 only handles example-01); gated on `hyperpolymath/typed-wasm#127` (D1) + `#130` (D2 round-trip). Tracked in paint-type#39.
-| Keep DRAFT; wait on upstream.
+| `src/bridges/`
+| stub only
+| Bridge stub directory exists; code generator not yet integrated. Planned for v0.2.0.
+| Leave stub; implement at v0.2.0.
 
 | Gossamer shell integration
 | `TOPOLOGY.md`, `ROADMAP.adoc`
@@ -161,11 +161,11 @@ paint-type/
     custom-checks.k9
     local-hooks.sh
   src/
-    ephapax/          (Rust — RGBA16F tile engine: 11 ops + UndoGraph + Layer + Brush)
+    ephapax/          (Rust — RGBA16F tile engine skeleton)
     interface/
       Abi/            (Idris2 — ABI types, layout proofs, FFI wrappers)
-      ffi/            (Zig — libpt C ABI bridge: 23 exports + integration tests)
-    bridges/          (AffineScript → typed-wasm — draft .twasm; gated upstream)
+      ffi/            (Zig — libpt C ABI bridge + integration tests)
+    bridges/          (AffineScript → typed-wasm stub)
     aspects/          (cross-cutting: integrity, observability, security)
   docs/               (human documentation)
   verification/       (formal proofs — Idris2, Lean4, Agda, Coq, TLA+)

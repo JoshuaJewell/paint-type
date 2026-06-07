@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 = paint-type — Repository Structure Guide
 :toc:
 :icons: font
@@ -9,7 +9,7 @@ This file explains how the repository is structured and what each piece does.
 
 paint-type is a cross-platform open-source image editor in the spirit of Paint.NET —
 capable enough for real work, simple enough to reach for without thinking.
-License: PMPL-1.0-or-later. Owner: Joshua Jewell (JoshuaJewell on GitHub).
+License: AGPL-3.0-or-later. Owner: Joshua Jewell (JoshuaJewell on GitHub).
 
 Part of the hyperpolymath/palimpsest ecosystem.
 
@@ -30,36 +30,13 @@ Part of the hyperpolymath/palimpsest ecosystem.
 
 == Source Tree (`src/`)
 
-=== `src/paint_core/` — Native Image Core (Rust)
+=== `src/ephapax/` — Native Image Core (Rust)
 
-`src/paint_core/` is paint-type's Rust crate (named "ephapax" for the role
-it plays as the image core, not because it is the
-`hyperpolymath/ephapax` language — those are SEPARATE things; the
-language has sublanguages `ephapax-linear` + `ephapax-proven`, and this
-crate is neither).
-
-Modules:
-
-`lib.rs`:: Tile API (`Tile::alloc/fill/read_pixel/write_pixel/drop`),
-           f16↔f32 helpers, FFI declarations against libpt for both
-           `pt_tile_*` and `pt_layer_*`.
-`composite.rs`:: Porter-Duff and W3C blend operators —
-           `over_premultiplied`, `over_unpremultiplied`,
-           `masked_blend`, `flatten_layer_stack`, `Tile::composite_over`,
-           plus `lerp`, `multiply`, `screen`, `in_op`, `out_op`, `atop`,
-           `xor`.
-`undo.rs`:: Persistent branching undo graph (`UndoGraph<T>`, `RevId`)
-           with the monotonicity invariant documented as a 4-clause
-           contract for the eventual INV-2 Lean4 mechanisation.
-`layer.rs`:: Layer model (`Layer`, `LayerStack`, `LayerId`) with stable
-           IDs across reorderings and a `flatten(name)` builder.
-`brush.rs`:: Brush engine (`BrushTip` with `soft_round` / `hard_round`
-           constructors, `Brush` with `stamp(tile, cx, cy)` mask-modulated
-           blending, `Stroke` point interpolation with spacing carry-over).
-
-Linear types enforce no aliased mutable tile access — `Tile` is `!Copy
-+ !Clone`. Build with `cargo test` from `src/paint_core/`. Benches in
-`src/paint_core/benches/`.
+Ephapax is the Rust crate that implements the image engine:
+RGBA16F tile pool, compositing, brush engine, and undo graph.
+Linear types enforce no aliased mutable tile access.
+Entry point: `src/ephapax/src/lib.rs`.
+Build with `cargo test` from `src/ephapax/`.
 
 === `src/interface/Abi/` — Formally Verified ABI Definitions (Idris2)
 
@@ -72,69 +49,25 @@ Three Idris2 modules prove correctness of the tile ABI:
 
 === `src/interface/ffi/` — Zig FFI Bridge
 
-`src/interface/ffi/src/main.zig`:: Pure-Zig C-ABI implementation (`libpt`). Exports
-  `pt_tile_alloc`, `pt_tile_free`, `pt_tile_fill`, `pt_tile_blit`,
-  `pt_tile_read_pixel`, `pt_tile_write_pixel`, `pt_version`, and related
-  functions via `callconv(.C)`. No `.c` or `.h` files in the repository —
-  Rust links to the Zig-built shared library directly through `extern "C"`.
-`src/interface/ffi/build.zig`:: Zig 0.15+ build file. Run `zig build test`.
-`src/interface/ffi/test/integration_test.zig`:: Integration tests — lifecycle, blit
-  operations, memory safety, version checks. Run with `zig build test`.
+`src/ffi/src/main.zig`:: C ABI implementation (`libpt`). Exports `pt_tile_alloc`,
+  `pt_tile_free`, `pt_tile_blit`, and related functions.
+`src/ffi/build.zig`:: Zig 0.15+ build file. Run `zig build test`.
+`src/ffi/test/integration_test.zig`:: Integration tests — lifecycle, blit operations,
+  memory safety, version checks. Run with `zig build test`.
 
-=== `src/bridges/` — AffineScript → typed-wasm Bridge (draft)
+=== `src/bridges/` — AffineScript → typed-wasm Bridge (stub)
 
-`paint-type-tile.twasm`:: Draft typed-wasm schema for the `pt_tile_*`
-  RGBA16F tile region — `region RGBA16F` + `region TileHeader` +
-  `region Tile` + `memory tile_memory` + functions `alloc_tile`,
-  `free_tile` (linear ownership), `fill_tile`, `read_pixel`,
-  `write_pixel`, `blit_tile`. Covers L1-L10. Mirrors
-  `src/interface/ffi/src/main.zig` `pt_tile_*` exports.
-`paint-type-layer.twasm`:: Draft schema for the `pt_layer_*` metadata
-  stack — `region Layer` + `region LayerStack` (bounded 256-entry array)
-  + functions `stack_new`, `stack_free`, `push_layer`, `get_id_at`,
-  `set_opacity`. Covers L1-L8.
-`0.2-AI-MANIFEST.a2ml`:: A2ML manifest pointing at both drafts and the
-  upstream gates.
-
-Both `.twasm` files are **DRAFT as of 2026-06-01**: cannot yet be
-compiled by `tw build` because typed-wasm codegen v0 only accepts the
-example-01 schema via a structural string-match (see
-`crates/typed-wasm-codegen/src/bin/tw.rs` in
-`hyperpolymath/typed-wasm`). General `.twasm` front-end → IR lowering
-is tracked upstream in `hyperpolymath/typed-wasm#127`, and paint-type's
-side is `#39`. When #127 lands these become the source the bridge
-generator emits (from AffineScript ABI declarations) plus corpus
-entries for `hyperpolymath/typed-wasm#130` (round-trip soundness).
+Future: generated from the Idris2 ABI definitions. Not yet populated.
 
 === `src/aspects/` — Cross-Cutting Concerns
 
 Integrity, observability, and security cross-cuts. Scaffold in place; content planned for v0.2.0+.
 
-== Top-Level Test Suite (`tests/`)
-
-`tests/aspect_tests.sh`:: 7 aspects — SPDX, dangerous-pattern, ABI/FFI
-  contract (7 Idris2 imports ⊆ 23 Zig exports), Rust panic-safety,
-  RGBA16F constants, Idris2 ABI check, file-I/O deferred. All PASS.
-`tests/e2e.sh`:: 9-stage end-to-end pipeline orchestrator (preflight +
-  zig build + zig test + cargo `e2e_pipeline` (2 scenarios) + 2
-  scenario_*.sh probes). PR #33.
-`tests/coverage.sh`:: Local coverage entry point — `rust` / `zig` / `all`
-  (Rust `cargo-llvm-cov` hard; Zig `kcov` best-effort). PR #32 + #34.
-`tests/e2e/scenario_libpt_artifacts.sh`:: Symbol + artifact probe over
-  `src/interface/ffi/zig-out/`.
-`tests/e2e/scenario_pipeline_dogfood.sh`:: Verbose `cargo test --test
-  e2e_pipeline` replay for human inspection.
-`tests/e2e/template_instantiation_test.sh`:: Repo-structure validator.
-`tests/workflows/validate_workflows_test.sh`:: Workflow presence + SPDX +
-  `name:` field validation.
-
 == Verification (`verification/`)
 
 Formal proofs and safety cases:
 
-`verification/proofs/idris2/ABI/Platform.idr`:: Per-platform pointer + int size proofs (ABI-3). DONE.
-`verification/proofs/idris2/ABI/Compliance.idr`:: C ABI compliance + tile-array packing (ABI-5). DONE.
-`verification/proofs/idris2/Pixel.idr`:: RGBA16F IEEE-754 binary16 classifier + finiteness carriers (TP-3). DONE.
+`verification/proofs/idris2/`:: Idris2 ABI proofs (planned, see PROOF-NEEDS.md).
 `verification/proofs/lean4/ApiTypes.lean`:: Lean4 type safety scaffold.
 `verification/proofs/agda/Properties.agda`:: Agda inductive properties scaffold.
 `verification/proofs/coq/TypeSafety.v`:: Coq type safety scaffold.
@@ -150,8 +83,6 @@ Formal proofs and safety cases:
 `.machine_readable/TRUST.contractile`:: AI agent trust level and permitted actions.
 `.machine_readable/INTENT.contractile`:: Project purpose and anti-purpose.
 `.machine_readable/ADJUST.contractile`:: Accessibility invariants (WCAG 2.2 AA).
-`.machine_readable/DUST.contractile`:: Recovery pipelines + elaborative error feedback catalogue (FIXME instruction sets for each `DUST-*-NNNN` code; emitted on tile-alloc / FFI-mismatch / undo-divergence / composite-precision / plugin-sandbox failures).
-`.machine_readable/BUST.contractile`:: Hard-stop / reintroduction-guard / must-not-run declarations (forbids hand-authored JS, ReScript, TypeScript, Python, C, non-FFI Zig in source tree; npm-without-fallback-order; canvas mutation from LLM channel without invocation; unsigned plugins).
 
 == Session Protocol
 
@@ -179,21 +110,7 @@ Stapeln-based container definitions for running paint-type as a containerized se
 
 Key workflows:
 
-`rust.yml`:: Rust build / clippy / test for Ephapax (builds libpt via Zig
-            first, then runs `cargo check/fmt/clippy/test` against
-            `src/paint_core/`). Green on main since 2026-06-01 (PRs #36/#37/#38).
-`idris-ci.yml`:: Idris2 ABI proof type-check (`idris2 --check`) on ABI module + `verification/proofs/idris2/` changes.
-`coverage.yml`:: `cargo-llvm-cov` LCOV + console summary for Rust (gated on
-                 `src/paint_core/`) plus best-effort `kcov` for the Zig
-                 integration-test binary. Reporting only — no threshold
-                 gate; uploads `rust-coverage-lcov` and `zig-coverage`
-                 artifacts each run. PR #32 + #34.
-`e2e.yml`:: Runs `bash tests/e2e.sh` end-to-end pipeline orchestrator
-            (9 stages: preflight + zig build + zig test + cargo
-            `e2e_pipeline` (2 scenarios) + 2 scenario_*.sh probes). PR #33.
-`fuzz-smoke.yml`:: 30 s `cargo-fuzz` smoke per FFI target
-                   (`pt_tile_blit`, `pt_tile_write_pixel`,
-                   `pt_layer_opacity`). PR #35.
+`rust-ci.yml`:: Rust build and test for Ephapax.
 `dogfood-gate.yml`:: A2ML, K9, eclexiaiser, Groove compliance.
 `hypatia-scan.yml`:: Neurosymbolic CI/CD safety scan.
 `static-analysis-gate.yml`:: Security static analysis.

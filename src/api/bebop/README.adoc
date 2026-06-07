@@ -1,0 +1,7 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Bebop adapter
+
+Binary wire format for low-overhead native integrations and tight latency budgets. Bebop schemas generated from `Abstract.idr`.
+
+* Used by Burble for inter-peer session frames.
+* Available over WebTransport, QUIC, or plain TCP.
