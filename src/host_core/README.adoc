@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= host_core
+:description: Project directory
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Project directory.
+
+
+As a Level 2 directory (`src/host_core/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n== Subdirectories\n\n[cols="1,2", options="header"]\n|===\n| Directory | Purpose\n| `src/` | |\n| `tests/` | |\n|===\n\n=== Configuration\n\n* `Cargo.toml` — Rust package manifest\n\n=== Other Files\n\n* `Cargo.lock` — Rust dependency lock file\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Configuration files* define build, test, and deployment parameters.\n
+*Other files* support directory operations.\n
+
+== AI Manifest Structure
+
+* `0.2-AI-MANIFEST.a2ml` (this file) - Level 2 manifest for `src/host_core/`
+
+* Each subdirectory has its own `0.3-AI-MANIFEST.a2ml`
+
+== Related Files
+
+* link:../0.1-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

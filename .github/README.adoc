@@ -1,0 +1,111 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= .github Directory
+:description: GitHub-specific configuration and automation for paint.type
+
+// NOTE: The project is named "paint.type" but the GitHub repository is "paint-type"
+
+This directory contains all GitHub-specific configuration files, workflows,
+templates, and policies for the paint-type repository.
+
+== Purpose
+
+The `.github/` directory serves as the integration point between the paint-type
+project and GitHub's platform features, including:
+
+* Continuous Integration / Continuous Deployment (CI/CD) workflows
+* Issue and discussion templates
+* Security policies and procedures
+* Community governance and conduct standards
+* Automated dependency management
+* Repository settings and automation
+
+== Contents by Functional Grouping
+
+=== Configuration Files
+
+* `CODEOWNERS`:: Defines repository ownership and code review requirements. Maps files/directories to owners and required reviewers.
+* `FUNDING.yml`:: Configures GitHub Sponsors funding for the project.
+* `dependabot.yml`:: Configures automated dependency updates and security patch management.
+* `settings.yml`:: Repository-level settings and configurations.
+
+=== Governance and Community
+
+* `CODE_OF_CONDUCT.md`:: GitHub-required file. Defines expected behavior and community standards. link:CODE_OF_CONDUCT.md[View].
+* `CONTRIBUTING.md`:: GitHub-required file. Guidelines for contributing to the project. link:CONTRIBUTING.md[View].
+* `GOVERNANCE.adoc`:: Project governance model (BDFL). Defines roles, decision-making, and maintainership. link:GOVERNANCE.adoc[View].
+* `MAINTAINERS`:: List of project maintainers with contact information.
+* `SUPPORT`:: Support channels and contact information.
+
+=== AI and Automation
+
+* `copilot-instructions.adoc`:: Instructions for AI assistants and Copilot. link:copilot-instructions.adoc[View].
+* `copilot-instructions.md`:: Legacy markdown version (maintained for compatibility).
+
+=== Security
+
+* `SECURITY.md`:: GitHub-required file. Security policy, vulnerability reporting, and disclosure procedures. link:SECURITY.md[View].
+
+=== Templates
+
+* `pull_request_template.md`:: Template for pull request descriptions. Ensures consistent PR formatting.
+
+=== Subdirectories
+
+* `workflows/`:: GitHub Actions workflow files for CI/CD automation.
+* `ISSUE_TEMPLATE/`:: Templates for different issue types (bug, feature, documentation, etc.).
+* `DISCUSSION_TEMPLATE/`:: Templates for GitHub discussion categories.
+
+== Purpose of Each Component
+
+=== CODEOWNERS
+
+Ensures that changes to critical parts of the codebase are reviewed by appropriate
+maintainers. Prevents unintended modifications to sensitive areas without proper
+oversight.
+
+=== Workflows (workflows/)
+
+Automated CI/CD pipelines that:
+
+* Run tests on pull requests and pushes
+* Enforce code quality standards
+* Build and deploy artifacts
+* Run security scans
+* Verify compliance with project standards
+
+See link:workflows/README.adoc[workflows/README.adoc] for details.
+
+=== Issue Templates (ISSUE_TEMPLATE/)
+
+Predefined templates for different issue types that:
+
+* Guide contributors to provide necessary information
+* Standardize issue reporting
+* Improve triage efficiency
+* Reduce back-and-forth for common questions
+
+=== Discussion Templates (DISCUSSION_TEMPLATE/)
+
+Templates for GitHub discussions that:
+
+* Structure community conversations
+* Provide context for different discussion topics
+* Guide users to appropriate channels
+
+== AI Manifest Structure
+
+This directory follows the hierarchical AI manifest structure:
+
+* `0-AI-MANIFEST.a2ml` (repo root):: Root AI manifest for paint-type
+* `0.1-AI-MANIFEST.a2ml` (this directory):: Level 1 manifest for `.github/`
+* `0.2-AI-MANIFEST.a2ml` (subdirectories):: Level 2 manifests for each subdirectory
+
+Each manifest provides machine-readable metadata about the directory's purpose,
+contents, and authority structure.
+
+== Related Files
+
+* link:../0-AI-MANIFEST.a2ml[Root AI Manifest]
+* link:../DIRECTORY.adoc[Root Directory Index]
+* link:../.machine_readable/[Machine Readable Metadata]

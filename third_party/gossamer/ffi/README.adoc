@@ -1,4 +1,31 @@
-// SPDX-License-Identifier: MPL-2.0
-= FFI
-Zig FFI implementation providing the C-compatible ABI bridge between the Idris2 interface definitions and the native WebView platform code.
-The `zig/` subdirectory contains the Zig build unit; generated C headers consumed here live in `generated/`.
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= ffi
+:description: Project directory
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Project directory.
+
+
+As a Level 3 directory (`third_party/gossamer/ffi/`), it supports the overall
+project structure.
+
+== Subdirectories\n\n[cols="1,2", options="header"]\n|===\n| Directory | Purpose\n| `zig/` | |\n|===\n\n
+== Purpose of Each Component
+
+
+
+== AI Manifest Structure
+
+* `0.3-AI-MANIFEST.a2ml` (this file) - Level 3 manifest for `third_party/gossamer/ffi/`
+
+* Each subdirectory has its own `0.4-AI-MANIFEST.a2ml`
+
+== Related Files
+
+* link:../0.2-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

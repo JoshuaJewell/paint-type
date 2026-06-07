@@ -1,27 +1,80 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
-= Dev Container Usage
-:author: Joshua Jewell <paint-type@pm.me>
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
+//
+// Copyright (c) 2026 Joshua Jewell (JoshuaJewell)
+// Copyright (c) 2026 Joshua Jewell (hyperpolymath)
+//
+= .devcontainer Directory
+:description: Development container configuration for paint-type
 
-== Overview
+This directory contains the **development container** configuration for paint-type,
+used by VS Code Dev Containers, GitHub Codespaces, and Gitpod.
 
-This dev container uses `cgr.dev/chainguard/wolfi-base` with git, curl, bash, and just pre-installed. Dev container features add git, just, and nickel automatically.
+== Purpose
 
-== VS Code (Local)
+Provides a consistent, reproducible development environment that matches
+the production build environment. This ensures:
 
-. Install the *Dev Containers* extension (`ms-vscode-remote.remote-containers`).
-. Set `dev.containers.dockerPath` to `podman` in VS Code settings.
-. Open the repo folder, then choose **Reopen in Container** from the command palette.
+* All developers use the same toolchain versions
+* Builds in dev match builds in CI
+* Security patches are consistently applied
 
-== GitHub Codespaces
+As a Level 1 directory (`.devcontainer/`), it supports the overall
+project structure.
 
-. From the repository on GitHub, click **Code > Codespaces > New codespace**.
-. The container builds automatically from this configuration.
+== Contents by Functional Grouping
 
-== Gitpod
+=== Configuration
 
-. Prefix the repo URL with `https://gitpod.io/#` to launch a workspace.
-. Gitpod reads `devcontainer.json` and builds the environment.
+* `devcontainer.json` -- VS Code/GitHub Codespaces configuration
+* `Containerfile` -- Development container image definition
 
-== Customization
+=== Documentation
 
-Replace `paint-type` placeholders in both `devcontainer.json` and `Containerfile` with your actual project name. Run `just deps` to verify the environment after first launch.
+* `README.adoc` -- This file
+* link:../CONTAINER-GUIDE.adoc[Container Architecture Guide] -- Complete guide to all container configurations
+
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose:
+
+*Configuration files* define build, test, and deployment parameters for the development environment.
+*Other files* support directory operations.
+
+== Development vs Production
+
+| Aspect | This Container | Production Container |
+|--------|----------------|---------------------|
+| Purpose | Development | Deployment |
+| Location | `.devcontainer/Containerfile` | `Containerfile` (root) |
+| Tools | Full dev stack | Minimal runtime |
+
+See link:../CONTAINER-GUIDE.adoc[Container Architecture Guide] for complete details.
+
+== Quick Start
+
+Build the development container:
+
+[source,bash]
+----
+podman build -t paint-type-dev -f .devcontainer/Containerfile .
+----
+
+Run with workspace mounted:
+
+[source,bash]
+----
+podman run --rm -it -v $(pwd):/workspaces/paint-type paint-type-dev
+----
+
+== AI Manifest Structure
+
+* `0.1-AI-MANIFEST.a2ml` - Level 1 manifest for `.devcontainer/`
+
+== Related Files
+
+* link:../0-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../CONTAINER-GUIDE.adoc[Container Architecture Guide]
+* link:../../.machine_readable/[Machine Readable Metadata]

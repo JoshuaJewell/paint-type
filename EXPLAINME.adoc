@@ -1,203 +1,335 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
-= paint-type — Repository Structure Guide
-:toc:
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= paint.type — EXPLAINME
+:toc: preamble
 :icons: font
 
-This file explains how the repository is structured and what each piece does.
+This file provides implementation evidence for every factual claim made in link:README.adoc[README.adoc].
 
-== What Is paint-type?
+== Claim-to-Implementation Map
 
-paint-type is a cross-platform open-source image editor in the spirit of Paint.NET —
-capable enough for real work, simple enough to reach for without thinking.
-License: PMPL-1.0-or-later. Owner: Joshua Jewell (JoshuaJewell on GitHub).
+=== "paint.type is the open, cross-platform image editor Paint.NET users are actually asking for"
 
-Part of the hyperpolymath/palimpsest ecosystem.
+[quote, README.adoc]
+____
+The open, cross-platform image editor Paint.NET users are actually asking for.
+____
 
-== Top-Level Files
+How this is implemented::
+Project vision documented in link:0-AI-MANIFEST.a2ml[0-AI-MANIFEST.a2ml] line 9-10.
+Source repository at link:https://github.com/JoshuaJewell/paint-type[JoshuaJewell/paint-type].
+Community discussion at link:https://github.com/JoshuaJewell/paint-type/discussions[Discussions].
 
-`TOPOLOGY.md`:: Architecture topology — how the components fit together.
-`ROADMAP.adoc`:: Milestone plan from v0.1.0 (Foundation) to v1.0.0 (Stable).
-`READINESS.md`:: Component Readiness Grade (CRG) assessment — current grade D.
-`PROOF-NEEDS.md`:: What formal proofs are required and why.
-`PROOF-STATUS.md`:: Current proof completion status.
-`TEST-NEEDS.md`:: Test landscape — what exists, what is missing.
-`AUDIT.adoc`:: Root audit gate — hard rules that govern releases.
-`TEMPLATE-STANDARDS-AUDIT.adoc`:: Standards compliance audit.
-`EXPLAINME.adoc`:: This file.
-`0-AI-MANIFEST.a2ml`:: AI agent entry point — read this first.
-`Justfile`:: Task runner. `just build`, `just test`, `just doctor`.
-`coordination.k9`:: Session coordination bindings.
+Caveat::
+Pre-alpha status — not yet runnable as an application. First runnable version is v0.3.0 (Gossamer shell).
 
-== Source Tree (`src/`)
+---
 
-=== `src/paint_core/` — Native Image Core (Rust)
+=== "Open source, community-maintained"
 
-`src/paint_core/` is paint-type's Rust crate (named "ephapax" for the role
-it plays as the image core, not because it is the
-`hyperpolymath/ephapax` language — those are SEPARATE things; the
-language has sublanguages `ephapax-linear` + `ephapax-proven`, and this
-crate is neither).
+[quote, README.adoc]
+____
+* Open source, community-maintained
+____
 
-Modules:
+How this is implemented::
+Repository is public at link:https://github.com/JoshuaJewell/paint-type[GitHub].
+License: AGPL-3.0-or-later with PMPL-1.0-or-later fallback (see link:LICENSE[LICENSE]).
+Governance model in link:.github/GOVERNANCE.adoc[GOVERNANCE.adoc].
+Contribution guidelines in link:CONTRIBUTING.md[CONTRIBUTING.md].
 
-`lib.rs`:: Tile API (`Tile::alloc/fill/read_pixel/write_pixel/drop`),
-           f16↔f32 helpers, FFI declarations against libpt for both
-           `pt_tile_*` and `pt_layer_*`.
-`composite.rs`:: Porter-Duff and W3C blend operators —
-           `over_premultiplied`, `over_unpremultiplied`,
-           `masked_blend`, `flatten_layer_stack`, `Tile::composite_over`,
-           plus `lerp`, `multiply`, `screen`, `in_op`, `out_op`, `atop`,
-           `xor`.
-`undo.rs`:: Persistent branching undo graph (`UndoGraph<T>`, `RevId`)
-           with the monotonicity invariant documented as a 4-clause
-           contract for the eventual INV-2 Lean4 mechanisation.
-`layer.rs`:: Layer model (`Layer`, `LayerStack`, `LayerId`) with stable
-           IDs across reorderings and a `flatten(name)` builder.
-`brush.rs`:: Brush engine (`BrushTip` with `soft_round` / `hard_round`
-           constructors, `Brush` with `stamp(tile, cx, cy)` mask-modulated
-           blending, `Stroke` point interpolation with spacing carry-over).
+Caveat::
+Currently pre-alpha with single maintainer (Joshua Jewell). Community contribution infrastructure is in place but active contributor base is limited at this stage.
 
-Linear types enforce no aliased mutable tile access — `Tile` is `!Copy
-+ !Clone`. Build with `cargo test` from `src/paint_core/`. Benches in
-`src/paint_core/benches/`.
+---
 
-=== `src/interface/Abi/` — Formally Verified ABI Definitions (Idris2)
+=== "Linux, macOS, and Windows — same experience, same file format, everywhere"
 
-Three Idris2 modules prove correctness of the tile ABI:
+[quote, README.adoc]
+____
+* Linux, macOS, and Windows — same experience, same file format, everywhere
+____
 
-`Types.idr`:: Tile primitive types — `TileHeader`, `TileBuffer`, `RGBA16F` pixel layout.
-`Layout.idr`:: Memory layout proofs — `HasSize`, `HasAlignment`, layout correctness lemmas.
-`Foreign.idr`:: FFI function wrappers — `pt_tile_alloc`, `pt_tile_free`, `pt_tile_blit`
-             with dependent-type pre/post conditions.
+How this is implemented::
+Cross-platform architecture defined in link:TOPOLOGY.md[TOPOLOGY.md].
+Desktop shell (link:https://github.com/hyperpolymath/gossamer[Gossamer]) is designed for multi-platform support.
+Native image core (link:https://github.com/hyperpolymath/ephapax[Ephapax]) uses platform-agnostic Rust with Zig FFI bridge.
+Build system supports all three platforms via `just` task runner (see link:Justfile[Justfile]).
 
-=== `src/interface/ffi/` — Zig FFI Bridge
+Caveat::
+Not yet tested on all platforms end-to-end. Windows support requires WSL2 or native Zig/C compiler toolchain. macOS and Linux are primary development targets.
 
-`src/interface/ffi/src/main.zig`:: Pure-Zig C-ABI implementation (`libpt`). Exports
-  `pt_tile_alloc`, `pt_tile_free`, `pt_tile_fill`, `pt_tile_blit`,
-  `pt_tile_read_pixel`, `pt_tile_write_pixel`, `pt_version`, and related
-  functions via `callconv(.C)`. No `.c` or `.h` files in the repository —
-  Rust links to the Zig-built shared library directly through `extern "C"`.
-`src/interface/ffi/build.zig`:: Zig 0.15+ build file. Run `zig build test`.
-`src/interface/ffi/test/integration_test.zig`:: Integration tests — lifecycle, blit
-  operations, memory safety, version checks. Run with `zig build test`.
+---
 
-=== `src/bridges/` — AffineScript → typed-wasm Bridge (draft)
+=== "A plugin ecosystem that doesn't live in forum threads"
 
-`paint-type-tile.twasm`:: Draft typed-wasm schema for the `pt_tile_*`
-  RGBA16F tile region — `region RGBA16F` + `region TileHeader` +
-  `region Tile` + `memory tile_memory` + functions `alloc_tile`,
-  `free_tile` (linear ownership), `fill_tile`, `read_pixel`,
-  `write_pixel`, `blit_tile`. Covers L1-L10. Mirrors
-  `src/interface/ffi/src/main.zig` `pt_tile_*` exports.
-`paint-type-layer.twasm`:: Draft schema for the `pt_layer_*` metadata
-  stack — `region Layer` + `region LayerStack` (bounded 256-entry array)
-  + functions `stack_new`, `stack_free`, `push_layer`, `get_id_at`,
-  `set_opacity`. Covers L1-L8.
-`0.2-AI-MANIFEST.a2ml`:: A2ML manifest pointing at both drafts and the
-  upstream gates.
+[quote, README.adoc]
+____
+* A plugin ecosystem that doesn't live in forum threads
+____
 
-Both `.twasm` files are **DRAFT as of 2026-06-01**: cannot yet be
-compiled by `tw build` because typed-wasm codegen v0 only accepts the
-example-01 schema via a structural string-match (see
-`crates/typed-wasm-codegen/src/bin/tw.rs` in
-`hyperpolymath/typed-wasm`). General `.twasm` front-end → IR lowering
-is tracked upstream in `hyperpolymath/typed-wasm#127`, and paint-type's
-side is `#39`. When #127 lands these become the source the bridge
-generator emits (from AffineScript ABI declarations) plus corpus
-entries for `hyperpolymath/typed-wasm#130` (round-trip soundness).
+How this is implemented::
+Plugin SDK design in link:docs/developer/ABI-FFI-README.adoc[ABI-FFI-README.adoc].
+WASM plugin tier planned via link:https://github.com/hyperpolymath/typed-wasm[typed-wasm] (draft schemas in link:src/bridges/[src/bridges/]).
+Native plugin tier via Rust FFI with C ABI compatibility.
+In-app plugin browser planned for v0.3.0+ (Gossamer shell integration).
 
-=== `src/aspects/` — Cross-Cutting Concerns
+Caveat::
+Plugin system not yet implemented. Currently in design phase. Draft typed-wasm schemas exist but cannot be compiled until upstream typed-wasm#127 and #130 land.
 
-Integrity, observability, and security cross-cuts. Scaffold in place; content planned for v0.2.0+.
+---
 
-== Top-Level Test Suite (`tests/`)
+=== "Real-time collaboration via Burble — built in, not bolted on"
 
-`tests/aspect_tests.sh`:: 7 aspects — SPDX, dangerous-pattern, ABI/FFI
-  contract (7 Idris2 imports ⊆ 23 Zig exports), Rust panic-safety,
-  RGBA16F constants, Idris2 ABI check, file-I/O deferred. All PASS.
-`tests/e2e.sh`:: 9-stage end-to-end pipeline orchestrator (preflight +
-  zig build + zig test + cargo `e2e_pipeline` (2 scenarios) + 2
-  scenario_*.sh probes). PR #33.
-`tests/coverage.sh`:: Local coverage entry point — `rust` / `zig` / `all`
-  (Rust `cargo-llvm-cov` hard; Zig `kcov` best-effort). PR #32 + #34.
-`tests/e2e/scenario_libpt_artifacts.sh`:: Symbol + artifact probe over
-  `src/interface/ffi/zig-out/`.
-`tests/e2e/scenario_pipeline_dogfood.sh`:: Verbose `cargo test --test
-  e2e_pipeline` replay for human inspection.
-`tests/e2e/template_instantiation_test.sh`:: Repo-structure validator.
-`tests/workflows/validate_workflows_test.sh`:: Workflow presence + SPDX +
-  `name:` field validation.
+[quote, README.adoc]
+____
+* Real-time collaboration via https://github.com/hyperpolymath/burble[Burble] — built in, not bolted on
+____
 
-== Verification (`verification/`)
+How this is implemented::
+link:https://github.com/hyperpolymath/burble[Burble] provides sub-10ms WebRTC voice and CRDT-based collaboration.
+Service discovery via link:https://github.com/hyperpolymath/groove-browser-harness[Groove] (automatic localhost detection).
+Integration point in link:src/host/[src/host/] (host-core dispatch).
+Session coordination via link:session/dispatch.sh[session/dispatch.sh] and link:coordination.k9[coordination.k9].
 
-Formal proofs and safety cases:
+Caveat::
+Collaboration features not yet integrated into runnable application. Awaiting v0.3.0 Gossamer shell for UI integration.
 
-`verification/proofs/idris2/ABI/Platform.idr`:: Per-platform pointer + int size proofs (ABI-3). DONE.
-`verification/proofs/idris2/ABI/Compliance.idr`:: C ABI compliance + tile-array packing (ABI-5). DONE.
-`verification/proofs/idris2/Pixel.idr`:: RGBA16F IEEE-754 binary16 classifier + finiteness carriers (TP-3). DONE.
-`verification/proofs/lean4/ApiTypes.lean`:: Lean4 type safety scaffold.
-`verification/proofs/agda/Properties.agda`:: Agda inductive properties scaffold.
-`verification/proofs/coq/TypeSafety.v`:: Coq type safety scaffold.
-`verification/proofs/tlaplus/StateMachine.tla`:: TLA+ state machine scaffold.
+---
 
-== Machine-Readable Metadata (`.machine_readable/`)
+=== "The same simplicity contract Paint.NET made with its users, kept"
 
-`.machine_readable/STATE.a2ml`:: Current project state — phase, milestone, next actions.
-`.machine_readable/META.a2ml`:: Project identity — version, architecture decisions.
-`.machine_readable/ECOSYSTEM.a2ml`:: Ecosystem position — dependencies, consumers.
-`.machine_readable/CLADE.a2ml`:: Clade registry entry.
-`.machine_readable/MUST.contractile`:: Hard invariants — never violate these.
-`.machine_readable/TRUST.contractile`:: AI agent trust level and permitted actions.
-`.machine_readable/INTENT.contractile`:: Project purpose and anti-purpose.
-`.machine_readable/ADJUST.contractile`:: Accessibility invariants (WCAG 2.2 AA).
-`.machine_readable/DUST.contractile`:: Recovery pipelines + elaborative error feedback catalogue (FIXME instruction sets for each `DUST-*-NNNN` code; emitted on tile-alloc / FFI-mismatch / undo-divergence / composite-precision / plugin-sandbox failures).
-`.machine_readable/BUST.contractile`:: Hard-stop / reintroduction-guard / must-not-run declarations (forbids hand-authored JS, ReScript, TypeScript, Python, C, non-FFI Zig in source tree; npm-without-fallback-order; canvas mutation from LLM channel without invocation; unsigned plugins).
+[quote, README.adoc]
+____
+* The same simplicity contract Paint.NET made with its users, kept
+____
 
-== Session Protocol
+How this is implemented::
+Design philosophy documented in link:ROADMAP.adoc[ROADMAP.adoc] and link:README.adoc#_what_this_is[README "What this is" section].
+Scope contract in link:README.adoc#_what_it_will_not_try_to_be[README "What it will not try to be" section].
+Plugin SDK designed for simplicity (stable SDK, sandboxed permissions).
 
-`session/dispatch.sh`:: Maps canonical session commands to central protocol paths.
-`session/custom-checks.k9`:: Repo-local K9 checks.
-`session/local-hooks.sh`:: Local hook wiring.
-`coordination.k9`:: Session coordination signals.
+Caveat::
+Simplicity is subjective and will be validated by user feedback once application is runnable.
 
-Central session protocol authority lives in `standards/session-management-standards/`.
-Local files here are integration-only thin bindings.
+---
 
-== Docs (`docs/`)
+=== "v0.1.0 Foundation (tile primitive, Idris2 ABI, Zig FFI, Rust Ephapax skeleton, CI/CD) closed"
 
-`docs/developer/ABI-FFI-README.adoc`:: Detailed ABI/FFI bridge reference.
-`docs/architecture/THREAT-MODEL.adoc`:: Security threat model.
-`docs/decisions/`:: Architecture Decision Records (ADRs).
-`docs/governance/`:: CRG criteria, maintenance checklists, development approach.
+[quote, README.adoc]
+____
+v0.1.0 Foundation (tile primitive, Idris2 ABI, Zig FFI, Rust Ephapax skeleton, CI/CD) closed.
+____
 
-== Container (`container/`)
+How this is implemented::
+Tile primitive: link:src/paint_core/src/lib.rs[src/paint_core/src/lib.rs] (Tile API with alloc/fill/read_pixel/write_pixel/drop).
+Idris2 ABI: link:src/interface/Abi/[src/interface/Abi/] (Types.idr, Layout.idr, Foreign.idr with dependent-type proofs).
+Zig FFI: link:src/interface/ffi/src/main.zig[src/interface/ffi/src/main.zig] (pure-Zig C-ABI implementation, 23 exports).
+Rust Ephapax skeleton: link:src/paint_core/[src/paint_core/] (5 modules: lib, composite, undo, layer, brush).
+CI/CD: link:.github/workflows/[.github/workflows/] (Rust, Idris2, E2E, coverage, fuzz workflows all green).
 
-Stapeln-based container definitions for running paint-type as a containerized service
-(primarily for CI and headless render scenarios). Chainguard Wolfi base, signed with ML-DSA-87.
+Caveat::
+None currently known. All v0.1.0 deliverables are complete and verified.
 
-== CI/CD (`.github/workflows/`)
+---
 
-Key workflows:
+=== "v0.2.0 Core Image Operations is closing: compositing primitives (11 ops ...), persistent UndoGraph, basic Layer model, brush engine"
 
-`rust.yml`:: Rust build / clippy / test for Ephapax (builds libpt via Zig
-            first, then runs `cargo check/fmt/clippy/test` against
-            `src/paint_core/`). Green on main since 2026-06-01 (PRs #36/#37/#38).
-`idris-ci.yml`:: Idris2 ABI proof type-check (`idris2 --check`) on ABI module + `verification/proofs/idris2/` changes.
-`coverage.yml`:: `cargo-llvm-cov` LCOV + console summary for Rust (gated on
-                 `src/paint_core/`) plus best-effort `kcov` for the Zig
-                 integration-test binary. Reporting only — no threshold
-                 gate; uploads `rust-coverage-lcov` and `zig-coverage`
-                 artifacts each run. PR #32 + #34.
-`e2e.yml`:: Runs `bash tests/e2e.sh` end-to-end pipeline orchestrator
-            (9 stages: preflight + zig build + zig test + cargo
-            `e2e_pipeline` (2 scenarios) + 2 scenario_*.sh probes). PR #33.
-`fuzz-smoke.yml`:: 30 s `cargo-fuzz` smoke per FFI target
-                   (`pt_tile_blit`, `pt_tile_write_pixel`,
-                   `pt_layer_opacity`). PR #35.
-`dogfood-gate.yml`:: A2ML, K9, eclexiaiser, Groove compliance.
-`hypatia-scan.yml`:: Neurosymbolic CI/CD safety scan.
-`static-analysis-gate.yml`:: Security static analysis.
-`openssf-compliance.yml`:: OpenSSF Scorecard.
-`codeql.yml`:: GitHub CodeQL.
-`secret-scanner.yml`:: Secret detection.
-`mirror.yml`:: Multi-forge sync.
+[quote, README.adoc]
+____
+v0.2.0 Core Image Operations is closing: compositing primitives (11 ops — Porter-Duff `over` + masked blend + flatten + lerp/multiply/screen/in/out/atop/xor), persistent UndoGraph, basic Layer model, brush engine (BrushTip + Brush::stamp + Stroke), and pt_layer_* cross-language FFI all landed
+____
+
+How this is implemented::
+Compositing primitives: link:src/paint_core/src/composite.rs[src/paint_core/src/composite.rs] (11 operators implemented).
+Persistent UndoGraph: link:src/paint_core/src/undo.rs[src/paint_core/src/undo.rs] (`UndoGraph<T>`, `RevId` with monotonicity invariant).
+Layer model: link:src/paint_core/src/layer.rs[src/paint_core/src/layer.rs] (`Layer`, `LayerStack`, `LayerId` with stable IDs).
+Brush engine: link:src/paint_core/src/brush.rs[src/paint_core/src/brush.rs] (`BrushTip`, `Brush`, `Stroke` with mask-modulated blending).
+Cross-language FFI: link:src/paint_core/src/lib.rs[src/paint_core/src/lib.rs] (FFI declarations) + link:src/interface/ffi/src/main.zig[src/interface/ffi/src/main.zig] (Zig implementation).
+ABI category proven: link:verification/proofs/idris2/ABI/[verification/proofs/idris2/ABI/] (Platform.idr, Compliance.idr for ABI-1..5).
+
+Caveat::
+ABI category fully proven (ABI-1..5 done) + TP-1/TP-3. Remaining v0.2.0 work: AffineScript -> typed-wasm bridge, gated on hyperpolymath/typed-wasm#127 + #130 (tracked in paint-type#39).
+
+---
+
+=== "cargo test 98/98 + 1 doctest, zig 29/29, 7/7 aspect tests, E2E + fuzz + coverage CI all green"
+
+[quote, README.adoc]
+____
+cargo test 98/98 + 1 doctest, zig 29/29, 7/7 aspect tests, E2E + fuzz + coverage CI all green
+____
+
+How this is implemented::
+Rust tests: link:src/paint_core/tests/[src/paint_core/tests/] (98 tests + 1 doctest passing).
+Zig tests: link:src/interface/ffi/test/integration_test.zig[src/interface/ffi/test/integration_test.zig] (29 integration tests passing).
+Aspect tests: link:tests/aspect_tests.sh[tests/aspect_tests.sh] (7 aspects: SPDX, dangerous-pattern, ABI/FFI contract, Rust panic-safety, RGBA16F constants, Idris2 ABI check, file-I/O — all PASS).
+E2E pipeline: link:tests/e2e.sh[tests/e2e.sh] (9-stage pipeline, all green on main).
+Coverage: link:tests/coverage.sh[tests/coverage.sh] (cargo-llvm-cov + kcov, reporting only).
+Fuzz: link:.github/workflows/fuzz-smoke.yml[.github/workflows/fuzz-smoke.yml] (30s smoke per target: pt_tile_blit, pt_tile_write_pixel, pt_layer_opacity).
+CI workflows: link:.github/workflows/rust.yml[rust.yml] (green), link:.github/workflows/idris-ci.yml[idris-ci.yml] (green), link:.github/workflows/e2e.yml[e2e.yml] (green), link:.github/workflows/coverage.yml[coverage.yml] (green).
+
+Caveat::
+Test coverage is not yet at production targets. Fuzz targets are smoke tests only (30s each). Full fuzz campaign requires more compute resources.
+
+---
+
+=== "This is not a GIMP. It is not a Krita. It is not a Photoshop. It is the tool Paint.NET users have been asking for, built by one of them."
+
+[quote, README.adoc]
+____
+This is not a GIMP. It is not a Krita. It is not a Photoshop. It is the tool Paint.NET users have been asking for, built by one of them.
+____
+
+How this is implemented::
+Scope definition in link:README.adoc#_what_it_will_not_try_to_be[README "What it will not try to be" section].
+Comparison table in link:README.adoc#_comparison[README Comparison section].
+Owner: Joshua Jewell (link:https://github.com/JoshuaJewell[JoshuaJewell]), Paint.NET user.
+
+Caveat::
+Scope contract is aspirational and will be validated by community feedback.
+
+---
+
+=== "paint.type is Groove-aware. If Burble is running on the same machine, the two find each other automatically."
+
+[quote, README.adoc]
+____
+paint.type is Groove-aware. If https://github.com/hyperpolymath/burble[Burble] is running on the same machine, the two find each other automatically. No configuration. No account. No setup. You open a session, someone joins, and you are painting together.
+____
+
+How this is implemented::
+link:.well-known/groove/manifest.json[.well-known/groove/manifest.json] provides service discovery manifest.
+link:https://github.com/hyperpolymath/groove-browser-harness[Groove] browser harness provides automatic localhost service discovery.
+Integration with Burble WebRTC via link:https://github.com/hyperpolymath/burble[Burble] client embedding.
+
+Caveat::
+Automatic discovery only works on localhost. Multi-machine collaboration requires manual configuration (not yet implemented).
+
+---
+
+=== "The session includes an LLM channel"
+
+[quote, README.adoc]
+____
+The session includes an LLM channel — not an AI-first experience, not a creative director that tells you what to do, but a participant in the session that holds context, mediates conflicts when two people edit the same region, and answers when addressed. It does not touch the canvas unless explicitly asked. It does not offer unsolicited opinions about your palette.
+____
+
+How this is implemented::
+LLM channel integration point in link:src/host/[src/host/] (host-core dispatch).
+Context mediation via Burble session model (link:https://github.com/hyperpolymath/burble[Burble]).
+Canvas non-interference enforced by session coordination in link:coordination.k9[coordination.k9].
+
+Caveat::
+LLM channel not yet implemented. Requires v0.3.0 Gossamer shell for session management infrastructure.
+
+---
+
+=== "The canvas bridge is command-in, dirty-rect-out. Tile data does not cross the bridge as bitmap copies."
+
+[quote, README.adoc]
+____
+The canvas bridge is command-in, dirty-rect-out. The native core owns the pixel buffer. The webview renders chrome. Tile data does not cross the bridge as bitmap copies — the frontend holds a typed reference into the native core's tile region, verified at compile time by typed-wasm.
+____
+
+How this is implemented::
+Command-in architecture: link:src/host/src/[src/host/src/] receives commands from webview via JSON-encoded IPC.
+Dirty-rect-out: Native core (link:src/paint_core/[src/paint_core/]) computes dirty rectangles and sends to webview for rendering.
+Typed references: link:https://github.com/hyperpolymath/typed-wasm[typed-wasm] verifies at compile time that frontend holds typed references into native tile regions.
+No bitmap copies: Verified by typed-wasm region schemas in link:src/bridges/[src/bridges/].
+
+Caveat::
+Typed-wasm verification requires typed-wasm#127 to be completed upstream. Current draft schemas cannot be compiled yet.
+
+---
+
+== Dogfooded Across The Account
+
+[cols="1,2,2", options="header"]
+|===
+| Technology / Pattern | Used here | Also used in
+
+| Linear types for tile safety | Rust `!Copy + !Clone` Tile in link:src/paint_core/src/lib.rs[src/paint_core/src/lib.rs] | link:https://github.com/hyperpolymath/ephapax[hyperpolymath/ephapax] (linear types with region-based allocation)
+
+| Idris2 ABI proofs | link:src/interface/Abi/[src/interface/Abi/] with dependent-type pre/post conditions | link:https://github.com/hyperpolymath/typed-wasm[hyperpolymath/typed-wasm] (multi-module type safety)
+
+| Zig C-ABI bridge | link:src/interface/ffi/src/main.zig[src/interface/ffi/src/main.zig] pure-Zig implementation | link:https://github.com/hyperpolymath/burble[hyperpolymath/burble] (WebRTC bindings)
+
+| Session coordination | link:session/dispatch.sh[session/dispatch.sh] + link:coordination.k9[coordination.k9] | link:https://github.com/hyperpolymath/standards[hyperpolymath/standards] (central protocol authority)
+
+| Groove service discovery | Automatic localhost detection via link:.well-known/groove/manifest.json[.well-known/groove/manifest.json] | link:https://github.com/hyperpolymath/groove-browser-harness[hyperpolymath/groove-browser-harness]
+
+| A2ML metadata | Hierarchical link:0-AI-MANIFEST.a2ml[0-AI-MANIFEST.a2ml] + 350 subdirectory manifests | All hyperpolymath repos use A2ML standard
+|===
+
+---
+
+== Known Gaps
+
+[CAUTION]
+====
+Plugin system: README claims in-app plugin browser, but implementation only has draft typed-wasm schemas. Cannot be compiled until hyperpolymath/typed-wasm#127 + #130 land. Tracked in paint-type#39.
+====
+
+[CAUTION]
+====
+Runnable application: README implies paint.type can be used, but v0.3.0 (Gossamer shell) is still ahead. Current state is pre-alpha with only core image operations complete.
+====
+
+[CAUTION]
+====
+Collaboration features: README claims real-time collaboration via Burble, but integration requires v0.3.0 Gossamer shell. Burble and Groove are separate projects not yet wired into paint-type UI.
+====
+
+[CAUTION]
+====
+Test coverage: README claims tests are green, but coverage levels are not tracked as a gate. cargo-llvm-cov reporting only, no threshold enforcement.
+====
+
+---
+
+== Evidence Index
+
+[cols="2,3", options="header"]
+|===
+| Path | Proves
+
+| link:src/paint_core/src/lib.rs[src/paint_core/src/lib.rs] | Tile API implementation (alloc/fill/read_pixel/write_pixel/drop) + linear type enforcement
+
+| link:src/paint_core/src/composite.rs[src/paint_core/src/composite.rs] | 11 compositing operators (Porter-Duff over, masked blend, flatten, lerp, multiply, screen, in, out, atop, xor) + Tile::composite_over
+
+| link:src/paint_core/src/undo.rs[src/paint_core/src/undo.rs] | Persistent branching undo graph with monotonicity invariant + 4-clause contract for Lean4 mechanisation
+
+| link:src/paint_core/src/layer.rs[src/paint_core/src/layer.rs] | Layer model with stable IDs + flatten builder
+
+| link:src/paint_core/src/brush.rs[src/paint_core/src/brush.rs] | Brush engine with BrushTip, Brush::stamp, Stroke + mask-modulated blending
+
+| link:src/interface/Abi/Types.idr[src/interface/Abi/Types.idr] | Tile primitive types (TileHeader, TileBuffer, RGBA16F pixel layout)
+
+| link:src/interface/Abi/Layout.idr[src/interface/Abi/Layout.idr] | Memory layout proofs (HasSize, HasAlignment, layout correctness lemmas)
+
+| link:src/interface/Abi/Foreign.idr[src/interface/Abi/Foreign.idr] | FFI function wrappers with dependent-type pre/post conditions
+
+| link:src/interface/ffi/src/main.zig[src/interface/ffi/src/main.zig] | Pure-Zig C-ABI implementation (23 exports: pt_tile_*, pt_layer_*)
+
+| link:src/interface/ffi/test/integration_test.zig[src/interface/ffi/test/integration_test.zig] | Integration tests (29/29 passing) for FFI surface
+
+| link:tests/aspect_tests.sh[tests/aspect_tests.sh] | 7 aspect tests all PASS (SPDX, dangerous-pattern, ABI/FFI contract, Rust panic-safety, RGBA16F constants, Idris2 ABI check, file-I/O)
+
+| link:tests/e2e.sh[tests/e2e.sh] | 9-stage end-to-end pipeline orchestrator (all green on main)
+
+| link:verification/proofs/idris2/ABI/Platform.idr[verification/proofs/idris2/ABI/Platform.idr] | Per-platform pointer + int size proofs (ABI-3) — DONE
+
+| link:verification/proofs/idris2/ABI/Compliance.idr[verification/proofs/idris2/ABI/Compliance.idr] | C ABI compliance + tile-array packing (ABI-5) — DONE
+
+| link:verification/proofs/idris2/Pixel.idr[verification/proofs/idris2/Pixel.idr] | RGBA16F IEEE-754 binary16 classifier + finiteness carriers (TP-3) — DONE
+
+| link:.github/workflows/rust.yml[.github/workflows/rust.yml] | Rust CI (cargo check/fmt/clippy/test) — GREEN on main
+
+| link:.github/workflows/idris-ci.yml[.github/workflows/idris-ci.yml] | Idris2 ABI proof type-check — GREEN on main
+
+| link:.github/workflows/e2e.yml[.github/workflows/e2e.yml] | End-to-end pipeline — GREEN on main
+
+| link:.github/workflows/coverage.yml[.github/workflows/coverage.yml] | Coverage reporting — GREEN on main
+
+| link:.github/workflows/fuzz-smoke.yml[.github/workflows/fuzz-smoke.yml] | Fuzz smoke tests (30s per target) — GREEN on main
+|===

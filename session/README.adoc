@@ -1,0 +1,35 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= session
+:description: Session management and coordination files
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Session management and coordination files.
+
+
+As a Level 1 directory (`session/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n=== Configuration\n\n* `local-hooks.sh` — Shell script\n* `dispatch.sh` — Shell script\n\n=== Documentation\n\n* `README.md` — Project documentation\n\n=== Other Files\n\n* `custom-checks.k9` — K9 coordination file\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Configuration files* define build, test, and deployment parameters.\n
+*Documentation files* provide guidance.\n
+*Other files* support directory operations.\n
+
+== AI Manifest Structure
+
+* `0.1-AI-MANIFEST.a2ml` (this file) - Level 1 manifest for `session/`
+
+
+
+== Related Files
+
+* link:../0-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

@@ -1,27 +1,26 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
----
-### [META]
-id: "source-pillar"
-level: 1
-parent: "../0-AI-MANIFEST.a2ml"
+# paint.type AI Manifest (Level 1)
 
----
-### [AI_MANIFEST]
-description: |
-  Primary source code directory. Organized by role and architectural
-  aspect.
+This is the AI manifest for the `src/` directory (Level 1) of paint.type.
 
-canonical_locations:
-  core: "core/"
-  interface: "interface/"
-  bridges: "bridges/"
-  contracts: "contracts/"
-  errors: "errors/"
-  definitions: "definitions/"
-  aspects: "aspects/"
+## Purpose
 
-invariants:
-  - "Core logic MUST reside in core/"
-  - "Verified seams MUST reside in interface/"
-  - "Safety constraints MUST reside in contracts/"
-  - "Failure dictionaries MUST reside in errors/"
+This manifest describes the purpose and structure of the `src/` directory.
+
+## Authority Split
+
+- **Central protocol authority:** `standards/` repository
+- **Local integration authority (this directory):** src/ specific configurations
+
+## Subdirectories\n\n| Directory | Layer | Purpose |\n|---|---|---|\n| `bridges/` | 2 | |\n| `contracts/` | 2 | |\n| `host_core/` | 2 | |\n| `host/` | 2 | |\n| `core/` | 2 | |\n| `ui/` | 2 | |\n| `errors/` | 2 | |\n| `paint_core/` | 2 | |\n| `aspects/` | 2 | |\n| `interface/` | 2 | |\n| `definitions/` | 2 | |\n\n## Invariants
+
+1. All A2ML state files must live in `.machine_readable/` ONLY, never in the repo root.
+2. Each directory at layer 1 must have its own `0.1-AI-MANIFEST.a2ml`.
+3. Each directory must have a `README.adoc` describing purpose, contents, and function.
+4. SPDX license identifiers must be consistent across all files (PMPL-1.0-or-later).
+
+## Startup Checklist for Agents
+
+1. Read this file (`0.1-AI-MANIFEST.a2ml`).
+2. Read `README.adoc` for directory overview.
+3. For subdirectories, navigate to their respective manifest files.
+4. Never edit `.machine_readable/` files directly.

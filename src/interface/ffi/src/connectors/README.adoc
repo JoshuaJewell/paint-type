@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= connectors
+:description: Project directory
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Project directory.
+
+
+As a Level 5 directory (`src/interface/ffi/src/connectors/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n=== Source Files\n\n* `flatbuffers.zig` — flatbuffers configuration or data\n* `bsp.zig` — bsp configuration or data\n* `trpc.zig` — trpc configuration or data\n* `graphql.zig` — graphql configuration or data\n* `ipfs.zig` — ipfs configuration or data\n* `verisimdb_rest.zig` — verisimdb_rest configuration or data\n* `soap.zig` — soap configuration or data\n* `rest.zig` — rest configuration or data\n* `websocket.zig` — websocket configuration or data\n* `jsonrpc.zig` — jsonrpc configuration or data\n* `scip.zig` — scip configuration or data\n* `mqtt.zig` — mqtt configuration or data\n* `capnproto.zig` — capnproto configuration or data\n* `arrow_flight.zig` — arrow_flight configuration or data\n* `bebop.zig` — bebop configuration or data\n* `grpc.zig` — grpc configuration or data\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Source files* implement core functionality.\n
+
+== AI Manifest Structure
+
+* `0.5-AI-MANIFEST.a2ml` (this file) - Level 5 manifest for `src/interface/ffi/src/connectors/`
+
+
+
+== Related Files
+
+* link:../0.4-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

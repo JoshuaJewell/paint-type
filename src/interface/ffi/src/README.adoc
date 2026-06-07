@@ -1,1 +1,33 @@
-= Src Logic
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= src
+:description: Project directory
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Project directory.
+
+
+As a Level 4 directory (`src/interface/ffi/src/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n== Subdirectories\n\n[cols="1,2", options="header"]\n|===\n| Directory | Purpose\n| `connectors/` | |\n|===\n\n=== Source Files\n\n* `main.zig` — main configuration or data\n* `hexadeca.zig` — hexadeca configuration or data\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Source files* implement core functionality.\n
+
+== AI Manifest Structure
+
+* `0.4-AI-MANIFEST.a2ml` (this file) - Level 4 manifest for `src/interface/ffi/src/`
+
+* Each subdirectory has its own `0.5-AI-MANIFEST.a2ml`
+
+== Related Files
+
+* link:../0.3-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

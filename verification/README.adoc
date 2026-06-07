@@ -1,1 +1,31 @@
-= Verification Pillar
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= verification
+:description: Formal proofs and verification artifacts
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Formal proofs and verification artifacts.
+
+
+As a Level 1 directory (`verification/`), it supports the overall
+project structure.
+
+== Subdirectories\n\n[cols="1,2", options="header"]\n|===\n| Directory | Purpose\n| `tests/` | |\n| `fuzzing/` | |\n| `safety_case/` | |\n| `proofs/` | |\n| `traceability/` | |\n| `simulations/` | |\n| `coverage/` | |\n| `benchmarks/` | |\n|===\n\n
+== Purpose of Each Component
+
+
+
+== AI Manifest Structure
+
+* `0.1-AI-MANIFEST.a2ml` (this file) - Level 1 manifest for `verification/`
+
+* Each subdirectory has its own `0.2-AI-MANIFEST.a2ml`
+
+== Related Files
+
+* link:../0-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

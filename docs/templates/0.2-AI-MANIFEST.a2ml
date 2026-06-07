@@ -1,0 +1,26 @@
+# paint.type AI Manifest (Level 2)
+
+This is the AI manifest for the `docs/templates/` directory (Level 2) of paint.type.
+
+## Purpose
+
+This manifest describes the purpose and structure of the `docs/templates/` directory.
+
+## Authority Split
+
+- **Central protocol authority:** `standards/` repository
+- **Local integration authority (this directory):** docs/templates/ specific configurations
+
+## Subdirectories\n\n| Directory | Layer | Purpose |\n|---|---|---|\n| `contractiles/` | 3 | |\n\n## Invariants
+
+1. All A2ML state files must live in `.machine_readable/` ONLY, never in the repo root.
+2. Each directory at layer 2 must have its own `0.2-AI-MANIFEST.a2ml`.
+3. Each directory must have a `README.adoc` describing purpose, contents, and function.
+4. SPDX license identifiers must be consistent across all files (PMPL-1.0-or-later).
+
+## Startup Checklist for Agents
+
+1. Read this file (`0.2-AI-MANIFEST.a2ml`).
+2. Read `README.adoc` for directory overview.
+3. For subdirectories, navigate to their respective manifest files.
+4. Never edit `.machine_readable/` files directly.

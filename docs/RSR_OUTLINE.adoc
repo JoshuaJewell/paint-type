@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 = paint-type Repository Outline
 :toc:
 :sectnums:
@@ -111,7 +111,7 @@ For the full directory guide, see link:../EXPLAINME.adoc[EXPLAINME.adoc].
 
 == License
 
-SPDX-License-Identifier: PMPL-1.0-or-later
+SPDX-License-Identifier: CC-BY-SA-4.0
 
 See `LICENSE`, `docs/legal/EXHIBIT-A-ETHICAL-USE.txt`, and
 `docs/legal/EXHIBIT-B-QUANTUM-SAFE.txt` for full terms.

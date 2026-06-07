@@ -1,4 +1,4 @@
--- SPDX-License-Identifier: PMPL-1.0-or-later
+-- SPDX-License-Identifier: AGPL-3.0-or-later
 ||| C ABI Compliance Proof (ABI-5, paint-type PROOF-NEEDS)
 |||
 ||| For paint-type's `PtTile` header struct laid out by the Zig FFI,

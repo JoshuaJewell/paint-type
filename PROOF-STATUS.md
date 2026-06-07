@@ -1,5 +1,5 @@
 # Proof Status — paint-type
-<!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
 <!-- Tracks proof completion. Requirements defined in PROOF-NEEDS.md -->
 
 ## Summary

@@ -1,39 +1,26 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
----
-### [META]
-id: "source-unit-bridges"
-level: 2
-parent: "../0.1-AI-MANIFEST.a2ml"
+# paint.type AI Manifest (Level 2)
 
----
-### [AI_MANIFEST]
-description: |
-  AffineScript → typed-wasm bridge surface.
+This is the AI manifest for the `src/bridges/` directory (Level 2) of paint.type.
 
-  Hand-modelled `.twasm` sources for paint-type's two FFI surfaces:
+## Purpose
 
-    paint-type-tile.twasm   — pt_tile_* RGBA16F tile region + ops
-                              (L1-L10: linear alloc/free, &mut/& blit
-                              pairing, bounds-proved pixel access).
-    paint-type-layer.twasm  — pt_layer_* metadata stack
-                              (L1-L8: bounded array, opacity bits,
-                              visibility flags, name buffer).
+This manifest describes the purpose and structure of the `src/bridges/` directory.
 
-  Both files are DRAFT as of 2026-06-01: `tw build` from
-  `hyperpolymath/typed-wasm` codegen v0 only accepts the example-01
-  schema via structural string-match. General `.twasm` front-end →
-  IR lowering is tracked upstream in hyperpolymath/typed-wasm#127,
-  and paint-type's side is paint-type#39.
+## Authority Split
 
-  When #127 lands these become the actual sources the bridge generator
-  emits (from AffineScript ABI declarations) plus corpus entries for
-  hyperpolymath/typed-wasm#130 (round-trip soundness property).
+- **Central protocol authority:** `standards/` repository
+- **Local integration authority (this directory):** src/bridges/ specific configurations
 
-status: draft
-gates:
-  - hyperpolymath/typed-wasm#127
-  - hyperpolymath/typed-wasm#130
-  - JoshuaJewell/paint-type#39
-mirrors:
-  - src/interface/ffi/src/main.zig
-  - src/paint_core/src/lib.rs
+## Canonical Files\n\n- `paint-type-layer.twasm` -- paint-type-layer configuration or data\n- `paint-type-tile.twasm` -- paint-type-tile configuration or data\n\n## Invariants
+
+1. All A2ML state files must live in `.machine_readable/` ONLY, never in the repo root.
+2. Each directory at layer 2 must have its own `0.2-AI-MANIFEST.a2ml`.
+3. Each directory must have a `README.adoc` describing purpose, contents, and function.
+4. SPDX license identifiers must be consistent across all files (PMPL-1.0-or-later).
+
+## Startup Checklist for Agents
+
+1. Read this file (`0.2-AI-MANIFEST.a2ml`).
+2. Read `README.adoc` for directory overview.
+3. For subdirectories, navigate to their respective manifest files.
+4. Never edit `.machine_readable/` files directly.

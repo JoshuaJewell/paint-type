@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= idris2
+:description: Project directory
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Project directory.
+
+
+As a Level 3 directory (`verification/proofs/idris2/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n== Subdirectories\n\n[cols="1,2", options="header"]\n|===\n| Directory | Purpose\n| `ABI/` | |\n|===\n\n=== Source Files\n\n* `Pixel.idr` — Pixel configuration or data\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Source files* implement core functionality.\n
+
+== AI Manifest Structure
+
+* `0.3-AI-MANIFEST.a2ml` (this file) - Level 3 manifest for `verification/proofs/idris2/`
+
+* Each subdirectory has its own `0.4-AI-MANIFEST.a2ml`
+
+== Related Files
+
+* link:../0.2-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

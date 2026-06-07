@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
 <!-- Last updated: 2026-06-01 -->
 
 # paint-type Component Readiness Assessment
@@ -17,11 +17,11 @@
 | Idris2 ABI (Types, Layout, Foreign) | C | Pre-alpha | Compiles + CI-checked; ABI category fully proven (ABI-1..5 done) |
 | Zig FFI (libpt)     | C     | Pre-alpha     | 29/29 tests pass; 23 exports (pt_tile_* + pt_layer_* + slot helpers) |
 | Ephapax (Rust core) | C     | Pre-alpha     | Tile API + 11 compositing ops + UndoGraph + layer model + brush engine + benches (cargo test 98/98 + 1 doctest) |
-| AffineScript bridge | D     | Pre-alpha     | Draft `.twasm` schemas in `src/bridges/`; gated on `hyperpolymath/typed-wasm#127` + `#130` (paint-type#39) |
+| AffineScript bridge | D     | Pre-alpha     | Draft `.twasm` schemas in `src/bridges/` compile with `tw build` via hardcoded IR; full front-end gated on `hyperpolymath/typed-wasm#127` + `#130` (paint-type#39) |
 | Gossamer shell integration | D | Pre-alpha  | Not started; architecture specified                       |
 | Burble / Groove     | D     | Pre-alpha     | Not started; architecture specified                       |
 
-**Overall:** Grade D (closing on C) — 15 PRs of v0.2.0 work landed 2026-06-01: compositing primitives + 7 more operators (lerp/multiply/screen/in/out/atop/xor), non-uniform `Tile::composite_over`, persistent UndoGraph + benches, basic Layer / LayerStack model, brush engine (tip masks + stroke sampling + tile-local stamping), pt_layer_* cross-language FFI, ABI-3/ABI-5/TP-3 proofs, **draft `.twasm` schemas at `src/bridges/`** (PR #40), and the full CI tail — coverage (PR #32 + #34), E2E pipeline (PR #33), fuzz harness (PR #35), Rust CI now green on main (PRs #36/#37/#38). ABI category fully proven; cargo test 98/98 + 1 doctest; zig build test 29/29; aspect tests 7 PASS. Remaining v0.2.0 work: AffineScript → typed-wasm bridge **compilation** (draft `.twasm` exists; `tw build` gated on `hyperpolymath/typed-wasm#127` + `#130`; paint-type#39). Outstanding for Grade C: AffineScript bridge generated and verifier-accepted, Gossamer integration started.
+**Overall:** Grade D (closing on C) — 15 PRs of v0.2.0 work landed 2026-06-01: compositing primitives + 7 more operators (lerp/multiply/screen/in/out/atop/xor), non-uniform `Tile::composite_over`, persistent UndoGraph + benches, basic Layer / LayerStack model, brush engine (tip masks + stroke sampling + tile-local stamping), pt_layer_* cross-language FFI, ABI-3/ABI-5/TP-3 proofs, **draft `.twasm` schemas at `src/bridges/`** (PR #40), and the full CI tail — coverage (PR #32 + #34), E2E pipeline (PR #33), fuzz harness (PR #35), Rust CI now green on main (PRs #36/#37/#38). ABI category fully proven; cargo test 98/98 + 1 doctest; zig build test 29/29; aspect tests 7 PASS. Remaining v0.2.0 work: AffineScript → typed-wasm bridge **full front-end** (draft `.twasm` exists and compiles with `tw build` via hardcoded IR; full front-end → IR lowering gated on `hyperpolymath/typed-wasm#127` + `#130`; paint-type#39). Outstanding for Grade C: AffineScript bridge generated and verifier-accepted, Gossamer integration started.
 
 ---
 
@@ -100,6 +100,6 @@ This follows after reaching Grade C. Target: after v0.3.0 Desktop Shell mileston
 ## Concerns and Maintenance Notes
 
 - Ephapax is architecturally specified but not yet feature-complete — compositing, brush engine, and undo graph are all v0.2.0 work
-- AffineScript bridge has draft `.twasm` schemas at `src/bridges/paint-type-{tile,layer}.twasm`; the AffineScript-ABI → `.twasm` generator + the upstream `tw build` path are not yet integrated (gated on `hyperpolymath/typed-wasm#127` general front-end + `#130` round-trip soundness; tracked in paint-type#39)
+- AffineScript bridge has draft `.twasm` schemas at `src/bridges/paint-type-{tile,layer}.twasm`; the schemas compile with `tw build` via hardcoded IR; the AffineScript-ABI → `.twasm` generator + upstream general front-end are gated on `hyperpolymath/typed-wasm#127` + `#130` round-trip soundness; tracked in paint-type#39)
 - Gossamer shell integration has not started; depends on Gossamer reaching a usable API surface
 - Burble and Groove collaboration layers are future work (v0.5.0)

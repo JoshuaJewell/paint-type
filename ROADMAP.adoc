@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 = paint-type Roadmap
 
 == Current Status
@@ -8,10 +8,11 @@ All in-repo v0.2.0 work has landed (compositing primitives, persistent
 UndoGraph, basic Layer model, brush engine, pt_layer_* FFI, ABI-3/ABI-5/TP-3
 proofs); E2E + fuzz + coverage CI wired and Rust CI is green on `main`. The
 only remaining v0.2.0 box is the AffineScript → typed-wasm bridge — draft
-`.twasm` schemas live at `src/bridges/paint-type-{tile,layer}.twasm` but
-`tw build` cannot yet compile them; gated upstream on
-`hyperpolymath/typed-wasm#127` (D1 codegen coverage) + `#130` (D2 round-trip
-soundness), tracked from this side in `JoshuaJewell/paint-type#39`.
+`.twasm` schemas live at `src/bridges/paint-type-{tile,layer}.twasm` and now
+compile with `tw build` via hardcoded IR; full general front-end → IR lowering
+still gated upstream on `hyperpolymath/typed-wasm#127` (D1 codegen coverage) +
+`#130` (D2 round-trip soundness), tracked from this side in
+`JoshuaJewell/paint-type#39`.
 Architecture remains locked.
 
 == Milestones
@@ -32,7 +33,7 @@ Architecture remains locked.
 * [x] Basic layer model — new, flatten, delete, reorder — PR #23
 * [x] `pt_layer_*` cross-language layer-metadata FFI — PR #28 (closes #25)
 * [x] E2E pipeline test + fuzz harness + coverage reporting — PRs #32 / #33 / #34 / #35; Rust CI green on main — PRs #36 / #37 / #38
-* [ ] AffineScript → typed-wasm bindings for the tile API — DRAFT `.twasm` schemas landed in `src/bridges/paint-type-{tile,layer}.twasm` (PR #40); compilation gated on `hyperpolymath/typed-wasm#127` + `#130`, tracked in paint-type#39
+* [ ] AffineScript → typed-wasm bindings for the tile API — DRAFT `.twasm` schemas landed in `src/bridges/paint-type-{tile,layer}.twasm` (PR #40); now compiles with `tw build` via hardcoded IR; full front-end gated on `hyperpolymath/typed-wasm#127` + `#130`, tracked in paint-type#39
 * [x] Formal proofs for ABI layout correctness in Idris2 — ABI-1/2/3/4/5 + TP-1/3 done (PRs #10, #19); ABI category fully closed
 
 === v0.3.0 - Desktop Shell (tracked: #13)

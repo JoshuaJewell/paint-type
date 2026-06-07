@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= ui
+:description: Project directory
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Project directory.
+
+
+As a Level 2 directory (`src/ui/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n=== Source Files\n\n* `app.js` — app configuration or data\n\n=== Other Files\n\n* `index.html` — index configuration or data\n* `style.css` — style configuration or data\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Source files* implement core functionality.\n
+*Other files* support directory operations.\n
+
+== AI Manifest Structure
+
+* `0.2-AI-MANIFEST.a2ml` (this file) - Level 2 manifest for `src/ui/`
+
+
+
+== Related Files
+
+* link:../0.1-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

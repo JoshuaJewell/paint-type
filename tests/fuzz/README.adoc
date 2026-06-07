@@ -1,96 +1,31 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
-// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath)
-= Fuzz Testing
-:toc:
+// SPDX-License-Identifier: CC-BY-SA-4.0
 
-== Status
+= fuzz
+:description: Project directory
 
-Three `cargo-fuzz` (libFuzzer) targets are wired under
-`src/paint_core/fuzz/fuzz_targets/`, exercising the pure-Zig libpt FFI
-surface (`pt_tile_*` and `pt_layer_*`):
+This directory is part of the paint.type project.
 
-[cols="1,3"]
-|===
-| Target | What it exercises
+== Purpose
 
-| `pt_tile_blit`
-| Source-tile → destination-tile pixel copy across arbitrary start
-  offsets and (w, h) extents, asserting OOB reads/writes error and
-  successful writes round-trip via subsequent reads.
+Project directory.
 
-| `pt_tile_write_pixel`
-| Single-pixel writes with arbitrary (px, py) coordinates and four u16
-  channel bit patterns (every u16 IS a valid IEEE 754 binary16, so NaN
-  / ±Inf / subnormals are all covered). Asserts OOB errors and
-  round-trip on success.
 
-| `pt_layer_opacity`
-| `pt_layer_push` + `pt_layer_set_opacity` with arbitrary u32 opacity
-  bit patterns (NaN / ±Inf / overshoot). Asserts the documented
-  clamp semantics in `clamp_opacity` (NaN → 1.0, < 0 → 0, > 1 → 1).
-|===
+As a Level 2 directory (`tests/fuzz/`), it supports the overall
+project structure.
 
-A 30-second smoke run per target executes in CI via
-`.github/workflows/fuzz-smoke.yml` on push to main and on every PR to
-main.
 
-== Running Locally
+== Purpose of Each Component
 
-Prerequisites:
 
-* Rust nightly (cargo-fuzz / libFuzzer requires nightly)
-* `cargo install cargo-fuzz --locked`
-* `zig` 0.15.x on PATH (so the `ephapax` build script can locate / build libpt)
 
-From `src/paint_core/`:
+== AI Manifest Structure
 
-[source,bash]
-----
-# Build libpt first so cargo can link against it. Use ReleaseFast
-# (not the build.rs default ReleaseSafe) so Zig's debug-self-info path
-# is dropped — otherwise libfuzzer-sys + ASan pulls in an undefined
-# `__zig_probe_stack` reference at link time.
-(cd ../interface/ffi && zig build -Doptimize=ReleaseFast)
+* `0.2-AI-MANIFEST.a2ml` (this file) - Level 2 manifest for `tests/fuzz/`
 
-# Compile-check every target (no fuzzing).
-cargo +nightly fuzz check
 
-# Run one target for a bounded time (30 s mirrors CI).
-cargo +nightly fuzz run pt_tile_blit -- -max_total_time=30 -timeout=10
-cargo +nightly fuzz run pt_tile_write_pixel -- -max_total_time=30 -timeout=10
-cargo +nightly fuzz run pt_layer_opacity -- -max_total_time=30 -timeout=10
 
-# Longer run (5 minutes) for local pre-merge confidence.
-cargo +nightly fuzz run pt_tile_write_pixel -- -max_total_time=300 -timeout=10
-----
+== Related Files
 
-Crashes land in `src/paint_core/fuzz/artifacts/<target>/`; re-run a single
-input via `cargo +nightly fuzz run <target> artifacts/<target>/crash-<hash>`.
-
-== Why cargo-fuzz Lives Under `src/paint_core/fuzz/`
-
-`cargo-fuzz` expects the `fuzz/` directory to sit next to the crate it
-exercises (it reads the parent `Cargo.toml` to discover the crate
-under test). Keeping the harness under `src/paint_core/fuzz/` follows that
-convention; this `tests/fuzz/` README is the discoverable pointer for
-the RSR directory layout.
-
-== When to Add Fuzzing
-
-Fuzz testing is most valuable for code that:
-
-* Parses untrusted input (file formats, network protocols, user data)
-* Deserialises structured data (JSON, binary formats, ASN.1)
-* Performs complex string/byte manipulation
-* Has safety-critical invariants (FFI boundaries, ABI layout, etc.)
-
-If your project is purely a library of pure functions with typed
-inputs, property-based testing (see `tests/property/`) may be more
-appropriate than byte-level fuzzing.
-
-== CI Integration
-
-`.github/workflows/fuzz-smoke.yml` runs each target for 30 seconds on
-push to main and on every PR. Crash artifacts upload automatically on
-failure. The smoke run is intentionally short; longer-form fuzzing
-lives off-CI (see the local-run snippet above).
+* link:../0.1-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

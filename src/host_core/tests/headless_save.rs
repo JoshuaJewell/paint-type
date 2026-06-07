@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Headless end-to-end: new_doc -> stroke -> save_png, no window.
 use host_core::dispatch::dispatch;
 use host_core::document::Document;

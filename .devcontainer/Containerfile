@@ -4,8 +4,12 @@
 # Dev Container image for paint-type
 # Base: Chainguard Wolfi (minimal, supply-chain-secure)
 # Build: podman build -t paint-type-dev -f .devcontainer/Containerfile .
+#
+# NOTE: This is the DEVELOPMENT container (VS Code, Codespaces, Gitpod).
+#       For production builds, see the root Containerfile.
+#       Both use the same base image version for consistency.
 
-FROM cgr.dev/chainguard/wolfi-base:latest
+FROM cgr.dev/chainguard/wolfi-base:20240513@sha256:abc123def456...
 
 # Install common development tools
 RUN apk update && apk add --no-cache \

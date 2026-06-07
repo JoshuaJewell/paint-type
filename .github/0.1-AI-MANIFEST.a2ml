@@ -1,1 +1,60 @@
 # AI Manifest - Level 1: .github
+
+This is the AI manifest for the `.github/` directory (Level 1) of paint.type.
+
+**NOTE:** The project is named "paint.type" but the GitHub repository is "paint-type"
+
+## Purpose
+
+The `.github/` directory contains GitHub-specific configuration, workflows, templates,
+and policies that govern repository automation, community interactions, and CI/CD.
+
+## Authority Split
+
+- **Central protocol authority:** `standards/` repository
+- **Local integration authority (this directory):**
+  - GitHub Actions workflows in `workflows/`
+  - Issue and discussion templates in `ISSUE_TEMPLATE/` and `DISCUSSION_TEMPLATE/`
+  - CODEOWNERS file
+  - FUNDING.yml
+  - dependabot.yml
+  - settings.yml
+
+## Subdirectories
+
+| Directory | Layer | Purpose |
+|---|---|---|
+| `workflows/` | 2 | GitHub Actions CI/CD workflows |
+| `ISSUE_TEMPLATE/` | 2 | Templates for GitHub issues |
+| `DISCUSSION_TEMPLATE/` | 2 | Templates for GitHub discussions |
+
+## Canonical Files
+
+- `CODEOWNERS` -- Repository ownership and review requirements
+- `FUNDING.yml` -- Funding configuration for GitHub Sponsors
+- `dependabot.yml` -- Dependency update automation
+- `settings.yml` -- Repository settings
+- `SECURITY.md` -- Security policy (GitHub-required, .md)
+- `CODE_OF_CONDUCT.md` -- Code of conduct (GitHub-required, .md)
+- `CONTRIBUTING.md` -- Contribution guidelines (GitHub-required, .md)
+- `GOVERNANCE.adoc` -- Project governance model
+- `copilot-instructions.adoc` -- AI assistant guidelines
+- `pull_request_template.md` -- Pull request template
+- `DIRECTORY.adoc` -- Directory index
+- `README.adoc` -- This directory's purpose and contents
+
+## Invariants
+
+1. GitHub-required files (SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, CHANGELOG.md)
+   MUST remain as `.md` for GitHub community health.
+2. All other documentation should prefer `.adoc` format.
+3. Each subdirectory at Layer 2 must have its own `0.2-AI-MANIFEST.a2ml`.
+4. Each subdirectory must have a `README.adoc` describing purpose, contents, and function.
+
+## Startup Checklist for Agents
+
+1. Read this file (`0.1-AI-MANIFEST.a2ml`).
+2. Read `README.adoc` for a complete overview of this directory.
+3. Read `DIRECTORY.adoc` for a complete file index.
+4. For GitHub-specific operations, refer to the relevant workflow or template.
+5. Never edit GitHub-required `.md` files without maintaining backward compatibility.

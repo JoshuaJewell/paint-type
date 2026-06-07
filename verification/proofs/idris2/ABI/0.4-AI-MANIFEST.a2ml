@@ -1,0 +1,26 @@
+# paint.type AI Manifest (Level 4)
+
+This is the AI manifest for the `verification/proofs/idris2/ABI/` directory (Level 4) of paint.type.
+
+## Purpose
+
+This manifest describes the purpose and structure of the `verification/proofs/idris2/ABI/` directory.
+
+## Authority Split
+
+- **Central protocol authority:** `standards/` repository
+- **Local integration authority (this directory):** verification/proofs/idris2/ABI/ specific configurations
+
+## Canonical Files\n\n- `Platform.idr` -- Platform configuration or data\n- `Compliance.idr` -- Compliance configuration or data\n- `Pointers.idr` -- Pointers configuration or data\n- `Foreign.idr` -- Foreign configuration or data\n- `Connector.idr` -- Connector configuration or data\n- `Layout.idr` -- Layout configuration or data\n\n## Invariants
+
+1. All A2ML state files must live in `.machine_readable/` ONLY, never in the repo root.
+2. Each directory at layer 4 must have its own `0.4-AI-MANIFEST.a2ml`.
+3. Each directory must have a `README.adoc` describing purpose, contents, and function.
+4. SPDX license identifiers must be consistent across all files (PMPL-1.0-or-later).
+
+## Startup Checklist for Agents
+
+1. Read this file (`0.4-AI-MANIFEST.a2ml`).
+2. Read `README.adoc` for directory overview.
+3. For subdirectories, navigate to their respective manifest files.
+4. Never edit `.machine_readable/` files directly.

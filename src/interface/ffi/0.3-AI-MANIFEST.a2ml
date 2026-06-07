@@ -1,11 +1,26 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
----
-### [META]
-id: "ffi-logic"
-level: 3
-parent: "../0.2-AI-MANIFEST.a2ml"
+# paint.type AI Manifest (Level 3)
 
----
-### [AI_MANIFEST]
-description: |
-  Specialised Level 3 logic for ffi.
+This is the AI manifest for the `src/interface/ffi/` directory (Level 3) of paint.type.
+
+## Purpose
+
+This manifest describes the purpose and structure of the `src/interface/ffi/` directory.
+
+## Authority Split
+
+- **Central protocol authority:** `standards/` repository
+- **Local integration authority (this directory):** src/interface/ffi/ specific configurations
+
+## Subdirectories\n\n| Directory | Layer | Purpose |\n|---|---|---|\n| `src/` | 4 | |\n| `test/` | 4 | |\n\n## Canonical Files\n\n- `build.zig` -- Zig build file\n\n## Invariants
+
+1. All A2ML state files must live in `.machine_readable/` ONLY, never in the repo root.
+2. Each directory at layer 3 must have its own `0.3-AI-MANIFEST.a2ml`.
+3. Each directory must have a `README.adoc` describing purpose, contents, and function.
+4. SPDX license identifiers must be consistent across all files (PMPL-1.0-or-later).
+
+## Startup Checklist for Agents
+
+1. Read this file (`0.3-AI-MANIFEST.a2ml`).
+2. Read `README.adoc` for directory overview.
+3. For subdirectories, navigate to their respective manifest files.
+4. Never edit `.machine_readable/` files directly.

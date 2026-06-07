@@ -1,27 +1,26 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
----
-### [META]
-id: "verification-pillar"
-level: 1
-parent: "../0-AI-MANIFEST.a2ml"
+# paint.type AI Manifest (Level 1)
 
----
-### [AI_MANIFEST]
-description: |
-  Primary verification pillar. Contains evidence for correctness,
-  performance, formal proofs, randomized testing, and aerospace-grade
-  high-assurance metrics (MC/DC coverage, traceability, safety cases).
+This is the AI manifest for the `verification/` directory (Level 1) of paint.type.
 
-canonical_locations:
-  tests: "tests/"
-  benchmarks: "benchmarks/"
-  proofs: "proofs/"
-  fuzzing: "fuzzing/"
-  simulations: "simulations/"
-  coverage: "coverage/"
-  traceability: "traceability/"
-  safety_case: "safety_case/"
+## Purpose
 
-invariants:
-  - "Evidence MUST be reproducible and documented"
-  - "High-assurance deployments MUST satisfy traceability and safety_case requirements"
+This manifest describes the purpose and structure of the `verification/` directory.
+
+## Authority Split
+
+- **Central protocol authority:** `standards/` repository
+- **Local integration authority (this directory):** verification/ specific configurations
+
+## Subdirectories\n\n| Directory | Layer | Purpose |\n|---|---|---|\n| `tests/` | 2 | |\n| `fuzzing/` | 2 | |\n| `safety_case/` | 2 | |\n| `proofs/` | 2 | |\n| `traceability/` | 2 | |\n| `simulations/` | 2 | |\n| `coverage/` | 2 | |\n| `benchmarks/` | 2 | |\n\n## Invariants
+
+1. All A2ML state files must live in `.machine_readable/` ONLY, never in the repo root.
+2. Each directory at layer 1 must have its own `0.1-AI-MANIFEST.a2ml`.
+3. Each directory must have a `README.adoc` describing purpose, contents, and function.
+4. SPDX license identifiers must be consistent across all files (PMPL-1.0-or-later).
+
+## Startup Checklist for Agents
+
+1. Read this file (`0.1-AI-MANIFEST.a2ml`).
+2. Read `README.adoc` for directory overview.
+3. For subdirectories, navigate to their respective manifest files.
+4. Never edit `.machine_readable/` files directly.

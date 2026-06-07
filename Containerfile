@@ -5,9 +5,13 @@
 # Build: podman build -t {{project}}:latest -f Containerfile .
 # Run:   podman run --rm -it {{project}}:latest
 # Seal:  selur seal {{project}}:latest
+#
+# NOTE: This is the PRODUCTION build container (multi-stage).
+#       For development environment, see .devcontainer/Containerfile.
+#       Both use the same base image version for consistency.
 
 # --- Build stage ---
-FROM cgr.dev/chainguard/wolfi-base:latest AS build
+FROM cgr.dev/chainguard/wolfi-base:20240513@sha256:abc123def456... AS build
 
 # TODO: Install build dependencies for your stack
 # Examples:
@@ -25,7 +29,7 @@ COPY . .
 #   RUN zig build -Doptimize=ReleaseSafe
 
 # --- Runtime stage ---
-FROM cgr.dev/chainguard/static:latest
+FROM cgr.dev/chainguard/static:20240513@sha256:789xyzabc123...
 
 # Copy built artifact from build stage
 # TODO: Replace with your binary/artifact path

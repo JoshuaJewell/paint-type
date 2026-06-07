@@ -1,16 +1,18 @@
-# paint-type AI Manifest (Read First)
+# paint.type AI Manifest (Read First)
 
-This is the root AI manifest for paint-type.
+This is the root AI manifest for paint.type.
 
 ## Project
 
-paint-type is a cross-platform open-source image editor in the spirit of Paint.NET.
+**NAME CLARIFICATION:** The *project* is named "paint.type" (similar to Paint.NET). The *GitHub repository* is named "paint-type" (GitHub does not allow dots in repository names). All references should use "paint.type" as the project name.
+
+paint.type is a cross-platform open-source image editor in the spirit of Paint.NET.
 Repo: JoshuaJewell/paint-type. License: PMPL-1.0-or-later.
 Contact: paint-type@pm.me. Status: pre-alpha — v0.2.0 Core Image Operations
 closing (compositing primitives + UndoGraph + Layer model + brush engine +
 pt_layer_* FFI all landed; ABI category fully proven; Rust CI green on main).
 Only AffineScript → typed-wasm bridge remains, gated on
-hyperpolymath/typed-wasm#127 + #130 (paint-type#39). Last updated: 2026-06-01.
+hyperpolymath/typed-wasm#127 + #130 (paint-type#39). Last updated: 2026-06-07.
 
 ## Authority Split
 

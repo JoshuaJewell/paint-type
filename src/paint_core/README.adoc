@@ -1,0 +1,35 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= paint_core
+:description: Project directory
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Project directory.
+
+
+As a Level 2 directory (`src/paint_core/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n== Subdirectories\n\n[cols="1,2", options="header"]\n|===\n| Directory | Purpose\n| `src/` | |\n| `benches/` | |\n| `tests/` | |\n| `fuzz/` | |\n|===\n\n=== Configuration\n\n* `Cargo.toml` — Rust package manifest\n\n=== Source Files\n\n* `build.rs` — Rust build script\n\n=== Other Files\n\n* `Cargo.lock` — Rust dependency lock file\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Configuration files* define build, test, and deployment parameters.\n
+*Source files* implement core functionality.\n
+*Other files* support directory operations.\n
+
+== AI Manifest Structure
+
+* `0.2-AI-MANIFEST.a2ml` (this file) - Level 2 manifest for `src/paint_core/`
+
+* Each subdirectory has its own `0.3-AI-MANIFEST.a2ml`
+
+== Related Files
+
+* link:../0.1-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

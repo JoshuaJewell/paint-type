@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= scripts
+:description: Utility scripts and automation
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Utility scripts and automation.
+
+
+As a Level 1 directory (`scripts/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n=== Configuration\n\n* `build-host-local.sh` — Shell script\n* `invariant-path.sh` — Shell script\n* `verify-manifests.sh` — Shell script\n* `validate-template.sh` — Shell script\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Configuration files* define build, test, and deployment parameters.\n
+
+== AI Manifest Structure
+
+* `0.1-AI-MANIFEST.a2ml` (this file) - Level 1 manifest for `scripts/`
+
+
+
+== Related Files
+
+* link:../0-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

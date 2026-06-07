@@ -1,1 +1,33 @@
-= abi Logic
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= Abi
+:description: Project directory
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Project directory.
+
+
+As a Level 3 directory (`src/interface/Abi/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n=== Source Files\n\n* `Types.idr` — Types configuration or data\n* `Foreign.idr` — Foreign configuration or data\n* `Connector.idr` — Connector configuration or data\n* `Layout.idr` — Layout configuration or data\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Source files* implement core functionality.\n
+
+== AI Manifest Structure
+
+* `0.3-AI-MANIFEST.a2ml` (this file) - Level 3 manifest for `src/interface/Abi/`
+
+
+
+== Related Files
+
+* link:../0.2-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

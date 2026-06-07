@@ -1,33 +1,26 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
----
-### [META]
-id: "docs-pillar"
-level: 1
-parent: "../0-AI-MANIFEST.a2ml"
+# paint.type AI Manifest (Level 1)
 
----
-### [AI_MANIFEST]
-description: |
-  Technical documentation hub. The root contains high-level orientation
-  (README, Quickstart, State-Visualizer). Specialized tracks live in
-  subdirectories.
+This is the AI manifest for the `docs/` directory (Level 1) of paint.type.
 
-canonical_locations:
-  quickstart: "QUICKSTART.adoc"
-  state_visualizer: "STATE-VISUALIZER.adoc"
-  governance: "governance/"
-  architecture: "architecture/"
-  decisions: "decisions/"
-  theory: "theory/"
-  practice: "practice/"
-  developer: "developer/"
-  attribution: "attribution/"
-  reports: "reports/"
-  whitepapers: "whitepapers/"
-  standards: "standards/"
-  legal: "legal/"
-  wikis: "wikis/"
+## Purpose
 
-invariants:
-  - "Primary documentation format MUST be AsciiDoc (.adoc)"
-  - "Root docs/ MUST only contain pillar entry points"
+This manifest describes the purpose and structure of the `docs/` directory.
+
+## Authority Split
+
+- **Central protocol authority:** `standards/` repository
+- **Local integration authority (this directory):** docs/ specific configurations
+
+## Subdirectories\n\n| Directory | Layer | Purpose |\n|---|---|---|\n| `practice/` | 2 | |\n| `standards/` | 2 | |\n| `legal/` | 2 | |\n| `attribution/` | 2 | |\n| `whitepapers/` | 2 | |\n| `theory/` | 2 | |\n| `reports/` | 2 | |\n| `decisions/` | 2 | |\n| `superpowers/` | 2 | |\n| `wikis/` | 2 | |\n| `templates/` | 2 | |\n| `developer/` | 2 | |\n| `architecture/` | 2 | |\n| `governance/` | 2 | |\n| `wiki/` | 2 | |\n\n## Canonical Files\n\n- `STATE-VISUALIZER.adoc` -- AsciiDoc documentation\n- `QUICKSTART.adoc` -- AsciiDoc documentation\n- `RSR_OUTLINE.adoc` -- AsciiDoc documentation\n- `tech-debt-2026-05-26.md` -- Markdown documentation\n\n## Invariants
+
+1. All A2ML state files must live in `.machine_readable/` ONLY, never in the repo root.
+2. Each directory at layer 1 must have its own `0.1-AI-MANIFEST.a2ml`.
+3. Each directory must have a `README.adoc` describing purpose, contents, and function.
+4. SPDX license identifiers must be consistent across all files (PMPL-1.0-or-later).
+
+## Startup Checklist for Agents
+
+1. Read this file (`0.1-AI-MANIFEST.a2ml`).
+2. Read `README.adoc` for directory overview.
+3. For subdirectories, navigate to their respective manifest files.
+4. Never edit `.machine_readable/` files directly.

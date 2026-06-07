@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // Paint Core -- region renderer: flatten the visible layer stack over a
 // rectangle into straight-alpha RGBA8 bytes for display and codecs.

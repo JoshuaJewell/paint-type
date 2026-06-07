@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
 = paint.type
 :toc: left
 :toc-title: Contents
@@ -8,7 +9,7 @@
 
 The open, cross-platform image editor Paint.NET users are actually asking for.
 
-image:https://img.shields.io/badge/license-PMPL--1.0--or--later-blue[License: PMPL-1.0-or-later]
+image:https://img.shields.io/badge/license-AGPL--3.0--or--later-red[License: AGPL-3.0-or-later]
 image:https://img.shields.io/badge/status-pre--alpha%20(v0.2.0%20closing)-yellow[Status: pre-alpha — v0.2.0 closing]
 image:https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey[Platforms]
 image:https://github.com/JoshuaJewell/paint-type/actions/workflows/rust.yml/badge.svg[Rust CI,link=https://github.com/JoshuaJewell/paint-type/actions/workflows/rust.yml]
@@ -268,9 +269,9 @@ Open an issue, start a discussion, or reach out directly.
 
 == License
 
-PMPL-1.0-or-later — see link:LICENSE[LICENSE]
+AGPL-3.0-or-later — see link:LICENSE[LICENSE]
 
-MPL-2.0 fallback available for components where store distribution requires it.
+Fallback: PMPL-1.0-or-later (with MPL-2.0 fallback) available where AGPL-3.0-or-later cannot be used.
 
 ---
 

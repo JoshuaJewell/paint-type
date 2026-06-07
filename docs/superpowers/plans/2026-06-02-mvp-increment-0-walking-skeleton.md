@@ -105,7 +105,7 @@ git commit -m "build: vendor gossamer v0.3.1 as submodule for the desktop shell"
 Create `src/paint_core/src/render.rs` with only the test module and a stub:
 
 ```rust
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 //
 // Ephapax — region renderer: flatten the visible layer stack over a
 // rectangle into straight-alpha RGBA8 bytes for display and codecs.
@@ -310,7 +310,7 @@ git commit -m "feat(ephapax): add render_region to flatten the visible stack to 
 Create `src/host_core/Cargo.toml`:
 
 ```toml
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: CC-BY-SA-4.0
 [package]
 name = "host_core"
 version = "0.1.0"
@@ -331,7 +331,7 @@ png = "0.17"
 Create `src/host_core/src/lib.rs`:
 
 ```rust
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 //
 // host_core — the display-independent heart of the paint.type desktop
 // shell: the command protocol, the document model, the dispatch entry
@@ -349,7 +349,7 @@ pub mod protocol;
 Create `src/host_core/src/protocol.rs`:
 
 ```rust
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 //
 // The command/response contract between the web UI and the core. Each
 // inbound JavaScript __gossamer_invoke maps to one Command; the Response
@@ -402,7 +402,7 @@ pub enum Response {
 Create `src/host_core/src/dispatch.rs` with the entry point stubbed and the tests present:
 
 ```rust
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 //
 // dispatch — the single function the GUI calls. Pure: Document in,
 // Response out, no I/O except SavePng which writes a file.
@@ -481,7 +481,7 @@ Expected: FAIL — `not implemented` panic (the document module does not exist y
 Create `src/host_core/src/document.rs`:
 
 ```rust
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 //
 // Document — canvas dimensions, the layer stack, the active layer, the
 // current brush, and stroke state. Stamping is tile-aware: a dab is
@@ -761,7 +761,7 @@ git commit -m "feat(host_core): protocol, document, and dispatch for the brush s
 Create `src/host_core/src/codec.rs`:
 
 ```rust
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 //
 // codec — PNG encode/decode for straight-alpha RGBA8 buffers. Decode is
 // bounded by MAX_DIM to contain the decoder attack surface.
@@ -901,7 +901,7 @@ This task is integration glue verified by a smoke run, not by unit tests; the lo
 Create `src/host/Cargo.toml`:
 
 ```toml
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: CC-BY-SA-4.0
 [package]
 name = "host"
 version = "0.1.0"
@@ -923,7 +923,7 @@ serde_json = "1"
 Create `src/host/src/main.rs`:
 
 ```rust
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 //
 // paint-type desktop host. Boots a Gossamer window, loads the bundled
 // web UI, and registers one IPC command per protocol message. Each
@@ -1218,7 +1218,7 @@ echo "PASS: headless host wrote $OUT ($(wc -c < "$OUT") bytes)"
 Create the integration test it drives, `src/host_core/tests/headless_save.rs`:
 
 ```rust
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 // Headless end-to-end: new_doc -> stroke -> save_png, no window.
 use host_core::dispatch::dispatch;
 use host_core::document::Document;
@@ -1265,7 +1265,7 @@ Expected: existing stages pass and the new "headless host wrote ..." line appear
 Create `.github/workflows/host.yml`:
 
 ```yaml
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: CC-BY-SA-4.0
 name: host
 on:
   push:
