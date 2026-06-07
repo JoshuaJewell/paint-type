@@ -633,6 +633,10 @@ test *args:
     cargo test --manifest-path src/host_core/Cargo.toml {{args}}
     @echo "Tests passed!"
 
+# Run benchmarks
+bench:
+    cd src/interface/ffi && zig build bench
+
 # Run tests with verbose output
 test-verbose:
     cd src/interface/ffi && zig build test 2>&1

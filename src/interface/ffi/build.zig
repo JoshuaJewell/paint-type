@@ -116,7 +116,24 @@ pub fn build(b: *std.Build) void {
     // `zig build test` step
     //--------------------------------------------------------------------------
 
-    const test_step = b.step("test", "Run unit and integration tests for libpt");
+    const test_step = b.step("test", "Run unit and integration tests");
     test_step.dependOn(&run_unit_tests.step);
     test_step.dependOn(&run_integration_tests.step);
-}
+
+    //--------------------------------------------------------------------------
+    // Benchmarks (in test/bench.zig)
+    //--------------------------------------------------------------------------
+
+    const bench_exe = b.addExecutable(.{
+        .name = "pt_bench",
+        .root_source_file = b.path("test/bench.zig"),
+        .target = target,
+        .optimize = .ReleaseFast,
+        .link_libc = true,
+    });
+    const run_bench = b.addRunArtifact(bench_exe);
+
+    const bench_step = b.step("bench", "Run performance benchmarks");
+    bench_step.dependOn(&run_bench.step);
+    }
+
