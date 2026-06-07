@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Crypto backends
+
+Hardware crypto acceleration for: file-format signatures, plugin signature verification, session encryption, attestation of collaborative-session participants.
+
+| Backend | Acceleration
+|---|---
+| `CpuAesNiBackend` | x86_64 AES-NI + VAES
+| `ArmCeBackend` | aarch64 Crypto Extensions
+| `RvvVkBackend` | RISC-V Vector Crypto (Zvkn)
+| `IntelQatBackend` | Intel QAT (offload card)
+| `AppleSepBackend` | Apple Secure Enclave (where exposed)
+| `TpmBackend` | TPM 2.0 (any OS)
+| `BoringSslBackend` | Software fallback (BoringSSL)

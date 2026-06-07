@@ -1,77 +1,201 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 = paint-type Roadmap
+
+This roadmap is constrained by link:docs/decisions/0002-foundation-cross-platform.adoc[ADR-0002] (Foundation — Universal Cross-Platform, Unified Backend/Kernel Surface). Read it first; the milestones below presuppose its commitments.
 
 == Current Status
 
-Pre-alpha — v0.1.0 Foundation closed; v0.2.0 Core Image Operations is closing.
-All in-repo v0.2.0 work has landed (compositing primitives, persistent
-UndoGraph, basic Layer model, brush engine, pt_layer_* FFI, ABI-3/ABI-5/TP-3
-proofs); E2E + fuzz + coverage CI wired and Rust CI is green on `main`. The
-only remaining v0.2.0 box is the AffineScript → typed-wasm bridge — draft
-`.twasm` schemas live at `src/bridges/paint-type-{tile,layer}.twasm` but
-`tw build` cannot yet compile them; gated upstream on
-`hyperpolymath/typed-wasm#127` (D1 codegen coverage) + `#130` (D2 round-trip
-soundness), tracked from this side in `JoshuaJewell/paint-type#39`.
-Architecture remains locked.
+Early development. Licensing finalised (AGPL-3.0-or-later for this repository; MPL-2.0 for the hyperpolymath ecosystem this work consumes). Foundation architecture locked: unified backend/kernel pattern modelled on https://github.com/hyperpolymath/Axiom.jl[Axiom.jl], AffineScript as the application language, Idris2 for the abstract operation surface and proofs, Zig for kernels and the unified API, typed-wasm as the portable compile target, OCI multi-arch container as the canonical artifact.
 
 == Milestones
 
-=== v0.1.0 - Foundation (closed)
+=== v0.0.x — Prelude (already landed)
 
-* [x] Tile primitive (RGBA16F, 64×64 tiles)
-* [x] Idris2 ABI definitions (`src/interface/Abi/Types.idr`, `Layout.idr`, `Foreign.idr`)
-* [x] Zig FFI bridge (`src/interface/ffi/`) with integration tests
-* [x] Rust Ephapax crate skeleton (`src/paint_core/`)
-* [x] CI/CD pipeline (GitHub Actions, OpenSSF scorecard, SPDX compliance)
-* [x] Repository governance and machine-readable metadata
+* [x] Idris2 ABI sketch for a single tile primitive (`src/interface/Abi/`)
+* [x] Zig libpt FFI for the same tile primitive (`src/interface/ffi/`)
+* [x] Rust client crate skeleton (`src/ephapax/`) — retained as a reference Rust consumer; not the primary build path
+* [x] Repository governance, CI/CD, SPDX, machine-readable metadata
+* [x] Relicensing pass to AGPL-3.0-or-later
+* [x] Foundation directory scaffold (`src/affinescript/`, `src/api/`, `src/backends/`, `src/capability/`, `src/wasm/`)
 
-=== v0.2.0 - Core Image Operations (current; tracked: #12)
+These artifacts predate ADR-0002. They are folded forward as one specific backend ingredient — not as the project's main path.
 
-* [x] Ephapax brush engine — compositing primitives **done** (PR #20: Porter-Duff over, masked blend, flatten_layer_stack); tile-level non-uniform composite **done** (PR #21); brush-stroke / kernel sampling **done** (PR #29: BrushTip soft/hard round, Brush::stamp with mask-modulated blend, Stroke point interpolation with spacing carryover); 7 additional operators **done** (PR #27: lerp, multiply, screen, in_op, out_op, atop, xor) — 11 compositing ops total
-* [x] Non-destructive undo graph (persistent, O(1) branch) — PR #21
-* [x] Basic layer model — new, flatten, delete, reorder — PR #23
-* [x] `pt_layer_*` cross-language layer-metadata FFI — PR #28 (closes #25)
-* [x] E2E pipeline test + fuzz harness + coverage reporting — PRs #32 / #33 / #34 / #35; Rust CI green on main — PRs #36 / #37 / #38
-* [ ] AffineScript → typed-wasm bindings for the tile API — DRAFT `.twasm` schemas landed in `src/bridges/paint-type-{tile,layer}.twasm` (PR #40); compilation gated on `hyperpolymath/typed-wasm#127` + `#130`, tracked in paint-type#39
-* [x] Formal proofs for ABI layout correctness in Idris2 — ABI-1/2/3/4/5 + TP-1/3 done (PRs #10, #19); ABI category fully closed
+=== v0.1.0 — Foundation (current)
 
-=== v0.3.0 - Desktop Shell (tracked: #13)
+The first runnable paint.type. Nothing user-visible beyond a capability report and a single round-trip, but the entire architectural skeleton must be in place.
 
-* [ ] Gossamer integration — linearly-typed webview shell bootstrapped
-* [ ] Web UI chrome — layer panel, tool bar, canvas viewport
-* [ ] Tool primitives — brush, eraser, selection, fill
-* [ ] Platform integration — file open/save (PNG, RGBA16F native format)
-* [ ] Cross-platform build (Linux, macOS, Windows)
+* [ ] **Capability descriptor** (Idris2) — the structured value describing what a backend can do, including kernel-class flags (dsp/fpga/audio/math/gpu/physics/crypto/io/vector/tensor) and precision tiers
+* [ ] **Abstract operation surface** (Idris2, `src/backends/Abstract.idr`) — `Backend` interface and dispatch totality proofs, generated to a C header
+* [ ] **Reference `CpuBackend`** (Zig, `src/backends/cpu/`) — every operation implemented, byte-exact reference for all other backends
+* [ ] **Dispatcher** (Zig, `src/backends/dispatcher.zig`) — runtime selection, transparent fallback to reference, self-healing diagnostics, hot-plug event handling
+* [ ] **Topology probe** (Zig, `src/capability/`) — CPU/RAM/VRAM topology, NUMA, P/E cores, accelerator-device tree, network reachability cost
+* [ ] **AffineScript application skeleton** (`src/affinescript/`) — compiles to typed-wasm; calls the abstract operation surface only
+* [ ] **typed-wasm build path** — `src/wasm/` produces the application module with backends as typed imports
+* [ ] **Unified API server** (Zig, `src/api/`) — REST, GraphQL, gRPC, SSE, Bebop adapters over the operation surface, with one shared schema generated from Idris2
+* [ ] **Multi-arch container** — `Containerfile` builds for linux/amd64, linux/arm64, linux/arm/v7, linux/riscv64, linux/ppc64le; CI publishes by digest
+* [ ] **Cross-platform CI matrix** — Linux (glibc + musl), macOS, Windows, Android, iOS, FreeBSD; x86_64 / aarch64 / armv7 / riscv64 / ppc64le; wasm32 / wasm64
+* [ ] **`capability_report` end-to-end** — start container on any target, query `paint_api`, receive a structured capability + topology report
 
-=== v0.4.0 - Plugin System (tracked: #14)
+=== v0.2.0 — MVP (the 12)
 
-* [ ] WASM tier sandbox — plugins run in isolated typed-wasm environment
-* [ ] Plugin manifest and signing (cerro-torre, ML-DSA)
-* [ ] Plugin browser and package index
-* [ ] Effect plugin API — colour adjustments, filters
-* [ ] Tool plugin API — custom brush behaviours
+The minimum viable paint program. The floor is MS Paint; the ceiling — the one feature that takes us past it and into Paint.NET territory — is layers. Each item below is a concrete deliverable: an abstract operation entry in `src/backends/Abstract.idr`, a `CpuReferenceBackend` implementation, an AffineScript application binding, exposure through every API adapter, and verification on every supported `(os, arch)` tuple in CI.
 
-=== v0.5.0 - Collaboration (tracked: #15)
+Origin: this list maps the original README "core experience" bullets onto the unified-backend pattern from ADR-0002. Same scope contract — *capable enough for real work, simple enough to reach for without thinking* — applied with one feature beyond MS Paint: layers.
 
-* [ ] Burble WebRTC session layer — sub-10ms latency shared canvas
-* [ ] Groove service discovery — paint-type peers announce via `.well-known/groove/`
-* [ ] Conflict-free tile merging (CRDT-compatible compositing)
-* [ ] LLM channel — optional AI assistant integrated via boj-server MCP gateway
-* [ ] Permission model for collaborative sessions
+==== MVP-1. Canvas
 
-=== v1.0.0 - Stable Release (tracked: #16)
+* [ ] `canvas_new(width, height, format, background)`, `canvas_resize(canvas, w, h, anchor)` in Abstract.idr
+* [ ] `CpuReferenceBackend` allocates RGBA16F tile grid, lazy materialisation
+* [ ] AffineScript `canvas/` module exposes `New`, `Resize`, `SetBackground`
+* [ ] REST `POST /canvas`, GraphQL `mutation createCanvas`, gRPC `Canvas.Create`, SSE `canvas.created`, Bebop `Canvas/Create`
+* [ ] CI: open a 2048×2048 canvas on every `(os, arch)` matrix slot
 
-* [ ] All v0.x features stable and tested
-* [ ] Comprehensive test suite (unit, integration, E2E, fuzz)
-* [ ] Native file format spec published and versioned
-* [ ] Accessibility audit complete (WCAG 2.2 AA)
-* [ ] Performance targets met (60fps canvas on reference hardware)
+==== MVP-2. Open / Save / Save As
+
+* [ ] `io_open(path, format)`, `io_save(canvas, path, format, options)` over the I/O backend family
+* [ ] Codecs in `CpuReferenceBackend`: PNG (read+write), JPEG (read+write), BMP (read+write), native `.ptype` RGBA16F (read+write)
+* [ ] AffineScript `io/` wires Open / Save / Save As with autosave hook
+* [ ] All five adapters expose the round-trip; SSE emits `io.progress` for large files
+* [ ] CI: round-trip a 4K PNG bit-for-bit, then through `.ptype`, on every target
+
+==== MVP-3. Pencil / brush
+
+* [ ] `tool_stroke_pencil(brush_state, points, colour)` and `tool_stroke_brush(brush_state, spline, colour, profile)` in Abstract.idr
+* [ ] `CpuReferenceBackend` rasterises pencil (hard 1px) and brush (variable radius + hardness + opacity + spacing) — pressure curve is the identity at MVP; tablet input lands in a later milestone
+* [ ] AffineScript `tools/brush.aff` and `tools/pencil.aff`; selected via the unified API
+* [ ] API: stream stroke points via SSE / gRPC streaming; commit via REST/GraphQL/Bebop
+* [ ] CI: golden-image regression on every backend with the same stroke
+
+==== MVP-4. Eraser
+
+* [ ] `tool_stroke_eraser(brush_state, points, mode)` where `mode ∈ {AlphaTo0, RestoreBackground}`
+* [ ] `CpuReferenceBackend` implements both modes against the current layer's tile region
+* [ ] AffineScript `tools/eraser.aff` keyed to E
+* [ ] All API adapters; eraser is a brush variant in the schema
+* [ ] CI: golden-image after `pencil → eraser` covers every pixel back to transparent
+
+==== MVP-5. Eyedropper / colour picker
+
+* [ ] `tool_sample_colour(canvas, point, area)` returning RGBA16F + colour-space metadata
+* [ ] `CpuReferenceBackend` samples with optional 3×3 / 5×5 averaging
+* [ ] AffineScript `tools/eyedropper.aff`, plus primary/secondary swatch state in `tools/palette.aff`
+* [ ] API: synchronous sample; SSE pushes hover-sample previews
+* [ ] CI: sample-accuracy assertion on each backend for the known canvas
+
+==== MVP-6. Fill bucket
+
+* [ ] `tool_fill(canvas, point, colour, tolerance, contiguous)` in Abstract.idr
+* [ ] `CpuReferenceBackend` implements scanline flood fill (contiguous) and global fill (`contiguous=false`)
+* [ ] AffineScript `tools/fill.aff` with tolerance slider + "fill on all layers" toggle (post-MVP for the toggle; MVP fills the active layer)
+* [ ] All API adapters; large fills stream progress via SSE
+* [ ] CI: deterministic flood-fill on synthetic mazes — every backend must match the reference byte-for-byte
+
+==== MVP-7. Selection
+
+* [ ] `selection_*` operations: rectangle, free-form lasso, move, cut, copy, paste, deselect, invert
+* [ ] Selection is a first-class mask — `Selection` type in Abstract.idr with affine ownership
+* [ ] `CpuReferenceBackend` rasterises selection masks; clipboard integration via the OS clipboard backend (per-OS, in `src/backends/peripheral/input` or a future `src/backends/clipboard/`)
+* [ ] AffineScript `tools/select.aff` with marching-ants overlay
+* [ ] All API adapters; clipboard ops gated behind capability flags
+* [ ] CI: cut → paste at offset produces pixel-identical sub-region
+
+==== MVP-8. Shapes (line, rectangle, ellipse, polygon)
+
+* [ ] `shape_line`, `shape_rectangle`, `shape_ellipse`, `shape_polygon` with `stroke`, `fill`, `width`, `colour`, `aa_mode` (off / on / SDF)
+* [ ] `CpuReferenceBackend` rasterises each — Bresenham, scanline polygon fill, midpoint ellipse
+* [ ] AffineScript `tools/shapes.aff`; shape preview while dragging; commit on mouse-up
+* [ ] All API adapters
+* [ ] CI: each shape pixel-identical against reference on every backend
+
+==== MVP-9. Text
+
+* [ ] `text_rasterise(string, font, size, colour, transform)` in Abstract.idr — single-line at MVP
+* [ ] `CpuReferenceBackend` loads system fonts via FreeType (one of the IO/font backends) and rasterises with subpixel AA
+* [ ] AffineScript `tools/text.aff` with placement + edit-until-committed UX
+* [ ] All API adapters; bundled fallback font ships in the container
+* [ ] CI: text rendering golden-image, plus a Unicode-coverage smoke (Latin, CJK, Arabic-shaped, emoji-fallback)
+
+==== MVP-10. Undo / Redo
+
+* [ ] `history_record(op)`, `history_undo()`, `history_redo()`, `history_clear()` in Abstract.idr
+* [ ] Persistent undo graph in `CpuReferenceBackend` — O(1) branch, bounded by a memory budget (not by step count); branches are first-class so non-linear edits don't lose work
+* [ ] AffineScript `undo/` module wires every tool through the recorder; keyboard `Ctrl+Z` / `Ctrl+Shift+Z` / `Ctrl+Y`
+* [ ] API: history is queryable; `history.undo` events stream via SSE so collaborators stay in sync
+* [ ] CI: 10k-op stress test produces same final canvas across backends after random undo/redo
+
+==== MVP-11. Zoom / pan / fit
+
+* [ ] `viewport_set(zoom, pan, rotation)` in Abstract.idr — rotation 0 at MVP, parameter retained for v0.3.0 expansion
+* [ ] `CpuReferenceBackend` produces the present-frame transform that the display backend renders
+* [ ] AffineScript `canvas/viewport.aff` with keyboard, scroll, middle-drag, and pinch (where touch input is available)
+* [ ] Display backends apply the transform with crisp pixel rendering at high zoom (no smoothing on integer zoom levels)
+* [ ] All API adapters expose viewport state for remote-display scenarios
+* [ ] CI: viewport state round-trips through every adapter
+
+==== MVP-12. Layers (the Paint.NET-defining feature)
+
+* [ ] `layer_new`, `layer_delete`, `layer_reorder`, `layer_set_visible`, `layer_set_opacity`, `layer_set_blend_mode` in Abstract.idr
+* [ ] Blend modes at MVP: `Normal`, `Multiply`, `Screen`. Additional modes land progressively.
+* [ ] `CpuReferenceBackend` composites the layer stack with the documented blend formulas (no SIMD assumptions; the AVX-512 / Metal / WebGPU backends will speed this up later)
+* [ ] AffineScript `layers/` module with layer panel state; `Tools → New Layer`, `Ctrl+Shift+N`
+* [ ] All API adapters; layer-tree subscription via SSE/GraphQL
+* [ ] CI: composite a known three-layer stack on every backend; every output must match the reference within the per-blend-mode epsilon declared in `Abstract.idr`
+
+=== Operating discipline for v0.2.0
+
+* Every MVP item ships with: one Idris2 surface entry, one CpuReferenceBackend implementation, one AffineScript application binding, five adapter exposures, and a CI check that runs on every supported `(os, arch)` matrix slot.
+* No MVP item is considered done until the numerical-equivalence harness passes against `CpuReferenceBackend` for at least one accelerated backend on at least one platform — that's the proof the dispatch layer works, not the proof every backend works.
+* Performance is not a v0.2.0 concern. *Correct first, fast later.* Speed lands in v0.3.0 once the surface is stable.
+
+=== v0.3.0 — Surfaces, peripherals, presentation, performance
+
+Once MVP works on every target, fill in the surrounding surface and start accelerating.
+
+* [ ] Display backends — Wayland, X11, DRM/KMS, CoreGraphics, DXGI, Android Surface, Metal Layer, WebGPU Canvas
+* [ ] Input backends — libinput / evdev, Wacom tablet pen + tilt + pressure curve, HID, MIDI, OSC
+* [ ] Print / plot backends — CUPS, IPP Everywhere, HPGL, ESC/POS, PCL, PostScript, Windows Print
+* [ ] File I/O backends — io_uring, kqueue, IOCP, WASI, epoll
+* [ ] Format adapters — PSD-read, OpenRaster, WebP, AVIF
+* [ ] One reference UI shell per host class (web canvas under typed-wasm; native shells via the same operation surface)
+* [ ] Accelerated backends: at minimum one GPU backend per vendor (CUDA, ROCm, Metal, WebGPU) verified against the CPU reference
+* [ ] Vector / SIMD backends: AVX2, AVX-512, NEON, SVE, RVV — verified
+
+=== v0.4.0 — Plugin system
+
+* [ ] Plugins are typed-wasm modules that import the abstract operation surface; the runtime is the same dispatcher
+* [ ] Capability-scoped permissions — a plugin declares which kernel classes it needs; the runtime enforces
+* [ ] Plugin manifest and signing (ML-DSA / `cerro-torre`)
+* [ ] In-app plugin browser and package index
+* [ ] Effect plugin API, tool plugin API, codec plugin API — all expressed against the same surface
+
+=== v0.5.0 — Collaboration
+
+* [ ] Network backends — QUIC, WebTransport, TCP, UDP, WebRTC (Burble), mDNS / Bonjour discovery (Groove)
+* [ ] Conflict-free tile merging (CRDT-compatible compositing on the operation surface)
+* [ ] Optional LLM channel via boj-server MCP gateway
+* [ ] Permission model for collaborative sessions, including kernel-class delegation
+
+=== v1.0.0 — Stable release
+
+* [ ] All v0.x features stable
+* [ ] Comprehensive test matrix: unit, integration, E2E, fuzz, on every supported `(os, arch, backend)` tuple
+* [ ] Native file-format spec published and versioned
+* [ ] Accessibility audit complete (WCAG 2.2 AA on web UI; platform-native a11y on each shell)
+* [ ] Performance targets met (60fps canvas on reference hardware per platform class)
 * [ ] OpenSSF Scorecard ≥ 8.0
-* [ ] CRG Grade B — external breadth confirmed
+* [ ] CRG Grade B — six diverse external targets fed back
+* [ ] Reproducible builds for the container and for native extractions
 
-== Future Directions
+== Non-goals
 
-* Wayland-native shell (bypass Gossamer for pure Linux setups)
-* Tablet/stylus pressure curves and tilt
-* Headless render server for batch image processing
+* paint.type will not compete with Photoshop on professional print workflows. The scope contract is "capable enough for real work, simple enough to reach for without thinking."
+* paint.type will not adopt a single-platform UI toolkit, a single-vendor GPU binding, or a single-OS audio framework. Every such concern is a backend.
+* paint.type will not narrow its supported-target set to accelerate any milestone. Constrained schedules ship constrained features, not a constrained target list.
+
+== Future directions
+
+* Headless render server profile of the same container (typed-wasm-only, no display backend loaded)
 * Scripting surface for automation (AffineScript API)
+* On-chain attestation of plugin signatures via boj-server
+* Tablet/stylus pressure curves and tilt across every host (a v0.3.0 input backend that becomes a first-class brush input in v0.4.0+)
+* Specialty backends as they emerge: bare-metal RISC-V via typed-wasm, persistent-memory tile storage on CXL, photonic accelerators

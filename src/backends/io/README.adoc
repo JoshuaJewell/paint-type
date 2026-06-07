@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Async I/O backends
+
+OS-native async I/O. Used for file open / save, autosave, batch import/export.
+
+| Backend | OS facility
+|---|---
+| `IoUringBackend` | Linux io_uring (5.6+)
+| `EpollBackend` | Linux epoll (fallback for older kernels)
+| `KqueueBackend` | macOS / FreeBSD / OpenBSD / NetBSD / DragonFly
+| `IocpBackend` | Windows I/O Completion Ports
+| `WasiBackend` | WASI Preview 2 + future Preview 3
+| `PosixAioBackend` | POSIX AIO (Illumos / Haiku / MINIX best-effort)

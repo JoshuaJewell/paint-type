@@ -1,4 +1,4 @@
-; SPDX-License-Identifier: PMPL-1.0-or-later
+; SPDX-License-Identifier: AGPL-3.0-or-later
 ; Groove Protocol Manifest — declares API surfaces paint-type exposes.
 ;
 ; Used by Groove service discovery for snap-on/snap-off collaboration.

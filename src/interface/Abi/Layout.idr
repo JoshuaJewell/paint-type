@@ -1,4 +1,4 @@
--- SPDX-License-Identifier: PMPL-1.0-or-later
+-- SPDX-License-Identifier: AGPL-3.0-or-later
 ||| paint.type ABI Layout Verification
 |||
 ||| This module provides formal proofs about memory layout, alignment,

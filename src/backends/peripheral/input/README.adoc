@@ -1,0 +1,19 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Input backends
+
+Pointer, tablet pen, keyboard, HID, MIDI, OSC, gamepad — anything that produces user input events.
+
+| Backend | Host
+|---|---
+| `LibinputBackend` | Linux — libinput (Wayland / X11)
+| `EvdevBackend` | Linux — direct evdev (TTY / DRM-KMS shell)
+| `WintabBackend` | Windows — Wintab (tablet pen)
+| `Win32InputBackend` | Windows — raw input API
+| `AppKitInputBackend` | macOS — AppKit / NSEvent
+| `UikitInputBackend` | iOS / iPadOS — UIKit + Apple Pencil
+| `AndroidInputBackend` | Android — InputEvent + MotionEvent
+| `WaylandInputBackend` | Wayland — wl_pointer / wl_keyboard / zwp_tablet_v2
+| `HidBackend` | Cross-platform USB HID
+| `MidiBackend` | ALSA-MIDI / CoreMIDI / WinMM / WebMIDI
+| `OscBackend` | Open Sound Control
+| `WebInputBackend` | Browser — PointerEvent / Pointer Lock / Keyboard

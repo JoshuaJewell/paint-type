@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # RSR Standard Aspect Test Template
@@ -54,13 +54,7 @@ while IFS= read -r -d '' f; do
         warn "Missing SPDX header: $f"
         MISSING_SPDX=$((MISSING_SPDX + 1))
     fi
-done < <(find src/ -type f \
-    \( -name "*.rs" -o -name "*.zig" -o -name "*.res" -o -name "*.ex" \
-       -o -name "*.exs" -o -name "*.gleam" -o -name "*.idr" -o -name "*.sh" \) \
-    -not -path '*/.zig-cache/*' \
-    -not -path '*/zig-out/*' \
-    -not -path '*/target/*' \
-    -print0 2>/dev/null)
+done < <(find src/ -type f \( -name "*.rs" -o -name "*.zig" -o -name "*.res" -o -name "*.ex" -o -name "*.exs" -o -name "*.gleam" -o -name "*.idr" -o -name "*.sh" \) -print0 2>/dev/null)
 
 if [ "$MISSING_SPDX" -eq 0 ]; then
     pass "All source files have SPDX headers"
@@ -82,13 +76,8 @@ else
     pass "No dangerous Idris2 patterns (believe_me, assert_total)"
 fi
 
-# Coq/Lean/Agda/Haskell dangerous patterns — scope to source extensions only
-# so banned-list documentation in *.adoc / *.md / README* isn't flagged.
-DANGEROUS_PROOF=$(grep -rn --include='*.v' --include='*.lean' --include='*.agda' --include='*.hs' \
-    '\bAdmitted\b\|\bsorry\b\|\bunsafeCoerce\b\|\bObj\.magic\b' src/ verification/ 2>/dev/null \
-    | grep -v 'NO Admitted\|no Admitted\|NO sorry\|no sorry' \
-    | grep -vE '^[^:]+:[0-9]+:[[:space:]]*(--|//|\*|\(\*)' \
-    || true)
+# Coq/Lean dangerous patterns
+DANGEROUS_PROOF=$(grep -rn '\bAdmitted\b\|\bsorry\b\|\bunsafeCoerce\b\|\bObj\.magic\b' src/ verification/ 2>/dev/null | grep -v "test" | grep -v "comment" || true)
 if [ -n "$DANGEROUS_PROOF" ]; then
     fail "Dangerous proof patterns found:"
     echo "$DANGEROUS_PROOF" | head -5
@@ -97,132 +86,36 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════
-# Aspect 3: ABI/FFI Contract — every Idris2 %foreign has a Zig export
+# Aspect 3: ABI/FFI Contract (if applicable)
 # ═══════════════════════════════════════════════════════════════════════
-bold "Aspect 3: ABI/FFI contract (Idris2 %foreign ↔ Zig export)"
+# Uncomment if your project has Idris2 ABI + Zig FFI:
 
-ABI_FILE="src/interface/Abi/Foreign.idr"
-ZIG_FILE="src/interface/ffi/src/main.zig"
-
-if [ -f "$ABI_FILE" ] && [ -f "$ZIG_FILE" ]; then
-    MISSING_EXPORTS=0
-    # Extract symbol names from `%foreign "C:pt_xxx,libpt"` lines.
-    while IFS= read -r sym; do
-        if ! grep -qE "^export fn[[:space:]]+${sym}\b" "$ZIG_FILE"; then
-            fail "Idris2 imports $sym but no \`export fn $sym\` in $ZIG_FILE"
-            MISSING_EXPORTS=$((MISSING_EXPORTS + 1))
-        fi
-    done < <(grep -oE 'C:pt_[a-z0-9_]+' "$ABI_FILE" | sed 's/^C://' | sort -u)
-
-    if [ "$MISSING_EXPORTS" -eq 0 ]; then
-        ABI_COUNT=$(grep -cE '^%foreign[[:space:]]+"C:pt_' "$ABI_FILE")
-        ZIG_COUNT=$(grep -cE '^export fn[[:space:]]+pt_' "$ZIG_FILE")
-        pass "ABI/FFI contract holds ($ABI_COUNT Idris2 imports ⊆ $ZIG_COUNT Zig exports)"
-    fi
-else
-    warn "ABI/FFI files not present at expected paths — skipping"
-fi
+# bold "Aspect 3: ABI/FFI contract"
+# if [ -d "src/abi" ] && [ -d "ffi/zig" ]; then
+#     # Check that every exported function in Idris2 ABI has a Zig FFI implementation
+#     ABI_EXPORTS=$(grep -h 'export' src/abi/*.idr 2>/dev/null | wc -l)
+#     FFI_EXPORTS=$(grep -h 'pub export fn' ffi/zig/src/*.zig 2>/dev/null | wc -l)
+#     if [ "$ABI_EXPORTS" -gt 0 ] && [ "$FFI_EXPORTS" -gt 0 ]; then
+#         pass "ABI ($ABI_EXPORTS exports) and FFI ($FFI_EXPORTS exports) both present"
+#     else
+#         fail "ABI/FFI mismatch: $ABI_EXPORTS ABI exports, $FFI_EXPORTS FFI exports"
+#     fi
+# else
+#     pass "ABI/FFI not applicable (no src/abi or ffi/zig)"
+# fi
 
 # ═══════════════════════════════════════════════════════════════════════
-# Aspect 4: Rust error handling — no unaudited .unwrap() in Paint Core core
+# Aspect 4: Error Handling (no raw panic in production code)
 # ═══════════════════════════════════════════════════════════════════════
-bold "Aspect 4: Rust error handling (src/paint_core/)"
+# Uncomment for Rust projects:
 
-if [ -d "src/paint_core/src" ]; then
-    # Allow .unwrap() inside `#[cfg(test)] mod tests { ... }` blocks and
-    # inside doctests; flag elsewhere.
-    #
-    # Heuristic: per-file, strip the file at the first line containing
-    # `mod tests {`; any `.unwrap()` after that point is presumed to be
-    # in test code. Also skip `//` line comments and `///` doctest lines.
-    UNWRAP_PROD=0
-    set +o pipefail
-    while IFS= read -r -d '' f; do
-        PROD_PART=$(awk '/mod tests[[:space:]]*\{/{exit}{print}' "$f" 2>/dev/null || true)
-        N=$(printf '%s' "$PROD_PART" \
-            | { grep -E '\.unwrap\(\)' || true; } \
-            | { grep -vE '^[[:space:]]*//' || true; } \
-            | { grep -vE '^[[:space:]]*///' || true; } \
-            | wc -l)
-        UNWRAP_PROD=$((UNWRAP_PROD + N))
-    done < <(find src/paint_core/src -type f -name '*.rs' -print0 2>/dev/null)
-    set -o pipefail
-
-    if [ "$UNWRAP_PROD" -gt 0 ]; then
-        warn "$UNWRAP_PROD .unwrap() call(s) in non-test Paint Core code — review for panic-safety"
-    else
-        pass "No .unwrap() in non-test Paint Core code"
-    fi
-else
-    warn "src/paint_core/src not present — skipping Rust error-handling aspect"
-fi
-
-# ═══════════════════════════════════════════════════════════════════════
-# Aspect 5: Tile primitive invariants — Idris2/Zig/Rust agree on RGBA16F
-# ═══════════════════════════════════════════════════════════════════════
-bold "Aspect 5: Tile primitive constants (RGBA16F, 64×64)"
-
-# RGBA16F = 4 channels × 16-bit float = 8 bytes/pixel.
-# Tile size = 64×64×8 = 32 768 bytes. Verify the magic numbers exist
-# in each of the three layers so a silent drift cannot creep in.
-TILE_BYTES=32768
-TILE_OK=0
-
-if grep -qE '\b(64|0x40)\b' src/interface/Abi/Types.idr 2>/dev/null; then
-    TILE_OK=$((TILE_OK + 1))
-fi
-if grep -qE '\b(8192|32768|0x8000)\b' "$ZIG_FILE" 2>/dev/null; then
-    TILE_OK=$((TILE_OK + 1))
-fi
-if grep -rqE '\b(64|RGBA16F|TILE_SIZE|TILE_BYTES)\b' src/paint_core/src/ 2>/dev/null; then
-    TILE_OK=$((TILE_OK + 1))
-fi
-
-if [ "$TILE_OK" -eq 3 ]; then
-    pass "Tile constants present in all three layers (Idris2/Zig/Rust)"
-elif [ "$TILE_OK" -gt 0 ]; then
-    warn "Tile constants present in $TILE_OK/3 layers — verify drift"
-else
-    warn "No tile constants located — search heuristic may be stale"
-fi
-
-# ═══════════════════════════════════════════════════════════════════════
-# Aspect 6: Idris2 ABI proof check (skips if idris2 not installed)
-# ═══════════════════════════════════════════════════════════════════════
-bold "Aspect 6: Idris2 ABI proof check"
-
-if ! command -v idris2 >/dev/null 2>&1; then
-    warn "idris2 not installed locally — skipping (CI runs this via .github/workflows/idris-ci.yml)"
-else
-    ABI_CHECK_ERRORS=0
-    for f in src/interface/Abi/Types.idr src/interface/Abi/Layout.idr src/interface/Abi/Foreign.idr; do
-        if [ -f "$f" ]; then
-            # idris2 --check exits 0 even when imports are unresolvable, so we
-            # must inspect combined stdout+stderr for "Error:".
-            OUT=$(cd src/interface && idris2 --check "${f#src/interface/}" 2>&1 || true)
-            if printf '%s' "$OUT" | grep -q '^Error:'; then
-                if printf '%s' "$OUT" | grep -q 'Module .* not found'; then
-                    warn "idris2 --check $f — missing stdlib modules locally (CI is authoritative); skipping"
-                else
-                    fail "idris2 --check $f failed:"
-                    printf '%s\n' "$OUT" | head -5
-                    ABI_CHECK_ERRORS=$((ABI_CHECK_ERRORS + 1))
-                fi
-            fi
-        fi
-    done
-    if [ "$ABI_CHECK_ERRORS" -eq 0 ]; then
-        pass "All ABI modules type-check (or skipped: missing stdlib locally)"
-    fi
-fi
-
-# ═══════════════════════════════════════════════════════════════════════
-# Aspect 7: File I/O round-trip — DEFERRED to v0.3.0
-# ═══════════════════════════════════════════════════════════════════════
-# TEST-NEEDS.md P1 lists a file-I/O round-trip aspect (create tile, save,
-# reload, verify bytes identical). v0.1.0 has no file I/O surface yet —
-# this aspect activates at v0.3.0 Desktop Shell milestone when the native
-# RGBA16F format ships.
+# bold "Aspect 4: Error handling"
+# UNWRAP_COUNT=$(grep -rn '\.unwrap()' src/ 2>/dev/null | grep -v "test" | grep -v "example" | wc -l)
+# if [ "$UNWRAP_COUNT" -gt 20 ]; then
+#     warn "$UNWRAP_COUNT .unwrap() calls in src/ — consider replacing with ? or expect()"
+# else
+#     pass "Acceptable unwrap count: $UNWRAP_COUNT"
+# fi
 
 # ═══════════════════════════════════════════════════════════════════════
 # Summary

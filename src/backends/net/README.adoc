@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Network backends
+
+| Backend | Transport / discovery
+|---|---
+| `QuicBackend` | QUIC (RFC 9000)
+| `WebTransportBackend` | WebTransport (browser + native)
+| `TcpBackend` | Plain TCP
+| `UdpBackend` | Plain UDP
+| `WebRtcBackend` | WebRTC via Burble — sub-10ms session transport
+| `MdnsBackend` | mDNS / DNS-SD via Groove
+| `WellKnownBackend` | `.well-known/groove/` service discovery via Groove
+
+Collaboration session traffic flows through these backends; the application calls the abstract `net_*` operations only.

@@ -1,0 +1,54 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= paint.type backends
+
+Concrete kernel backends for the abstract operation surface defined in link:Abstract.idr[Abstract.idr]. This directory is governed by link:../../docs/decisions/0002-foundation-cross-platform.adoc[ADR-0002].
+
+== The contract
+
+A backend is a Zig module that:
+
+1. Exports the operations declared by `Abstract.idr` via the C ABI Idris2 generates.
+2. Declares a structured **capability descriptor** — which kernel classes (DSP, FPGA, audio, math, GPU, physics, crypto, I/O, vector, tensor) it serves, at which precisions, with which memory characteristics.
+3. Registers itself with link:dispatcher.zig[dispatcher.zig] at runtime.
+4. Tolerates being absent — if its underlying capability is missing from the host, the backend declines to load and the dispatcher routes to the reference backend.
+
+== Reference backend
+
+link:cpu/[`cpu/`] contains `CpuReferenceBackend` — the always-available, byte-exact reference implementation. It is the oracle every accelerated backend is verified against.
+
+== Accelerator and capability backends
+
+Each subdirectory is a backend family. Adding a new vendor or hardware target means adding a Zig file inside the appropriate family directory and registering the backend. It never restructures the tree.
+
+[cols="1,3"]
+|===
+| Family | Examples
+
+| link:gpu/[`gpu/`]
+| CUDA, ROCm, Metal, Vulkan, WebGPU, WebGL2, OpenGL 4.1, D3D12, Level Zero
+| link:tensor/[`tensor/`]
+| Apple ANE, Qualcomm Hexagon, Intel NPU, Rockchip NPU, TensorRT, MIGraphX, Core ML, ONNX Runtime
+| link:vector/[`vector/`]
+| AVX2 / AVX-512, NEON / SVE / SME, RVV, VSX, Wasm SIMD128
+| link:dsp/[`dsp/`]
+| ALSA, PipeWire, JACK, CoreAudio, AudioUnit, WASAPI, Oboe
+| link:fpga/[`fpga/`]
+| Xilinx OpenCL, Intel oneAPI FPGA, OpenFPGA
+| link:physics/[`physics/`]
+| Bullet (CPU SIMD), PhysX, Jolt, WebGPU compute
+| link:crypto/[`crypto/`]
+| AES-NI, ArmCE, RVV-VK, Intel QAT, Apple SEP, TPM
+| link:io/[`io/`]
+| io_uring, kqueue, IOCP, WASI, epoll
+| link:net/[`net/`]
+| QUIC, WebTransport, TCP, UDP, WebRTC (Burble), mDNS (Groove)
+| link:peripheral/[`peripheral/`]
+| display (Wayland / X11 / DRM-KMS / CoreGraphics / DXGI / Android Surface / Metal Layer / WebGPU Canvas), printer (CUPS / IPP / PCL / PostScript), plotter (HPGL / ESC-POS), input (libinput / evdev / tablet pen / HID / MIDI / OSC)
+|===
+
+== Rules
+
+* Backends never see the application. They see the operation surface and the dispatcher.
+* A backend may decline to implement an operation. The dispatcher will fall back to the reference.
+* A backend that implements an operation must produce a result numerically equivalent (within documented epsilon) to the reference. The test harness verifies this for every backend × operation pair.
+* Adding hardware support is opt-in. Removing platform support requires an ADR superseding ADR-0002.

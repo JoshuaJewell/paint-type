@@ -1,0 +1,12 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= API common layer
+
+Shared logic for every protocol adapter.
+
+== Responsibilities
+
+* Schema generation from Idris2's `Abstract.idr` to: OpenAPI, GraphQL SDL, protobuf, Bebop, JSON Schema (SSE event types).
+* HTTP server built on the dispatcher-selected I/O backend (io_uring / kqueue / IOCP / WASI).
+* Authentication (token, mTLS, capability-grant), authorisation (capability-scoped per request), and the session-binding the collaboration layer relies on.
+* Rate-limiting and back-pressure signalling.
+* Observability: OpenTelemetry traces / metrics / logs; per-operation latency and per-backend selection counters.

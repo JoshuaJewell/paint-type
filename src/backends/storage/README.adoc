@@ -1,0 +1,31 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= paint.type storage backends
+
+The persistence axis. Orthogonal to the compute axis defined under link:../[`src/backends/`]. Governed by link:../../../docs/decisions/0003-storage-verisimdb.adoc[ADR-0003].
+
+== Registered storage implementations
+
+[cols="1,3"]
+|===
+| link:in_memory.zig[`in_memory.zig`]
+| Reference implementation — always loaded, always correct, ephemeral. Currently lives inside `src/backends/cpu/main.zig`; will be lifted here as the storage axis stabilises.
+
+| link:verisimdb.zig[`verisimdb.zig`]
+| HTTP/gRPC client for https://github.com/hyperpolymath/verisimdb[hyperpolymath/verisimdb] — the canonical multimodel persistent store for paint.type. Skeleton today; full wiring lands when the v0.1.0 foundation milestone closes (per ROADMAP).
+|===
+
+== Contract
+
+Every storage implementation:
+
+1. Implements `StorageImpl` (Idris2 record in `../Abstract.idr`) exporting at minimum: `octad_create`, `octad_get`, `octad_update`, `temporal_record`, `temporal_walk`, `query_vql`, `health`.
+2. Declares a `StorageCapability` descriptor: which octad modalities it serves (Graph, Vector, Tensor, Semantic, Document, Temporal, Provenance, Spatial), persistence guarantees (`Ephemeral`, `Durable`, `Replicated`), consistency model (`Strong`, `Eventual`).
+3. Registers itself with the storage dispatcher at startup. The dispatcher picks per-operation just like the compute dispatcher; `InMemoryStorage` is the universal fallback.
+
+== Failure model
+
+Same self-healing posture as the compute axis:
+
+* External storage unreachable → fall back to in-memory, emit `storage.degraded` diagnostic.
+* External storage returns later → backfill the in-memory journal, resume dual-write.
+* Drift detected (the VerisimDB-specific case) → invoke its repair pipeline; never silently overwrite.

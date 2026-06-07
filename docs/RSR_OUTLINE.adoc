@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 = paint-type Repository Outline
 :toc:
 :sectnums:
@@ -18,7 +18,7 @@ For the full directory guide, see link:../EXPLAINME.adoc[EXPLAINME.adoc].
 |===
 | Directory | Contents
 
-| `src/paint_core/`
+| `src/ephapax/`
 | Rust image core — RGBA16F tile engine, compositing, undo graph (linear types)
 
 | `src/interface/Abi/`
@@ -111,7 +111,7 @@ For the full directory guide, see link:../EXPLAINME.adoc[EXPLAINME.adoc].
 
 == License
 
-SPDX-License-Identifier: PMPL-1.0-or-later
+SPDX-License-Identifier: AGPL-3.0-or-later
 
 See `LICENSE`, `docs/legal/EXHIBIT-A-ETHICAL-USE.txt`, and
 `docs/legal/EXHIBIT-B-QUANTUM-SAFE.txt` for full terms.

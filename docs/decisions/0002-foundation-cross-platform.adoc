@@ -1,0 +1,194 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= ADR-0002: Foundation — Universal Cross-Platform, Unified Backend/Kernel Surface
+:toc:
+:toclevels: 3
+
+Date:: 2026-05-13
+Status:: Accepted
+Supersedes:: (foundation portions of) ADR-0001 RSR-Standard adoption
+Authors:: Joshua Jewell
+
+== Context
+
+paint.type is a fresh project. Decisions taken now propagate forward indefinitely. Two things are non-negotiable for this project to mean what it is supposed to mean:
+
+1. **It must run anywhere people are.** Linux (every distribution), macOS, Windows, Android, iOS, BSD (all flavours), MINIX, RISC-V hosts, anything that can host a typed-wasm runtime. Across architectures: x86_64, aarch64, armv7, riscv64, ppc64le, wasm32, wasm64. No decision is permitted to narrow this set.
+
+2. **It must exploit what each host offers.** A machine with a GPU should use the GPU. A machine with an NPU/ANE/tensor cores should use those. A machine with FPGA fabric, audio DSPs, hardware crypto, vector ISAs, physics co-processors — all of it, where present. Absent any of them, the same code path runs (slower) on a generic CPU backend.
+
+These two requirements together rule out platform-specific app frameworks, single-target language stacks, monolithic GPU bindings, and architectural choices that hard-code a particular OS or accelerator family.
+
+== Decision
+
+paint.type adopts a **unified backend/kernel pattern** modelled on https://github.com/hyperpolymath/Axiom.jl[hyperpolymath/Axiom.jl], adapted to this project's language stack.
+
+=== The unified backend pattern (Axiom-derived)
+
+* **One abstract operation surface.** All compositing, blending, brush, filter, transform, I/O, network, display, print and peripheral operations are named once, at the ABI layer (Idris2). Concrete implementations are registered backends.
+* **Many concrete backends, one signature each.** A backend is a value implementing the abstract operations. Backends are scoped to a runtime target (e.g. `CpuBackend`, `NvidiaCudaBackend`, `AppleSiliconBackend`, `WebGpuBackend`, `FpgaPciBackend`, `DspAlsaBackend`), not to an operation class.
+* **Capability flags, not directory carve-ups.** Each backend reports a structured capability set: which kernel classes (DSP, FPGA, audio, math, GPU, physics, crypto, I/O, vector, tensor) it can serve and at what precision. The dispatcher uses these flags to pick the best backend per operation per call.
+* **Reference + accelerated tiers, transparent fallback.** Every operation has a reference implementation on `CpuBackend`. When an accelerator backend is selected but does not implement a specific operation, the dispatcher falls back to the reference path, emitting a single self-healing diagnostic. No call site changes.
+* **Detection at start, re-detection on hot-plug.** The runtime probes available backends at startup and on capability-change events (GPU plugged in, network appearing, MIDI controller attached, …). A `capability_report` structure is queryable and observable.
+* **Backends are conditionally loaded.** Like Julia's package extensions, a backend's full implementation is loaded only when the host carries the underlying capability. Missing libraries are not errors — they reduce the capability set.
+
+=== Language and target stack
+
+[cols="1,3"]
+|===
+| Layer | Choice and reason
+
+| Application language
+| **AffineScript** (https://github.com/hyperpolymath/affinescript). Algebraic effects let the compositing/brush/network/IO traffic classes be expressed without entangling latency-critical paths with throughput-oriented ones. Affine types prevent buffer aliasing at the application layer.
+
+| Abstract ABI / operation surface
+| **Idris2.** The abstract `Backend` interface, its capability descriptor, the dispatch totality proofs, and the cross-language layout proofs all live here. Idris2 is the only place in the project where proofs are written; the rest of the stack consumes generated headers.
+
+| FFI / kernel layer
+| **Zig.** Every concrete backend is a Zig module exporting the operation set via the C ABI declared by Idris2. Zig is the only place we cross into native, vendor-specific code (CUDA, ROCm, Metal, Vulkan, WebGPU, FPGA toolchains, audio servers, …).
+
+| Unified network/API surface
+| **Zig.** A single `paint_api` server, written in Zig, exposes the same operation surface over multiple wire protocols: REST, GraphQL, gRPC, Server-Sent Events, Bebop. Adding a protocol means adding an adapter; it does not duplicate the operation surface.
+
+| Portable compilation target
+| **typed-wasm** (https://github.com/hyperpolymath/typed-wasm). The AffineScript application compiles to a typed-wasm module. Backends register their own typed-wasm imports; the multi-module type checker verifies the boundary at build time, before any device touches it.
+
+| Canonical distribution artifact
+| **OCI multi-arch container.** The buildable, runnable, testable unit of paint.type from day one is a container image addressed by digest, built for every supported architecture. Native binaries are downstream products extracted from the container, not parallel build paths.
+|===
+
+=== Target platforms (no decision shall narrow this set)
+
+Operating systems::
+* Linux — every distribution (glibc, musl, Bionic). Including: Debian, Ubuntu, Fedora, Arch, Alpine, NixOS, Guix, Void, Slackware, Gentoo, openSUSE, RHEL/CentOS-Stream/Rocky/Alma, Asahi, etc.
+* macOS — Apple Silicon and Intel
+* Windows — Windows 10+, ARM64 included
+* Android — API 24+ on arm64, armv7, x86_64
+* iOS / iPadOS — arm64, including Mac Catalyst
+* BSD — FreeBSD, OpenBSD, NetBSD, DragonFly
+* MINIX 3
+* Illumos / SmartOS
+* RISC-V Linux hosts and bare-metal RISC-V via typed-wasm
+* Haiku (best-effort tier)
+* Browsers — via typed-wasm
+
+Architectures::
+* x86_64 (with optional AVX2 / AVX-512 / VAES feature tiers)
+* aarch64 (with optional NEON / SVE / SME / SME2 / ArmCE)
+* armv7 (with optional NEON)
+* riscv64 (with optional V / Zvbb / Zvbc / Zvkn vector-crypto extensions)
+* riscv32
+* ppc64le (with optional VSX)
+* wasm32 / wasm64 (with optional SIMD128 / threads / GC)
+
+A backend may declare itself unavailable on a target. **No top-level decision is permitted to declare a target unsupported.** Adding hardware support is opt-in; removing platform support is not.
+
+=== Backend categories and example concrete backends
+
+[cols="1,3"]
+|===
+| Capability axis | Concrete backends that may serve it
+
+| Reference (always available)
+| `CpuBackend` — pure-AffineScript reference, no SIMD assumptions
+
+| Vector / SIMD
+| `CpuAvx2Backend`, `CpuAvx512Backend`, `CpuNeonBackend`, `CpuSveBackend`, `CpuSmeBackend`, `CpuRvvBackend`, `CpuVsxBackend`, `CpuWasmSimd128Backend`
+
+| GPU (compositing, brush, filter)
+| `NvidiaCudaBackend`, `AmdRocmBackend`, `AppleMetalBackend`, `IntelLevelZeroBackend`, `VulkanBackend`, `WebGpuBackend`, `WebGl2Backend`, `OpenGl41Backend`, `D3d12Backend`
+
+| Tensor / NPU
+| `AppleAneBackend`, `QualcommHexagonBackend`, `IntelNpuBackend`, `RockchipNpuBackend`, `NvidiaTensorRtBackend`, `AmdMigraphxBackend`, `CoreMlBackend`, `OnnxRuntimeBackend`
+
+| DSP / Audio
+| `AlsaDspBackend`, `JackBackend`, `PipeWireBackend`, `CoreAudioBackend`, `WasapiBackend`, `OboeBackend` (Android), `AudioUnitBackend`
+
+| FPGA
+| `XilinxOpenClBackend`, `IntelOneApiFpgaBackend`, `OpenFpgaBackend`
+
+| Physics
+| `BulletCpuBackend`, `PhysxBackend`, `JoltCpuBackend`, `WebGpuPhysicsBackend`
+
+| Crypto cores
+| `CpuAesNiBackend`, `ArmCeBackend`, `RvvVkBackend`, `Intel QatBackend`, `AppleSepBackend`, `TpmBackend`
+
+| I/O
+| `Iouring Backend` (Linux), `KqueueBackend` (BSD/macOS), `IocpBackend` (Windows), `WasiBackend`, `EpollBackend`
+
+| Network
+| `QuicBackend`, `WebTransportBackend`, `TcpBackend`, `UdpBackend`, `WebRtcBackend` (delegated to Burble), `Bonjour/AvahiBackend` (discovery)
+
+| Peripherals — display
+| `WaylandBackend`, `XBackend`, `DrmKmsBackend`, `CoreGraphicsBackend`, `DxgiBackend`, `AndroidSurfaceBackend`, `MetalLayerBackend`, `WebGpuCanvasBackend`
+
+| Peripherals — printer / plotter
+| `CupsBackend`, `IppEverywhereBackend`, `HpglBackend`, `EscPosBackend`, `PclBackend`, `PostScriptBackend`, `WindowsPrintBackend`
+
+| Peripherals — input
+| `LibinputBackend`, `WlEvdevBackend`, `TabletPenBackend` (Wacom et al.), `HidBackend`, `MidiBackend`, `OscBackend`
+|===
+
+Each concrete backend lives in `src/backends/<family>/<backend>.zig`, registers itself with the abstract dispatcher at startup, and contributes the capability flags it supports.
+
+=== Memory and topology awareness
+
+The dispatcher is **topology-aware** from the start:
+
+* CPU NUMA nodes, hyperthread groups, performance/efficiency core mix
+* Available system RAM, page size, hugepages availability
+* VRAM amount per GPU device, plus unified-memory hosts (Apple Silicon, Adreno)
+* PCIe/NVLink/Infinity-Fabric/UMA topology between accelerator devices
+* Persistent-memory tiers (CXL, Optane-style) where present
+* Network reachability cost vector (loopback / LAN / WAN / metered)
+
+Topology is exposed as a structured value alongside the capability report; AffineScript code may consult it to decide tile placement, batch sizing, and offload thresholds.
+
+== Constraint
+
+No design decision in this repository may:
+
+1. Hard-code a specific operating system, libc, or window system in the application layer.
+2. Make a kernel-class backend mandatory. CPU reference is always sufficient to run.
+3. Limit the supported architecture set without an ADR that supersedes this one.
+4. Bypass the Idris2-defined operation surface to call into a backend directly from AffineScript.
+
+== Consequences
+
+Positive::
+* Adding a new accelerator means writing one Zig file and registering it. No app-layer changes.
+* Adding a new protocol to the API surface means writing one adapter. No operation duplication.
+* Adding a new OS target means producing the container for that target and verifying CI. No source-tree restructuring.
+* Verification scales: Idris2 proofs cover the dispatch and ABI; per-backend correctness is a numerical-equivalence test against `CpuBackend`.
+
+Negative / costs::
+* The CPU reference backend must be implemented first and kept correct forever. It is the oracle for every other backend.
+* The capability descriptor in Idris2 becomes a non-trivial schema; getting it wrong is expensive to fix later.
+* `paint_api` becomes a single point with five protocol adapters. Discipline is needed to keep the adapters thin.
+
+Neutral::
+* Existing `src/ephapax/` (Rust) and `src/interface/ffi/` (Zig) become specific backends under the unified scheme rather than the primary build path. `src/ephapax/` is retained for now as a reference Rust client; the canonical FFI lives in the per-backend Zig modules.
+
+== Implementation outline
+
+This ADR informs:
+
+* `src/backends/Abstract.idr` — abstract operation surface + capability descriptor
+* `src/backends/dispatcher.zig` — runtime selection, hot-plug events, self-healing diagnostics
+* `src/backends/cpu/` — the reference backend (always present)
+* `src/backends/<family>/` — one directory per backend family (gpu, tensor, dsp, fpga, …)
+* `src/api/` — unified Zig API server with adapters in `src/api/{rest,graphql,grpc,sse,bebop}/`
+* `src/affinescript/` — the application, calling the abstract operation surface only
+* `src/wasm/` — typed-wasm build glue and module manifest
+* `src/capability/` — runtime detection, topology probing, hot-plug subscription
+* `Containerfile` (root) — multi-arch container build
+* `flake.nix`, `guix.scm` — every supported `(os, arch)` system listed
+
+== References
+
+* hyperpolymath/Axiom.jl — pattern reference (backend abstraction, capability detection, transparent fallback)
+* hyperpolymath/affinescript — application language
+* hyperpolymath/typed-wasm — portable compilation target with verified module boundaries
+* hyperpolymath/ephapax — region-typed image-core primitives (one possible backend ingredient)
+* hyperpolymath/burble — collaborative session transport (one possible network backend)
+* hyperpolymath/groove-browser-harness — service discovery on localhost
+* AGPL-3.0-or-later — the licence under which paint.type is conveyed

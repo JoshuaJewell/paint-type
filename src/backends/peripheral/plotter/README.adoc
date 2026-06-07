@@ -1,0 +1,12 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Plotter backends
+
+Vector output devices: pen plotters, cutting plotters, laser plotters, CNC.
+
+| Backend | Format / protocol
+|---|---
+| `HpglBackend` | HP-GL / HP-GL2 (most pen plotters)
+| `DmplBackend` | Houston Instruments DM/PL
+| `GcodeBackend` | G-code (CNC, some laser plotters)
+| `SerialPlotterBackend` | Direct RS-232 / USB-serial to legacy plotters
+| `SvgBackend` | SVG export (for software plotter pipelines)

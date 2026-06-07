@@ -1,0 +1,12 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Printer backends
+
+| Backend | Protocol / OS
+|---|---
+| `CupsBackend` | CUPS (Linux / macOS / BSD)
+| `IppEverywhereBackend` | IPP Everywhere (network printers, all OSes)
+| `WindowsPrintBackend` | Windows GDI / WIA print
+| `AirprintBackend` | AirPrint (iOS / macOS / network)
+| `PclBackend` | PCL 5 / PCL 6 stream generation
+| `PostScriptBackend` | PostScript Level 3 stream generation
+| `EscPosBackend` | ESC/POS thermal / receipt printers
