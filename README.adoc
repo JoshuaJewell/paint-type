@@ -16,6 +16,8 @@ image:https://github.com/JoshuaJewell/paint-type/actions/workflows/idris-ci.yml/
 image:https://github.com/JoshuaJewell/paint-type/actions/workflows/e2e.yml/badge.svg[E2E,link=https://github.com/JoshuaJewell/paint-type/actions/workflows/e2e.yml]
 image:https://github.com/JoshuaJewell/paint-type/actions/workflows/coverage.yml/badge.svg[Coverage,link=https://github.com/JoshuaJewell/paint-type/actions/workflows/coverage.yml]
 
+TIP: For quick project orientation, see the link:https://github.com/JoshuaJewell/paint-type/wiki[Project Wiki].
+
 ---
 
 == What this is

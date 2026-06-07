@@ -1,0 +1,96 @@
+;; SPDX-License-Identifier: PMPL-1.0-or-later
+;;
+;; Assail Classifications — paint-type
+;;
+;; Registry of legitimate panic-attack findings that are either:
+;;   - False positives (pattern detected but no actual vulnerability)
+;;   - Necessary unsafe code (FFI boundaries, memory management)
+;;
+;; This file is consumed by panic-attack's suppression engine to mark
+;; specific findings as suppressed=true while retaining them in reports
+;; for audit transparency.
+
+(assail-classifications
+  (metadata
+    (version "1.0.0")
+    (project "paint-type")
+    (last-updated "2026-06-07")
+    (entries 9)
+    (status "active"))
+
+  ;; ===========================================================================
+  ;; Category: UnboundedAllocation
+  ;; ===========================================================================
+
+  (classification
+    (file "src/host/src/main.rs")
+    (category "UnboundedAllocation")
+    (classification "false-positive-compile-time")
+    (audit "audits/audit-unbounded-allocation.md")
+    (rationale "Compile-time string inclusion via include_str! macro. The embedded UI HTML file is 6,780 bytes at compile time. The runtime PT_UI_FILE path has a size check (max 10 MiB) before read_to_string."))
+
+  ;; ===========================================================================
+  ;; Category: UnsafeCode - Legitimate FFI (Rust side)
+  ;; ===========================================================================
+
+  (classification
+    (file "src/paint_core/src/lib.rs")
+    (category "UnsafeCode")
+    (classification "legitimate-ffi")
+    (audit "audits/audit-ffi-unsafe.md")
+    (rationale "Rust FFI declarations and wrappers for the Zig libpt C ABI. All unsafe blocks are wrapped in safe Rust APIs with proper validation. The extern 'C' block matches src/interface/ffi/src/main.zig exactly."))
+
+  (classification
+    (file "src/paint_core/src/lib.rs")
+    (category "UnsafeCode")
+    (classification "legitimate-ffi")
+    (audit "audits/audit-ffi-unsafe.md")
+    (rationale "Rust FFI declarations and wrappers for the Zig libpt C ABI. Second finding for the same file - covers all unsafe blocks in Tile implementation methods."))
+
+  ;; ===========================================================================
+  ;; Category: UnsafeCode - Fuzz Targets
+  ;; ===========================================================================
+
+  (classification
+    (file "src/paint_core/fuzz/fuzz_targets/pt_layer_opacity.rs")
+    (category "UnsafeCode")
+    (classification "fuzz-target")
+    (audit "audits/audit-fuzz-unsafe.md")
+    (rationale "Fuzz test harness requires unsafe code to exercise FFI boundaries under controlled input generation. This is standard practice for fuzz testing."))
+
+  ;; ===========================================================================
+  ;; Category: UnsafeCode - Legitimate FFI (Zig side)
+  ;; ===========================================================================
+
+  (classification
+    (file "src/interface/ffi/src/main.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-ffi")
+    (audit "audits/audit-ffi-unsafe.md")
+    (rationale "Zig FFI implementation for the paint-type C ABI (libpt). All pointer operations include null checks and magic word validation to prevent use-after-free and invalid access."))
+
+  ;; ===========================================================================
+  ;; Category: PathTraversal - Shell Scripts (Fixed via PT_TMPDIR)
+  ;; ===========================================================================
+
+  (classification
+    (file "tests/e2e.sh")
+    (category "PathTraversal")
+    (classification "hardened-via-env-var")
+    (audit "audits/audit-pathtraversal.md")
+    (rationale "All /tmp/ paths use PT_TMPDIR variable (default /tmp). Fixed in PR #50. PT_TMPDIR allows CI sandboxes and read-only /tmp/ hosts to redirect to safe locations."))
+
+  (classification
+    (file "tests/e2e/scenario_pipeline_dogfood.sh")
+    (category "PathTraversal")
+    (classification "hardened-via-env-var")
+    (audit "audits/audit-pathtraversal.md")
+    (rationale "All /tmp/ paths use PT_TMPDIR variable (default /tmp). Fixed in PR #50. PT_TMPDIR allows CI sandboxes and read-only /tmp/ hosts to redirect to safe locations."))
+
+  (classification
+    (file "scripts/build-host-local.sh")
+    (category "PathTraversal")
+    (classification "hardened-via-env-var")
+    (audit "audits/audit-pathtraversal.md")
+    (rationale "All /tmp/ paths use PT_TMPDIR variable (default /tmp). Fixed in PR #50. PT_TMPDIR allows CI sandboxes and read-only /tmp/ hosts to redirect to safe locations."))
+)
