@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-File-Origin: codegen
 //
 // Readable source for the paint.type web UI behaviour. For increment 0
 // the shipped artifact is the self-contained index.html with this script
