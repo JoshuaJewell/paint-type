@@ -266,14 +266,13 @@ Open an issue, start a discussion, or reach out directly.
 
 == License
 
-PMPL-1.0-or-later — see link:LICENSE[LICENSE]
-
-MPL-2.0 fallback available for components where store distribution requires it.
+AGPL-3.0-or-later — see link:LICENSE[LICENSE]
 
 ---
 
 == Author
 
 Joshua Jewell — https://github.com/JoshuaJewell[JoshuaJewell]
+Jonathan D.A. Jewell - https://github.com/hyperpolymath[hyperpolymath]
 
 Built within the https://github.com/hyperpolymath[hyperpolymath] ecosystem.
