@@ -17,11 +17,19 @@
   #hardness-val { font-variant-numeric: tabular-nums; min-width: 42px; }
   #brush-preview { width: 72px; height: 72px; display: grid; place-items: center; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; }
   #brush-dot { border-radius: 50%; }
+  #tools { display: flex; gap: 6px; }
+  #tools button { flex: 1; padding: 6px 4px; background: #3c3c3c; color: #ccc; border: 0; border-radius: 3px; cursor: pointer; font-size: 12px; }
+  #tools button.active { background: #555; color: #fff; }
 </style>
 </head>
 <body>
   <div id="toolbar">
     <strong>paint.type</strong>
+    <div id="tools">
+      <button id="tool-brush">Brush</button>
+      <button id="tool-eraser">Eraser</button>
+      <button id="tool-fill">Fill</button>
+    </div>
     <label>Colour <input id="colour" type="color" value="#cc0000"></label>
     <label>Brush size
       <span class="size-row">
@@ -123,6 +131,8 @@
     const c = hexToRgba(colourEl.value);
     await invoke({ cmd: "set_colour", r: c.r, g: c.g, b: c.b, a: c.a });
     await invoke({ cmd: "set_brush", diameter: Number(sizeEl.value), hardness: Number(hardnessEl.value) / 100 });
+    // Set initial tool state and visual highlighting.
+    selectTool("brush");
     status.textContent = "Ready - drag on the canvas to paint.";
   }
 
@@ -139,6 +149,25 @@
     updatePreview();
     invoke({ cmd: "set_brush", diameter: Number(sizeEl.value), hardness: Number(hardnessEl.value) / 100 }).catch(() => {});
   });
+
+  //## Tool selection
+  let activeTool = "brush";
+
+  function selectTool(kind) {
+    activeTool = kind;
+    // Update button visual state.
+    ["brush", "eraser", "fill"].forEach((t) => {
+      document.getElementById("tool-" + t).classList.toggle("active", t === kind);
+    });
+    // Notify the backend (fire-and-forget).
+    invoke({ cmd: "select_tool", kind }).catch(() => {});
+    // Reflect tool in cursor.
+    canvas.style.cursor = kind === "fill" ? "cell" : "crosshair";
+  }
+
+  document.getElementById("tool-brush").addEventListener("click", () => selectTool("brush"));
+  document.getElementById("tool-eraser").addEventListener("click", () => selectTool("eraser"));
+  document.getElementById("tool-fill").addEventListener("click", () => selectTool("fill"));
 
   // Coalesce pointer moves: keep only the latest position and run at most one
   // invoke in flight, so a fast drag never queues behind the IPC channel. The
@@ -163,20 +192,35 @@
 
   canvas.addEventListener("pointerdown", async (ev) => {
     if (!bridgeReady()) return;
+    const p = canvasPos(ev);
+    if (activeTool === "fill") {
+      // Fill does not initiate a stroke; send a single fill_at command instead.
+      status.textContent = "Filling...";
+      try {
+        const resp = await invoke({ cmd: "fill_at", x: p.x, y: p.y });
+        if (resp && resp.dirty) blit(resp.dirty);
+        status.textContent = "Filled.";
+      } catch (e) {
+        status.textContent = "Fill failed: " + e;
+      }
+      return;
+    }
+    // Brush or eraser: begin a stroke (backend tracks which tool is active).
     painting = true;
     canvas.setPointerCapture(ev.pointerId);
-    const p = canvasPos(ev);
     try {
       const res = await invoke({ cmd: "pointer_down", x: p.x, y: p.y });
       if (res && res.ok === "painted") blit(res.dirty);
     } catch (e) { /* ignore */ }
   });
   canvas.addEventListener("pointermove", (ev) => {
+    if (activeTool === "fill") return;
     if (!painting) return;
     pendingMove = canvasPos(ev);
     drainMoves();
   });
   canvas.addEventListener("pointerup", async () => {
+    if (activeTool === "fill") return;
     if (!painting) return;
     painting = false;
     while (draining || pendingMove !== null) {

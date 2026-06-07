@@ -60,6 +60,14 @@ pub fn dispatch(doc: &mut Option<Document>, cmd: Command) -> Response {
             paint(document, rect)
         }
         Command::PointerUp => Response::Ack,
+        Command::SelectTool { kind } => {
+            document.set_tool(kind);
+            Response::Ack
+        }
+        Command::FillAt { x, y } => {
+            let rect = document.fill_at(x, y);
+            paint(document, rect)
+        }
         Command::SavePng { path } => {
             let w = document.width();
             let h = document.height();
@@ -92,7 +100,7 @@ fn paint(doc: &Document, rect: Rect) -> Response {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::protocol::{Command, Response};
+    use crate::protocol::{Command, Response, ToolKind};
 
     fn decode(dirty_b64: &str) -> Vec<u8> {
         base64::engine::general_purpose::STANDARD
@@ -132,6 +140,58 @@ mod tests {
         assert!(has_opaque, "expected a near-opaque red pixel in the dab");
 
         assert_eq!(dispatch(&mut doc, Command::PointerUp), Response::Ack);
+    }
+
+    #[test]
+    fn eraser_reduces_alpha() {
+        let mut doc: Option<Document> = None;
+        dispatch(&mut doc, Command::NewDoc { w: 128, h: 128 });
+        dispatch(&mut doc, Command::SetColour { r: 1.0, g: 0.0, b: 0.0, a: 1.0 });
+        dispatch(&mut doc, Command::SetBrush { diameter: 16, hardness: 0.0 });
+
+        // Paint a dab.
+        dispatch(&mut doc, Command::PointerDown { x: 32.0, y: 32.0 });
+        // Render the result and record alpha at the centre pixel.
+        let after_paint = {
+            let document = doc.as_ref().unwrap();
+            use crate::document::Rect;
+            let rgba = document.render(Rect { x: 32, y: 32, w: 1, h: 1 });
+            rgba[3]
+        };
+        dispatch(&mut doc, Command::PointerUp);
+
+        // Switch to eraser and stroke the same point.
+        dispatch(&mut doc, Command::SelectTool { kind: ToolKind::Eraser });
+        dispatch(&mut doc, Command::PointerDown { x: 32.0, y: 32.0 });
+        // Render again.
+        let after_erase = {
+            let document = doc.as_ref().unwrap();
+            use crate::document::Rect;
+            let rgba = document.render(Rect { x: 32, y: 32, w: 1, h: 1 });
+            rgba[3]
+        };
+        dispatch(&mut doc, Command::PointerUp);
+
+        assert!(
+            (after_erase as u16) < (after_paint as u16),
+            "expected eraser to reduce alpha: before={after_paint}, after={after_erase}"
+        );
+    }
+
+    #[test]
+    fn fill_paints_region() {
+        let mut doc: Option<Document> = None;
+        dispatch(&mut doc, Command::NewDoc { w: 64, h: 64 });
+        dispatch(&mut doc, Command::SetColour { r: 1.0, g: 0.0, b: 0.0, a: 1.0 });
+
+        let response = dispatch(&mut doc, Command::FillAt { x: 5.0, y: 5.0 });
+        let Response::Painted { dirty } = response else {
+            panic!("expected Painted, got {response:?}");
+        };
+        let bytes = decode(&dirty.rgba_base64);
+        // At least one pixel should be recognisably red.
+        let has_red = bytes.chunks_exact(4).any(|p| p[0] > 200 && p[3] > 200);
+        assert!(has_red, "expected red pixels after fill");
     }
 
     #[test]

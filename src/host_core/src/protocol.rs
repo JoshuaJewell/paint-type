@@ -6,6 +6,15 @@
 
 use serde::{Deserialize, Serialize};
 
+/// The active painting tool.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum ToolKind {
+    Brush,
+    Eraser,
+    Fill,
+}
+
 /// A rectangle of freshly composited pixels the UI must blit.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DirtyRect {
@@ -29,6 +38,8 @@ pub enum Command {
     PointerDown { x: f32, y: f32 },
     PointerMove { x: f32, y: f32 },
     PointerUp,
+    SelectTool { kind: ToolKind },
+    FillAt { x: f32, y: f32 },
     SavePng { path: String },
 }
 

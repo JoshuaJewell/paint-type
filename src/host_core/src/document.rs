@@ -5,10 +5,14 @@
 // dispatched to every 64x64 tile its footprint overlaps, in tile-local
 // coordinates, allocating tiles lazily.
 
+use std::collections::{HashMap, VecDeque};
+
 use paint_core::brush::{Brush, BrushTip, Stroke};
 use paint_core::layer::{Layer, LayerId, LayerStack, TileCoord};
 use paint_core::render::render_region;
-use paint_core::{f32_to_f16_bits, Tile, TILE_SCALARS, TILE_SIZE};
+use paint_core::{f16_bits_to_f32, f32_to_f16_bits, Tile, TILE_SCALARS, TILE_SIZE};
+
+use crate::protocol::ToolKind;
 
 /// An axis-aligned dirty rectangle in canvas pixels.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -32,6 +36,7 @@ pub struct Document {
     // diameter, or hardness changes; rebuilding allocates the tip mask,
     // so it must not happen per stamp on the painting hot path.
     brush: Brush,
+    tool: ToolKind,
 }
 
 impl Document {
@@ -52,6 +57,7 @@ impl Document {
             hardness,
             stroke: Stroke::new(),
             brush: build_brush(diameter, hardness, colour),
+            tool: ToolKind::Brush,
         }
     }
 
@@ -72,6 +78,10 @@ impl Document {
         self.diameter = diameter.clamp(1, TILE_SIZE);
         self.hardness = hardness;
         self.brush = build_brush(self.diameter, self.hardness, self.colour);
+    }
+
+    pub fn set_tool(&mut self, kind: ToolKind) {
+        self.tool = kind;
     }
 
     /// Replace the document contents with the given RGBA8 image. Resets the
@@ -158,7 +168,11 @@ impl Document {
                 if let Some(tile) = layer.tile(coord) {
                     let local_cx = cx - (tx * TILE_SIZE) as f32;
                     let local_cy = cy - (ty * TILE_SIZE) as f32;
-                    let _ = self.brush.stamp(tile, local_cx, local_cy);
+                    if self.tool == ToolKind::Eraser {
+                        let _ = self.brush.erase_stamp(tile, local_cx, local_cy);
+                    } else {
+                        let _ = self.brush.stamp(tile, local_cx, local_cy);
+                    }
                 }
             }
         }
@@ -203,6 +217,161 @@ impl Document {
     pub fn render_all(&self) -> Vec<u8> {
         render_region(&self.stack, 0, 0, self.width, self.height)
     }
+
+    /// Flood-fill from `(cx, cy)` with the current colour. Uses a BFS bounded
+    /// at 4,000,000 pixels. Returns the union of all modified tile footprints
+    /// clamped to the canvas, or a zero rect when nothing was filled.
+    pub fn fill_at(&mut self, cx: f32, cy: f32) -> Rect {
+        let seed_x = (cx as u32).min(self.width.saturating_sub(1));
+        let seed_y = (cy as u32).min(self.height.saturating_sub(1));
+
+        // Read seed colour from tile buffer.
+        let seed_colour = self.pixel_rgba8(seed_x, seed_y);
+
+        // Scratch buffers: one [u16; TILE_SCALARS] per touched tile, keyed by
+        // (tile_x, tile_y). We read each tile once on first touch and collect
+        // all writes, then flush all buffers at the end.
+        let mut scratch: HashMap<(u32, u32), [u16; TILE_SCALARS]> = HashMap::new();
+        // Tracks which tiles have been touched so we can return their rects.
+        let mut touched_tiles: Vec<(u32, u32)> = Vec::new();
+
+        // BFS.
+        let mut visited: HashMap<(u32, u32), ()> = HashMap::new();
+        let mut queue: VecDeque<(u32, u32)> = VecDeque::new();
+        let mut pixel_count: u32 = 0;
+        const MAX_PIXELS: u32 = 4_000_000;
+
+        queue.push_back((seed_x, seed_y));
+        visited.insert((seed_x, seed_y), ());
+
+        while let Some((px, py)) = queue.pop_front() {
+            if pixel_count >= MAX_PIXELS {
+                break;
+            }
+
+            // Check tolerance against current canvas colour.
+            let current = self.pixel_rgba8(px, py);
+            if !colours_match(current, seed_colour) {
+                continue;
+            }
+
+            pixel_count += 1;
+
+            // Write the fill colour into the scratch buffer.
+            let tile_x = px / TILE_SIZE;
+            let tile_y = py / TILE_SIZE;
+            let key = (tile_x, tile_y);
+
+            if !scratch.contains_key(&key) {
+                // First touch: read the tile (or zero-initialise if absent).
+                let mut buf = [0u16; TILE_SCALARS];
+                let active = self.active;
+                if let Some(layer) = self.stack.get_mut(active) {
+                    let coord = TileCoord::new(tile_x, tile_y);
+                    if layer.tile(coord).is_none() {
+                        if let Some(tile) = Tile::alloc(tile_x, tile_y) {
+                            layer.put_tile(coord, tile);
+                        }
+                    }
+                    if let Some(tile) = layer.tile(coord) {
+                        let _ = tile.read_buffer(&mut buf);
+                    }
+                }
+                scratch.insert(key, buf);
+                touched_tiles.push(key);
+            }
+
+            if let Some(buf) = scratch.get_mut(&key) {
+                let local_x = px % TILE_SIZE;
+                let local_y = py % TILE_SIZE;
+                let idx = ((local_y as usize) * TILE_SIZE as usize + (local_x as usize)) * 4;
+                // Write straight-alpha colour as premultiplied f16.
+                let a = self.colour[3];
+                buf[idx]     = f32_to_f16_bits(self.colour[0] * a);
+                buf[idx + 1] = f32_to_f16_bits(self.colour[1] * a);
+                buf[idx + 2] = f32_to_f16_bits(self.colour[2] * a);
+                buf[idx + 3] = f32_to_f16_bits(a);
+            }
+
+            // Enqueue neighbours within canvas bounds.
+            let neighbours = [
+                (px.wrapping_sub(1), py),
+                (px + 1,             py),
+                (px,                 py.wrapping_sub(1)),
+                (px,                 py + 1),
+            ];
+            for (nx, ny) in neighbours {
+                if nx < self.width && ny < self.height && !visited.contains_key(&(nx, ny)) {
+                    visited.insert((nx, ny), ());
+                    queue.push_back((nx, ny));
+                }
+            }
+        }
+
+        if touched_tiles.is_empty() {
+            return Rect { x: 0, y: 0, w: 0, h: 0 };
+        }
+
+        // Flush scratch buffers back to their tiles.
+        let active = self.active;
+        for &(tile_x, tile_y) in &touched_tiles {
+            if let Some(buf) = scratch.get(&(tile_x, tile_y)) {
+                let coord = TileCoord::new(tile_x, tile_y);
+                if let Some(layer) = self.stack.get_mut(active) {
+                    if let Some(tile) = layer.tile(coord) {
+                        let _ = tile.write_buffer(buf);
+                    }
+                }
+            }
+        }
+
+        // Return the union of all modified tile footprints, clamped to canvas.
+        touched_tiles
+            .iter()
+            .map(|&(tx, ty)| {
+                let x = tx * TILE_SIZE;
+                let y = ty * TILE_SIZE;
+                let w = TILE_SIZE.min(self.width.saturating_sub(x));
+                let h = TILE_SIZE.min(self.height.saturating_sub(y));
+                Rect { x, y, w, h }
+            })
+            .filter(|r| r.w > 0 && r.h > 0)
+            .reduce(union)
+            .unwrap_or(Rect { x: 0, y: 0, w: 0, h: 0 })
+    }
+
+    /// Read the RGBA8 colour of a canvas pixel from the tile buffer. Tiles
+    /// that do not exist are treated as transparent `[0, 0, 0, 0]`.
+    fn pixel_rgba8(&self, px: u32, py: u32) -> [u8; 4] {
+        let tile_x = px / TILE_SIZE;
+        let tile_y = py / TILE_SIZE;
+        let coord = TileCoord::new(tile_x, tile_y);
+        // We need an immutable borrow here. `stack.get` returns an immutable
+        // reference; we obtain the tile and read its pixel directly.
+        let active = self.active;
+        if let Some(layer) = self.stack.get(active) {
+            if let Some(tile) = layer.tile(coord) {
+                let local_x = px % TILE_SIZE;
+                let local_y = py % TILE_SIZE;
+                if let Ok(bits) = tile.read_pixel_bits(local_x, local_y) {
+                    return [
+                        (f16_bits_to_f32(bits[0]) * 255.0).round().clamp(0.0, 255.0) as u8,
+                        (f16_bits_to_f32(bits[1]) * 255.0).round().clamp(0.0, 255.0) as u8,
+                        (f16_bits_to_f32(bits[2]) * 255.0).round().clamp(0.0, 255.0) as u8,
+                        (f16_bits_to_f32(bits[3]) * 255.0).round().clamp(0.0, 255.0) as u8,
+                    ];
+                }
+            }
+        }
+        [0, 0, 0, 0]
+    }
+}
+
+fn colours_match(a: [u8; 4], b: [u8; 4]) -> bool {
+    (a[0] as i16 - b[0] as i16).abs() <= 2
+        && (a[1] as i16 - b[1] as i16).abs() <= 2
+        && (a[2] as i16 - b[2] as i16).abs() <= 2
+        && (a[3] as i16 - b[3] as i16).abs() <= 2
 }
 
 fn build_brush(diameter: u32, hardness: f32, colour: [f32; 4]) -> Brush {
