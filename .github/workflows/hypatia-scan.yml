@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   scan:
@@ -146,6 +147,7 @@ jobs:
 
       - name: Comment on PR with findings
         if: github.event_name == 'pull_request' && steps.scan.outputs.findings_count > 0
+        continue-on-error: true
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v7
         with:
           script: |
