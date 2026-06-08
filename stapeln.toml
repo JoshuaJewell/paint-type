@@ -9,7 +9,7 @@ name = "paint-type"
 version = "0.1.0"
 description = "paint-type image editor container service"
 author = "Joshua Jewell <paint-type@pm.me>"
-license = "PMPL-1.0-or-later"
+license = "AGPL-3.0-or-later"
 registry = "ghcr.io/JoshuaJewell"
 
 [build]

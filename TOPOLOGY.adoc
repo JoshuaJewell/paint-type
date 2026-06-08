@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+// SPDX-License-Identifier: CC-BY-SA-4.0
 <!-- Last updated: 2026-06-01 -->
 
 # paint-type Architecture Topology

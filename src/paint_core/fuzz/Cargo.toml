@@ -14,7 +14,7 @@ name = "paint_core-fuzz"
 version = "0.0.0"
 edition = "2021"
 publish = false
-license = "PMPL-1.0-or-later"
+license = "AGPL-3.0-or-later"
 
 [package.metadata]
 cargo-fuzz = true

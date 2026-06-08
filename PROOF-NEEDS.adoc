@@ -1,5 +1,5 @@
 # Proof Requirements — paint-type
-<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+// SPDX-License-Identifier: CC-BY-SA-4.0
 
 ## Proof Tier
 
@@ -109,6 +109,6 @@ verification/proofs/
 
 ## References
 
-- Proof status tracking: `PROOF-STATUS.md` (this repo)
+- Proof status tracking: `PROOF-STATUS.adoc` (this repo)
 - Proven library: `proven` repo (Idris2 verified foundations)
 - ABI definitions: `src/interface/Abi/` (Idris2, already verified)

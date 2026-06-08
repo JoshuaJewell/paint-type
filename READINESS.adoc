@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+// SPDX-License-Identifier: CC-BY-SA-4.0
 <!-- Last updated: 2026-06-01 -->
 
 # paint-type Component Readiness Assessment
@@ -34,7 +34,7 @@
 - dogfood-gate, hypatia-scan, static-analysis-gate workflows all green
 - **Rust CI green on `main` since 2026-06-01** (`.github/workflows/rust.yml` — PRs #36/#37/#38)
 - idris-ci, coverage, e2e, and fuzz-smoke workflows wired and exercising the v0.2.0 surface
-- TOPOLOGY.md, TEST-NEEDS.md, PROOF-NEEDS.md, and ROADMAP.adoc reflect actual project state
+- TOPOLOGY.adoc, TEST-NEEDS.adoc, PROOF-NEEDS.adoc, and ROADMAP.adoc reflect actual project state
 
 ---
 

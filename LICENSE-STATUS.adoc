@@ -1,0 +1,88 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= License Status
+:description: Current licensing state of paint.type repository
+
+== Current State (as of 2026-06-08)
+
+This repository is **fully licensed** under AGPL-3.0-or-later with all SPDX
+identifiers aligned.
+
+=== Repository License
+
+* **License:** AGPL-3.0-or-later (GNU Affero General Public License v3.0 or later)
+* **SPDX Identifier:** `AGPL-3.0-or-later`
+* **File:** link:LICENSE[LICENSE]
+
+=== Documentation License
+
+* **License:** CC-BY-SA-4.0 (Creative Commons Attribution-ShareAlike 4.0)
+* **SPDX Identifier:** `CC-BY-SA-4.0`
+* **Applies to:** All `.adoc` files
+
+=== SPDX Header Alignment
+
+[cols="2,1,1", options="header"]
+|===
+| File Type | SPDX Identifier | Count
+
+| Rust source (`.rs`) | AGPL-3.0-or-later | ~40 files
+| Zig source (`.zig`) | AGPL-3.0-or-later | ~10 files
+| Idris source (`.idr`) | AGPL-3.0-or-later | ~5 files
+| Shell scripts (`.sh`) | AGPL-3.0-or-later | ~10 files
+| Config files (`.toml`, `.yml`, `.json`, `Justfile`, `.k9`) | AGPL-3.0-or-later | ~20 files
+| A2ML metadata (`.a2ml`) | AGPL-3.0-or-later | ~350 files
+| Documentation (`.adoc`) | CC-BY-SA-4.0 | ~140 files
+|===
+
+=== GitHub-Required Files
+
+The following files remain as `.md` for GitHub community health:
+
+* `SECURITY.md`
+* `CONTRIBUTING.md`
+* `CODE_OF_CONDUCT.md`
+* `CHANGELOG.md`
+
+These files maintain their SPDX headers as `AGPL-3.0-or-later`.
+
+=== PMPL Campaign Documentation
+
+The author advocates for PMPL-2.0-or-later (Palimpsest License v2) as a
+licensing philosophy. This is documented in:
+
+* link:docs/licensing/PMPL-CAMPAIGN.adoc[PMPL-CAMPAIGN.adoc]
+
+**Important:** PMPL is **NOT** the license of this repository. AGPL-3.0-or-later
+is the actual license. PMPL documentation is for informational purposes only.
+
+=== Verification
+
+To verify license alignment:
+
+[source,bash]
+----
+# Check all source/config files have AGPL-3.0-or-later
+grep -r "SPDX-License-Identifier: AGPL-3.0-or-later" --include="*.rs" --include="*.zig" --include="*.idr" --include="*.sh" --include="*.toml" --include="*.yml" --include="*.yaml" --include="*.json" .
+
+# Check all documentation files have CC-BY-SA-4.0
+grep -r "SPDX-License-Identifier: CC-BY-SA-4.0" --include="*.adoc" .
+
+# Verify no PMPL in code SPDX headers (should return 0)
+grep -r "SPDX-License-Identifier: PMPL" --include="*.rs" --include="*.zig" --include="*.idr" --include="*.sh" --include="*.toml" . | wc -l
+----
+
+== Compliance
+
+✅ LICENSE file updated with AGPL-3.0-or-later
+✅ All source/config files have AGPL-3.0-or-later SPDX headers
+✅ All documentation files have CC-BY-SA-4.0 SPDX headers
+✅ No PMPL SPDX headers in code files
+✅ GitHub-required files remain as .md
+✅ PMPL campaign documentation created and clearly separated
+
+== See Also
+
+* link:LICENSE[LICENSE] — Full license text
+* link:docs/licensing/[docs/licensing/] — Licensing documentation
+* link:https://www.gnu.org/licenses/agpl-3.0.html[AGPL-3.0 License]
+* link:https://creativecommons.org/licenses/by-sa/4.0/[CC-BY-SA-4.0 License]

@@ -33,7 +33,7 @@ ____
 
 How this is implemented::
 Repository is public at link:https://github.com/JoshuaJewell/paint-type[GitHub].
-License: AGPL-3.0-or-later with PMPL-1.0-or-later fallback (see link:LICENSE[LICENSE]).
+License: AGPL-3.0-or-later (see link:LICENSE[LICENSE]).
 Governance model in link:.github/GOVERNANCE.adoc[GOVERNANCE.adoc].
 Contribution guidelines in link:CONTRIBUTING.md[CONTRIBUTING.md].
 
@@ -50,7 +50,7 @@ ____
 ____
 
 How this is implemented::
-Cross-platform architecture defined in link:TOPOLOGY.md[TOPOLOGY.md].
+Cross-platform architecture defined in link:TOPOLOGY.adoc[TOPOLOGY.adoc].
 Desktop shell (link:https://github.com/hyperpolymath/gossamer[Gossamer]) is designed for multi-platform support.
 Native image core (link:https://github.com/hyperpolymath/ephapax[Ephapax]) uses platform-agnostic Rust with Zig FFI bridge.
 Build system supports all three platforms via `just` task runner (see link:Justfile[Justfile]).

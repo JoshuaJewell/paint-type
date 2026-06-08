@@ -39,7 +39,7 @@ axis-2 = "corrective > adaptive > perfective"
 axis-3 = "systems > compliance > effects"
 
 [scoping]
-sources = "README, ROADMAP.adoc, READINESS.md, TEST-NEEDS.md, PROOF-NEEDS.md, TOPOLOGY.md"
+sources = "README, ROADMAP.adoc, READINESS.adoc, TEST-NEEDS.adoc, PROOF-NEEDS.adoc, TOPOLOGY.adoc"
 marker-scan = "TODO/FIXME/XXX/HACK/STUB/PARTIAL"
 idris-unsound-scan = "believe_me/assert_total"
 

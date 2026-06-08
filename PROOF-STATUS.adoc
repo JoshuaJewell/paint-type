@@ -1,6 +1,6 @@
 # Proof Status — paint-type
-<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
-<!-- Tracks proof completion. Requirements defined in PROOF-NEEDS.md -->
+// SPDX-License-Identifier: CC-BY-SA-4.0
+<!-- Tracks proof completion. Requirements defined in PROOF-NEEDS.adoc -->
 
 ## Summary
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
 # LLM Warmup — paint-type (Developer)
 
 ## What is paint-type?
@@ -72,6 +73,6 @@ v0.3.0 with the Gossamer shell.
 - Part of hyperpolymath/palimpsest ecosystem
 - Contact: paint-type@pm.me
 - See `EXPLAINME.adoc` for full directory structure guide
-- See `TOPOLOGY.md` for architecture topology
+- See `TOPOLOGY.adoc` for architecture topology
 - See `ROADMAP.adoc` for milestone plan
 - Read `0-AI-MANIFEST.a2ml` and `.machine_readable/MUST.contractile` before making changes

@@ -1,20 +1,20 @@
 SPDX-License-Identifier: AGPL-3.0-or-later
 SPDX-FileCopyrightText: 2024-2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 
-================================================================================
-Dual License: AGPL-3.0-or-later with PMPL-1.0-or-later fallback
-================================================================================
+This work is licensed under the GNU Affero General Public License version 3.0
+or later (AGPL-3.0-or-later).
 
-PRIMARY LICENSE: GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later)
-Full text: https://www.gnu.org/licenses/agpl-3.0.html
+Full license text: https://www.gnu.org/licenses/agpl-3.0.html
 
-FALLBACK LICENSE: Palimpsest License v1.0 or later (PMPL-1.0-or-later)
-  - Extends MPL-2.0 with ethical use, post-quantum cryptographic provenance,
-    and emotional lineage protection
-  - Canonical text: https://github.com/hyperpolymath/palimpsest-license
-  - Fallback to MPL-2.0 where PMPL is not accepted
+---
 
-Where AGPL-3.0-or-later cannot be used (jurisdiction, legal requirements, or
-license incompatibility), PMPL-1.0-or-later applies as the alternative license.
+NOTE ON PMPL (Palimpsest License):
+This project's author is campaigning for PMPL-2.0-or-later (Palimpsest License v2),
+which extends MPL-2.0 with provisions for ethical use, post-quantum
+cryptographic provenance, and cultural/emotional lineage protection.
 
-================================================================================
+PMPL is NOT the license of this repository. AGPL-3.0-or-later is the actual
+license. PMPL is a separate licensing philosophy that the author advocates for
+in the broader ecosystem.
+
+For more information on PMPL: https://github.com/hyperpolymath/palimpsest-license

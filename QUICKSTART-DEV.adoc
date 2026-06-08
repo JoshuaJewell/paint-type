@@ -149,12 +149,12 @@ If using an AI assistant, load the warmup context first:
 just llm-context    # Outputs role-appropriate context
 ----
 
-Or read `0-AI-MANIFEST.a2ml` and `llm-warmup-dev.md` directly.
+Or read `0-AI-MANIFEST.a2ml` and `llm-warmup-dev.adoc` directly.
 
 == Get Help
 
 * **Architecture**: link:EXPLAINME.adoc[EXPLAINME.adoc]
-* **Topology**: link:TOPOLOGY.md[TOPOLOGY.md]
+* **Topology**: link:TOPOLOGY.adoc[TOPOLOGY.adoc]
 * **Roadmap**: link:ROADMAP.adoc[ROADMAP.adoc]
 * **Report issue**: https://github.com/JoshuaJewell/paint-type/issues
 * **Contact**: paint-type@pm.me

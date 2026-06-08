@@ -247,9 +247,9 @@ The proximal seams (within paint-type) are size-checked, layout-proven, and pani
 
 * https://github.com/JoshuaJewell/paint-type/wiki[Wiki Home] — single-page routing hub pointing at the in-repo source of truth
 * link:EXPLAINME.adoc[EXPLAINME.adoc] — repository structure guide
-* link:TOPOLOGY.md[TOPOLOGY.md] — component architecture
+* link:TOPOLOGY.adoc[TOPOLOGY.adoc] — component architecture
 * link:ROADMAP.adoc[ROADMAP.adoc] — milestone plan
-* link:PROOF-STATUS.md[PROOF-STATUS.md] / link:TEST-NEEDS.md[TEST-NEEDS.md] — proof + test coverage status
+* link:PROOF-STATUS.adoc[PROOF-STATUS.adoc] / link:TEST-NEEDS.adoc[TEST-NEEDS.adoc] — proof + test coverage status
 * link:QUICKSTART-DEV.adoc[QUICKSTART-DEV] / link:QUICKSTART-USER.adoc[QUICKSTART-USER] / link:QUICKSTART-MAINTAINER.adoc[QUICKSTART-MAINTAINER]
 
 ---
@@ -271,7 +271,14 @@ Open an issue, start a discussion, or reach out directly.
 
 AGPL-3.0-or-later — see link:LICENSE[LICENSE]
 
-Fallback: PMPL-1.0-or-later (with MPL-2.0 fallback) available where AGPL-3.0-or-later cannot be used.
+[NOTE]
+====
+This project's author advocates for PMPL-2.0-or-later (Palimpsest License v2) as a
+cultural/ethical licensing philosophy. However, **AGPL-3.0-or-later is the
+actual license** of this repository. PMPL is documented in link:LICENSE[LICENSE]
+for informational purposes only.
+====
+
 
 ---
 

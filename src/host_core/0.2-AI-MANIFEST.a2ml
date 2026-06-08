@@ -16,7 +16,7 @@ This manifest describes the purpose and structure of the `src/host_core/` direct
 1. All A2ML state files must live in `.machine_readable/` ONLY, never in the repo root.
 2. Each directory at layer 2 must have its own `0.2-AI-MANIFEST.a2ml`.
 3. Each directory must have a `README.adoc` describing purpose, contents, and function.
-4. SPDX license identifiers must be consistent across all files (PMPL-1.0-or-later).
+4. SPDX license identifiers must be consistent across all files (AGPL-3.0-or-later).
 
 ## Startup Checklist for Agents
 

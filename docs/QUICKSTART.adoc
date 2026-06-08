@@ -40,5 +40,5 @@ cargo test
 == Project Structure
 
 See link:../EXPLAINME.adoc[EXPLAINME.adoc] for the full directory structure guide.
-See link:../TOPOLOGY.md[TOPOLOGY.md] for the architecture topology.
+See link:../TOPOLOGY.adoc[TOPOLOGY.adoc] for the architecture topology.
 See link:../ROADMAP.adoc[ROADMAP.adoc] for the milestone plan.
