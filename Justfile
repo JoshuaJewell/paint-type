@@ -607,6 +607,17 @@ build-release *args:
     cargo build --release --manifest-path src/paint_core/Cargo.toml {{args}}
     @echo "Release build complete"
 
+# Build typed-wasm bridge schemas (.twasm -> .wasm via tw CLI)
+# Gate: paint-type#39, tracks typed-wasm#127 + #130
+bridge-build *args:
+    @echo "Building typed-wasm bridge schemas..."
+    # Build the tw CLI from the typed-wasm repo
+    cd ../typed-wasm && cargo build --release {{args}}
+    # Compile .twasm files to .wasm
+    ../typed-wasm/target/release/tw build src/bridges/paint-type-tile.twasm -o src/bridges/paint-type-tile.wasm
+    ../typed-wasm/target/release/tw build src/bridges/paint-type-layer.twasm -o src/bridges/paint-type-layer.wasm
+    @echo "Bridge build complete: paint-type-tile.wasm + paint-type-layer.wasm"
+
 # Build and watch for changes (requires entr)
 build-watch:
     find src -name '*.zig' -o -name '*.rs' | entr -c just build
@@ -616,6 +627,8 @@ clean:
     @echo "Cleaning..."
     rm -rf src/interface/ffi/zig-out/ src/interface/ffi/.zig-cache/
     cargo clean --manifest-path src/paint_core/Cargo.toml
+    # Clean typed-wasm bridge artifacts
+    rm -f src/bridges/paint-type-tile.wasm src/bridges/paint-type-layer.wasm
 
 # Deep clean including caches [reversible: rebuild]
 clean-all: clean
@@ -655,10 +668,6 @@ e2e:
 # Run aspect tests (cross-cutting concern validation)
 aspect:
     bash tests/aspect_tests.sh
-
-# Run benchmarks (Zig build + test timing + template validation)
-bench:
-    bash benches/template_bench.sh .
 
 # Run readiness tests (Component Readiness Grade: D/C/B)
 readiness:
@@ -756,7 +765,6 @@ deps-audit:
     @echo "Auditing for vulnerabilities..."
     @command -v cargo-audit >/dev/null && cargo audit --manifest-path src/paint_core/Cargo.toml || true
     @command -v trivy >/dev/null && trivy fs --severity HIGH,CRITICAL --quiet . || true
-    @command -v gitleaks >/dev/null && gitleaks detect --source . --no-git --quiet || true
     @echo "Audit complete"
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -991,7 +999,6 @@ install-hooks:
 # Run security audit
 security: deps-audit
     @echo "=== Security Audit ==="
-    @command -v gitleaks >/dev/null && gitleaks detect --source . --verbose || true
     @command -v trivy >/dev/null && trivy fs --severity HIGH,CRITICAL . || true
     @echo "Security audit complete"
 
@@ -1501,3 +1508,6 @@ handover-model path=".":
 
 handover-human path=".":
     @./session/dispatch.sh handover human "{{path}}"
+
+secret-scan-trufflehog:
+    @command -v trufflehog >/dev/null && trufflehog filesystem . --only-verified || true

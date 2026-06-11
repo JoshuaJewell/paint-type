@@ -1,0 +1,131 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
+//
+// Copyright (c) 2026 Joshua Jewell (JoshuaJewell)
+// Copyright (c) 2026 Joshua Jewell (hyperpolymath)
+//
+= paint-type Badge Board
+:description: Central dashboard for all component badges and status indicators
+
+This document provides a centralized view of all badges, status indicators, and
+quality metrics for paint-type and its components.
+
+== Overview
+
+The badge board aggregates:
+
+* Component Readiness Grades (CRG)
+* CI/CD pipeline status
+* Test coverage
+* Security scanning results
+* License compliance
+* Platform support
+
+== Component-Level Badges
+
+=== Core Components
+
+| Component | CRG | CI Status | Tests | Coverage | Security |
+|-----------|-----|-----------|-------|----------|----------|
+| Idris2 ABI | image:https://img.shields.io/badge/CRG-C-green?style=flat-square[C] | image:https://github.com/JoshuaJewell/paint-type/actions/workflows/idris-ci.yml/badge.svg[Idris2 CI] | 7/7 aspect | N/A | N/A |
+| Zig FFI (libpt) | image:https://img.shields.io/badge/CRG-C-green?style=flat-square[C] | image:https://github.com/JoshuaJewell/paint-type/actions/workflows/idris-ci.yml/badge.svg[Idris2 CI] | 29/29 | N/A | N/A |
+| Ephapax (Rust) | image:https://img.shields.io/badge/CRG-C-green?style=flat-square[C] | image:https://github.com/JoshuaJewell/paint-type/actions/workflows/rust.yml/badge.svg[Rust CI] | 98/98 + 1 doctest | image:https://github.com/JoshuaJewell/paint-type/actions/workflows/coverage.yml/badge.svg[Coverage] | N/A |
+| AffineScript bridge | image:https://img.shields.io/badge/CRG-D-orange?style=flat-square[D] | Pending | Draft | N/A | N/A |
+| Gossamer integration | image:https://img.shields.io/badge/CRG-D-orange?style=flat-square[D] | Pending | Not started | N/A | N/A |
+| Burble/Groove | image:https://img.shields.io/badge/CRG-D-orange?style=flat-square[D] | Pending | Not started | N/A | N/A |
+
+=== Overall System
+
+| Metric | Badge | Target | Current |
+|--------|-------|--------|---------|
+| **Overall CRG** | image:https://img.shields.io/badge/CRG-D-orange?style=flat-square[CRG D] | C | D (approaching C) |
+| **Rust CI** | image:https://github.com/JoshuaJewell/paint-type/actions/workflows/rust.yml/badge.svg[Rust CI] | Green | Green |
+| **Idris2 CI** | image:https://github.com/JoshuaJewell/paint-type/actions/workflows/idris-ci.yml/badge.svg[Idris2 CI] | Green | Green |
+| **E2E Tests** | image:https://github.com/JoshuaJewell/paint-type/actions/workflows/e2e.yml/badge.svg[E2E] | Green | Green |
+| **Coverage** | image:https://github.com/JoshuaJewell/paint-type/actions/workflows/coverage.yml/badge.svg[Coverage] | Green | Green |
+| **License** | image:https://img.shields.io/badge/license-AGPL--3.0--or--later-red[AGPL-3.0-or-later] | Compliant | Compliant |
+| **Status** | image:https://img.shields.io/badge/status-pre--alpha%20(v0.2.0%20closing)-yellow[pre-alpha (v0.2.0 closing)] | Beta | Pre-alpha |
+| **Platforms** | image:https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey[Linux | macOS | Windows] | All | All |
+
+== Promotions in Progress
+
+=== To Grade C (Self-Validated)
+
+image:https://img.shields.io/badge/Target-C-green?style=flat-square[Target: C]
+
+**Blockers:**
+
+- [ ] AffineScript → typed-wasm bridge front-end (gated on typed-wasm#127, #130)
+- [ ] Gossamer shell integration started
+- [ ] Deep code and folder annotation complete
+
+**Progress:** 6/8 prerequisites closed (as of 2026-06-01)
+
+=== To Grade B (Broadly Validated)
+
+image:https://img.shields.io/badge/Target-B-blue?style=flat-square[Target: B]
+
+**Requirements:**
+
+- [ ] Reach Grade C first
+- [ ] 6+ diverse external targets tested
+- [ ] Issues fed back and resolved
+
+**Target:** After v0.3.0 Desktop Shell milestone
+
+== Test and Quality Metrics
+
+=== Unit Tests
+
+| Language | Status | Count | Coverage |
+|----------|--------|-------|----------|
+| Rust | image:https://github.com/JoshuaJewell/paint-type/actions/workflows/rust.yml/badge.svg[Passing] | 98/98 + 1 doctest | Via cargo-llvm-cov |
+| Zig | image:https://github.com/JoshuaJewell/paint-type/actions/workflows/idris-ci.yml/badge.svg[Passing] | 29/29 | Via kcov |
+| Idris2 | image:https://github.com/JoshuaJewell/paint-type/actions/workflows/idris-ci.yml/badge.svg[Passing] | Compiles + typechecks | N/A |
+
+=== Integration Tests
+
+| Type | Status | Count |
+|------|--------|-------|
+| Aspect tests | image:https://github.com/JoshuaJewell/paint-type/actions/workflows/idris-ci.yml/badge.svg[Passing] | 7 PASS |
+| E2E pipeline | image:https://github.com/JoshuaJewell/paint-type/actions/workflows/e2e.yml/badge.svg[Passing] | 9 stages |
+| Fuzz tests | image:https://github.com/JoshuaJewell/paint-type/actions/workflows/fuzz-smoke.yml/badge.svg[Passing] | Smoke tests |
+
+=== Security Scanning
+
+| Scanner | Status | Findings |
+|---------|--------|----------|
+| Gitleaks | image:https://github.com/JoshuaJewell/paint-type/actions/workflows/secret-scanner.yml/badge.svg[Passing] | 0 |
+| Panic-Attack | image:https://github.com/JoshuaJewell/paint-type/actions/workflows/static-analysis-gate.yml/badge.svg[Passing] | 3 weak (pre-existing) |
+| Hypatia | image:https://github.com/JoshuaJewell/paint-type/actions/workflows/static-analysis-gate.yml/badge.svg[Passing] | Pending review |
+
+== Link to External Boards
+
+* link:READINESS.adoc[Full Component Readiness Assessment]
+* link:https://github.com/hyperpolymath/stapeln[Stapeln Ecosystem Badges]
+* link:https://github.com/hyperpolymath/standards/tree/main/component-readiness-grades[CRG Standard]
+
+== How to Update
+
+1. **CRG Badge:** Edit the `**Current Grade:**` line in `READINESS.adoc`
+2. **CI Badges:** Automatically updated by GitHub Actions
+3. **Test Badges:** Updated automatically when tests pass
+4. **Component Badges:** Update this file when component grades change
+
+== Badge Generation
+
+Run the following to generate updated badges:
+
+[source,bash]
+----
+# Generate CRG badge (requires just and rsr-template-repo)
+just crg-badge
+
+# Verify CRG compliance
+just crg-grade
+----
+
+== Related Standards
+
+* link:https://github.com/hyperpolymath/standards/tree/main/component-readiness-grades[Component Readiness Grades]
+* link:https://github.com/hyperpolymath/standards/tree/main/rsr-template-repo[RSR Template Repository]
