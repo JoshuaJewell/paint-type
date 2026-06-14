@@ -1,20 +1,29 @@
 SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-FileCopyrightText: 2024-2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me>
 SPDX-FileCopyrightText: 2024-2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 
-This work is licensed under the GNU Affero General Public License version 3.0
-or later (AGPL-3.0-or-later).
+paint.type is licensed by scope:
 
-Full license text: https://www.gnu.org/licenses/agpl-3.0.html
+  * SOURCE CODE — GNU Affero General Public License v3.0 or later
+    (AGPL-3.0-or-later). Full text: https://www.gnu.org/licenses/agpl-3.0.html
+
+  * DOCUMENTATION & CONTENT — Creative Commons Attribution-ShareAlike 4.0
+    International (CC-BY-SA-4.0).
+    Full text: https://creativecommons.org/licenses/by-sa/4.0/
+
+The per-file `SPDX-License-Identifier` header is authoritative for each file.
+Third-party and inherited components retain their original licences.
 
 ---
 
 NOTE ON PMPL (Palimpsest License):
-This project's author is campaigning for PMPL-2.0-or-later (Palimpsest License v2),
+The authors are campaigning for PMPL-2.0-or-later (Palimpsest License v2),
 which extends MPL-2.0 with provisions for ethical use, post-quantum
 cryptographic provenance, and cultural/emotional lineage protection.
 
 PMPL is NOT the license of this repository. AGPL-3.0-or-later is the actual
-license. PMPL is a separate licensing philosophy that the author advocates for
-in the broader ecosystem.
+source-code license (CC-BY-SA-4.0 for documentation and content). PMPL is a
+separate licensing philosophy that the authors advocate for in the broader
+ecosystem.
 
 For more information on PMPL: https://github.com/hyperpolymath/palimpsest-license

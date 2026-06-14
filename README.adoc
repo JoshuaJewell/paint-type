@@ -17,6 +17,10 @@ image:https://github.com/JoshuaJewell/paint-type/actions/workflows/rust.yml/badg
 image:https://github.com/JoshuaJewell/paint-type/actions/workflows/idris-ci.yml/badge.svg[Idris2 CI,link=https://github.com/JoshuaJewell/paint-type/actions/workflows/idris-ci.yml]
 image:https://github.com/JoshuaJewell/paint-type/actions/workflows/e2e.yml/badge.svg[E2E,link=https://github.com/JoshuaJewell/paint-type/actions/workflows/e2e.yml]
 image:https://github.com/JoshuaJewell/paint-type/actions/workflows/coverage.yml/badge.svg[Coverage,link=https://github.com/JoshuaJewell/paint-type/actions/workflows/coverage.yml]
+image:https://img.shields.io/badge/docs-CC--BY--SA--4.0-blue[Docs: CC-BY-SA-4.0,link=https://creativecommons.org/licenses/by-sa/4.0/]
+image:https://img.shields.io/badge/Idris-Inside-5E5086?logo=idris&logoColor=white[Idris Inside,link=https://www.idris-lang.org]
+image:https://img.shields.io/badge/RSR-Bronze-cd7f32[RSR Standard,link=https://github.com/hyperpolymath/standards]
+image:https://api.securityscorecards.dev/projects/github.com/JoshuaJewell/paint-type/badge[OpenSSF Scorecard,link=https://securityscorecards.dev/viewer/?uri=github.com/JoshuaJewell/paint-type]
 
 TIP: For quick project orientation, see the link:https://github.com/JoshuaJewell/paint-type/wiki[Project Wiki].
 
