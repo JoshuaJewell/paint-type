@@ -32,16 +32,16 @@
 | # | Proof | Status | File |
 |---|-------|--------|------|
 | TP-1 | Tile primitive type well-formedness | **Done** | `src/interface/Abi/Types.idr` |
-| TP-2 | Public API type safety (exported pt_ functions) | Needed | `verification/proofs/lean4/ApiTypes.lean` |
+| TP-2 | Public API type safety (exported pt_ functions) | **Done** | `verification/proofs/lean4/ApiTypes.lean` |
 | TP-3 | RGBA16F pixel format bounds (no overflow, no NaN propagation) | **Done** | `verification/proofs/idris2/Pixel.idr` |
 
 ## Invariant Proofs
 
 | # | Proof | Status | File |
 |---|-------|--------|------|
-| INV-1 | Tile pool invariant (no double-free, no use-after-free) | Needed | `verification/proofs/idris2/TilePool.idr` |
-| INV-2 | Undo graph monotonicity (history only grows; no silent discard) | Needed | `verification/proofs/lean4/UndoGraph.lean` |
-| INV-3 | Compositing blend function totality (terminates on all inputs) | Needed | `verification/proofs/agda/Compositing.agda` |
+| INV-1 | Tile pool invariant (no double-free, no use-after-free) | **Done** | `verification/proofs/idris2/TilePool.idr` |
+| INV-2 | Undo graph monotonicity (history only grows; no silent discard) | **Done** | `verification/proofs/lean4/UndoGraph.lean` |
+| INV-3 | Compositing blend function totality (terminates on all inputs) | **Done** | `verification/proofs/agda/Compositing.agda` |
 
 ## Security Proofs (Plugin Sandbox)
 

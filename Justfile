@@ -607,16 +607,30 @@ build-release *args:
     cargo build --release --manifest-path src/paint_core/Cargo.toml {{args}}
     @echo "Release build complete"
 
-# Build typed-wasm bridge schemas (.twasm -> .wasm via tw CLI)
-# Gate: paint-type#39, tracks typed-wasm#127 + #130
+# Build + verify typed-wasm bridge schemas (.twasm -> .wasm via tw CLI).
+# Gate: paint-type#39 — typed-wasm#127 is CLOSED (codegen coverage) and the
+# paint-type slice of #130 (round-trip soundness) is green upstream.
+# Requires a sibling typed-wasm clone at ../typed-wasm at PR #165 (commit
+# ba3c7d9) or later — that PR added the .twasm source-parser seam that compiles
+# these schemas. Older clones only emit example-01 and will fail to parse them.
 bridge-build *args:
-    @echo "Building typed-wasm bridge schemas..."
-    # Build the tw CLI from the typed-wasm repo
-    cd ../typed-wasm && cargo build --release {{args}}
-    # Compile .twasm files to .wasm
-    ../typed-wasm/target/release/tw build src/bridges/paint-type-tile.twasm -o src/bridges/paint-type-tile.wasm
+    @echo "Building tw + tw-verify from ../typed-wasm ..."
+    cd ../typed-wasm && cargo build --release --bin tw {{args}}
+    cd ../typed-wasm && cargo build --release -p typed-wasm-verify --features unstable-l2 {{args}}
+    @echo "Compiling .twasm schemas -> .wasm ..."
+    ../typed-wasm/target/release/tw build src/bridges/paint-type-tile.twasm  -o src/bridges/paint-type-tile.wasm
     ../typed-wasm/target/release/tw build src/bridges/paint-type-layer.twasm -o src/bridges/paint-type-layer.wasm
-    @echo "Bridge build complete: paint-type-tile.wasm + paint-type-layer.wasm"
+    @just bridge-verify
+    @echo "Bridge build complete: paint-type-tile.wasm + paint-type-layer.wasm (verifier-accepted)"
+
+# Assert the committed bridge .wasm is accepted by typed-wasm-verify (paint-type#39 gate).
+# Covers structural wasm validation + L7/L10/L13 ownership + L2 access-site
+# (typed load/store on the RGBA16F tile region) verification.
+bridge-verify:
+    @echo "Verifying bridge schemas against typed-wasm-verify ..."
+    ../typed-wasm/target/release/tw-verify src/bridges/paint-type-tile.wasm
+    ../typed-wasm/target/release/tw-verify src/bridges/paint-type-layer.wasm
+    @echo "✓ Both bridge schemas verifier-accepted (paint-type#39)"
 
 # Build and watch for changes (requires entr)
 build-watch:
@@ -1308,28 +1322,58 @@ help-me:
 # FORMAL VERIFICATION (PROOFS)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Check all formal proofs (Idris2 + Lean4 + Agda + Coq)
-proof-check-all: proof-check-idris2 proof-check-lean4 proof-check-agda proof-check-coq proof-scan-dangerous
+# Check all formal proofs (Idris2 + Lean4 + Agda).
+# Realises the `just proof-check-all` reference in PROOF-STATUS.adoc: enforces the
+# four discharged soundness obligations (INV-1, TP-2, INV-2, INV-3) locally with the
+# same curated file lists the CI workflows use. Exits non-zero on any prover failure.
+# A missing prover BINARY is a loud SKIP by default (dev ergonomics); set STRICT=1 to
+# make an absent prover a hard FAIL instead (the CI workflows install all provers, so
+# they enforce strictly regardless).
+# Coq (proof-check-coq) and the dangerous-pattern scan (proof-scan-dangerous) are
+# separate standalone recipes — there are no Coq obligations yet, and the scanner is
+# kept out of the type-check gate so a soundness regression surfaces unambiguously.
+proof-check-all: proof-check-idris proof-check-lean proof-check-agda
     @echo "=== All proof checks complete ==="
 
-# Check Idris2 proofs (ABI, types, dependent type proofs)
-proof-check-idris2:
+# Check Idris2 proofs (ABI bridge in src/interface + verified modules incl. INV-1/TilePool).
+# Curated list mirrors .github/workflows/idris-ci.yml — scaffold modules outside this
+# list are not yet wired to a real Idris2 source pkg (see PROOF-STATUS.adoc). idris2
+# 0.8.0 `--check` takes ONE file per call, so we loop; files are ordered by dependency
+# (Types -> Layout -> Foreign). Each check writes its .ttc into a fresh throwaway
+# --build-dir: this is hermetic (no stale-cache trap where a previously-compiled
+# Abi.Types interface hides a later source change) AND leaves the repo's tracked
+# src/interface/build/ artifacts untouched, so running the gate never dirties git.
+proof-check-idris:
     #!/usr/bin/env bash
     set -euo pipefail
     echo "=== Checking Idris2 proofs ==="
     if ! command -v idris2 &>/dev/null; then
+        if [ "${STRICT:-0}" = "1" ]; then echo "FAIL: idris2 not installed (STRICT=1)"; exit 1; fi
         echo "SKIP: idris2 not installed"
         exit 0
     fi
+    BUILD_DIR="$(mktemp -d)"
+    trap 'rm -rf "$BUILD_DIR"' EXIT
     ERRORS=0
-    for f in $(find verification/proofs/idris2 -name '*.idr' 2>/dev/null); do
-        echo -n "  Checking $f ... "
-        if idris2 --check "$f" 2>/dev/null; then
+    check() {
+        echo -n "  Checking $2/$1 ... "
+        # idris2 0.8.0 exits 0 on a missing file (prints "File Not Found"), so guard
+        # explicitly — a deleted curated module must fail the gate, not pass silently.
+        if [ ! -f "$2/$1" ]; then
+            echo "FAIL (missing)"
+            ERRORS=$((ERRORS + 1))
+        elif ( cd "$2" && idris2 --build-dir "$BUILD_DIR" --check "$1" ) >/dev/null 2>&1; then
             echo "OK"
         else
             echo "FAIL"
             ERRORS=$((ERRORS + 1))
         fi
+    }
+    for f in Abi/Types.idr Abi/Layout.idr Abi/Foreign.idr; do
+        check "$f" src/interface
+    done
+    for f in ABI/Platform.idr ABI/Compliance.idr Pixel.idr TilePool.idr; do
+        check "$f" verification/proofs/idris2
     done
     if [ "$ERRORS" -gt 0 ]; then
         echo "FAIL: $ERRORS Idris2 proof(s) failed"
@@ -1337,19 +1381,21 @@ proof-check-idris2:
     fi
     echo "PASS: All Idris2 proofs verified"
 
-# Check Lean4 proofs
-proof-check-lean4:
+# Check Lean4 proofs (TP-2 public-API type safety, INV-2 undo monotonicity).
+# Pure core Lean4 — no Mathlib. `lean` takes ONE file per invocation, so we loop.
+proof-check-lean:
     #!/usr/bin/env bash
     set -euo pipefail
     echo "=== Checking Lean4 proofs ==="
     if ! command -v lean &>/dev/null; then
+        if [ "${STRICT:-0}" = "1" ]; then echo "FAIL: lean not installed (STRICT=1)"; exit 1; fi
         echo "SKIP: lean not installed"
         exit 0
     fi
     ERRORS=0
-    for f in $(find verification/proofs/lean4 -name '*.lean' 2>/dev/null); do
+    for f in verification/proofs/lean4/ApiTypes.lean verification/proofs/lean4/UndoGraph.lean; do
         echo -n "  Checking $f ... "
-        if lean "$f" 2>/dev/null; then
+        if lean "$f" >/dev/null 2>&1; then
             echo "OK"
         else
             echo "FAIL"
@@ -1362,24 +1408,31 @@ proof-check-lean4:
     fi
     echo "PASS: All Lean4 proofs verified"
 
-# Check Agda proofs
+# Check Agda proof (INV-3 compositing totality).
+# --no-libraries avoids the broken global ~/.agda/libraries path (a bare `agda`
+# invocation exits non-zero on it); Compositing.agda has zero library dependencies.
+# Properties.agda is an unwired template scaffold, so it is intentionally excluded.
 proof-check-agda:
     #!/usr/bin/env bash
     set -euo pipefail
     echo "=== Checking Agda proofs ==="
     if ! command -v agda &>/dev/null; then
+        if [ "${STRICT:-0}" = "1" ]; then echo "FAIL: agda not installed (STRICT=1)"; exit 1; fi
         echo "SKIP: agda not installed"
         exit 0
     fi
     ERRORS=0
-    for f in $(find verification/proofs/agda -name '*.agda' 2>/dev/null); do
+    for f in verification/proofs/agda/Compositing.agda; do
         echo -n "  Checking $f ... "
-        if agda --safe "$f" 2>/dev/null; then
+        if ( cd verification/proofs/agda && agda --no-libraries "$(basename "$f")" ) >/dev/null 2>&1; then
             echo "OK"
         else
             echo "FAIL"
             ERRORS=$((ERRORS + 1))
         fi
+        # Agda 2.8.0 has no flag to relocate the .agdai interface file; drop it so
+        # running the gate leaves no untracked artifact behind.
+        rm -f "${f%.agda}.agdai"
     done
     if [ "$ERRORS" -gt 0 ]; then
         echo "FAIL: $ERRORS Agda proof(s) failed"

@@ -1,0 +1,119 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# proofs.yml — Enforce the Lean4 and Agda soundness proofs for paint-type.
+#
+# Scope: this workflow covers the proofs the Idris2 CI (idris-ci.yml) does NOT —
+#   * TP-2  (Lean4)  verification/proofs/lean4/ApiTypes.lean   — public-API type safety
+#   * INV-2 (Lean4)  verification/proofs/lean4/UndoGraph.lean  — undo-graph monotonicity
+#   * INV-3 (Agda)   verification/proofs/agda/Compositing.agda — compositing totality
+# INV-1 (Idris2 TilePool.idr) is enforced by idris-ci.yml, not here.
+#
+# Toolchain installs use run-steps (elan for Lean, cabal for Agda) rather than
+# third-party actions: this mirrors idris-ci.yml's git-clone+build pattern and
+# avoids depending on actions whose release SHAs cannot be verified offline.
+name: Proofs (Lean4 + Agda)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'verification/proofs/**'
+      - '.github/workflows/proofs.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'verification/proofs/**'
+      - '.github/workflows/proofs.yml'
+  workflow_dispatch:
+# Agda is built from source via cabal (slow, cold); cancel superseded runs to
+# keep concurrency headroom for other workflows.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  lean4:
+    name: Lean4 proofs (TP-2, INV-2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Pin the exact toolchain proven locally; elan reads this when invoking lean.
+      LEAN_TOOLCHAIN: leanprover/lean4:v4.13.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Install elan + Lean 4.13.0
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o elan-init.sh
+          # -y: non-interactive; pin the default toolchain to the proven version.
+          sh elan-init.sh -y --default-toolchain "$LEAN_TOOLCHAIN"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Show Lean version
+        run: lean --version
+      - name: Type-check Lean4 proofs
+        # Pure core Lean4 (no Mathlib). `lean` takes ONE file per invocation.
+        run: |
+          set -euo pipefail
+          lean verification/proofs/lean4/ApiTypes.lean
+          lean verification/proofs/lean4/UndoGraph.lean
+      - name: Write summary
+        if: always()
+        run: |
+          {
+            echo "## Lean4 Proof Results"
+            echo ""
+            echo "- **TP-2**: ApiTypes.lean (public-API type safety)"
+            echo "- **INV-2**: UndoGraph.lean (undo-graph monotonicity)"
+            echo "- **Lean version**: 4.13.0"
+          } >> "$GITHUB_STEP_SUMMARY"
+  agda:
+    name: Agda proof (INV-3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      AGDA_VERSION: '2.8.0'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Cache cabal store + Agda binary
+        id: cache-agda
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ~/.cabal/store
+            ~/.local/bin/agda
+            ~/.local/bin/agda-mode
+          key: agda-${{ env.AGDA_VERSION }}-${{ runner.os }}
+      - name: Install Agda 2.8.0 (cabal)
+        # ubuntu-latest ships ghc + cabal pre-installed. We build the exact Agda
+        # version from Hackage rather than apt (which lags well behind 2.8.0) so
+        # the runner matches the locally-proven toolchain. This is the slow,
+        # robust, fully-pinned path; the cache above makes warm runs cheap.
+        if: steps.cache-agda.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          cabal update
+          cabal install Agda-${AGDA_VERSION} --install-method=copy --overwrite-policy=always
+      - name: Add Agda to PATH
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Show Agda version
+        run: agda --version
+      - name: Type-check Agda proof
+        # --no-libraries: Compositing.agda has zero library dependencies and this
+        # avoids any global ~/.agda/libraries lookup. Run from the proof dir so
+        # the module name resolves against the file.
+        run: |
+          set -euo pipefail
+          cd verification/proofs/agda
+          agda --no-libraries Compositing.agda
+      - name: Write summary
+        if: always()
+        run: |
+          {
+            echo "## Agda Proof Results"
+            echo ""
+            echo "- **INV-3**: Compositing.agda (compositing totality)"
+            echo "- **Agda version**: ${AGDA_VERSION}"
+          } >> "$GITHUB_STEP_SUMMARY"
