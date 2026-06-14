@@ -1001,10 +1001,18 @@ fn cpu_io_open(_path: [*:0]const u8, _fmt: ?[*:0]const u8, _out: *u64) callconv(
     return @intFromEnum(dispatcher.ResultCode.not_implemented);
 }
 
+// SECURITY: `path` is written verbatim via fopen() with no canonicalisation or
+// sandboxing. That is correct for the local desktop app, whose user chooses the
+// save location ("Save As anywhere"). It is NOT safe to forward a request-
+// supplied path here from a network surface: any future REST/connector dispatch
+// that reaches io_save MUST constrain paths to a sandbox and reject
+// traversal/absolute/symlink-escaping paths at that boundary. See
+// audits/SECURITY-REVIEW-2026-06-15.md (M2).
 fn cpu_io_save(canvas: u64, path: [*:0]const u8, fmt: [*:0]const u8, _opts: [*:0]const u8) callconv(.c) u32 {
     _ = _opts;
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    if (std.mem.span(path).len == 0) return @intFromEnum(dispatcher.ResultCode.invalid_param);
 
     // Step 1 — composite the canvas into an RGBA8 buffer through the same
     // render path the rest of the pipeline uses.
