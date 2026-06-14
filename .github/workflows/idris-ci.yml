@@ -83,6 +83,7 @@ jobs:
           idris2 --check ABI/Platform.idr
           idris2 --check ABI/Compliance.idr
           idris2 --check Pixel.idr
+          idris2 --check TilePool.idr
       - name: Write summary
         if: always()
         run: |
