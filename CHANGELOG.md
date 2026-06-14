@@ -9,3 +9,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- Run: just changelog -->
 
 ## [Unreleased]
+
+### v0.2.0 — Core Image Operations (closing; 2026-06-01)
+
+In-repo work complete. AffineScript → typed-wasm bridge: draft `.twasm`
+schemas at `src/bridges/paint-type-{tile,layer}.twasm` now compile with `tw build`
+(hardcoded IR added to typed-wasm codegen v0); full front-end → IR lowering still
+gated on `hyperpolymath/typed-wasm#127` + `#130` (tracked in paint-type#39).
+
+#### Added
+- Ephapax brush engine (`src/ephapax/src/brush.rs`): `BrushTip`
+  (`soft_round`, `hard_round`), `Brush::stamp` with mask-modulated blend,
+  `Stroke` point interpolation with spacing carry-over (PR #29).
+- 7 additional compositing operators — `lerp`, `multiply`, `screen`,
+  `in_op`, `out_op`, `atop`, `xor` — 11 compositing ops total (PR #27).
+- Porter-Duff `over_premultiplied` / `over_unpremultiplied`,
+  `masked_blend`, `flatten_layer_stack`, `Tile::composite_over` (PRs #20/#21).
+- Persistent branching `UndoGraph<T>` + `RevId` with monotonicity invariant
+  documented (PR #21); benches: 88 ns/commit, 2 ns/checkout.
+- Basic `Layer` / `LayerStack` / `LayerId` model with stable IDs across
+  reorderings and `flatten(name)` builder (PR #23).
+- `pt_layer_*` cross-language FFI surface for layer metadata (PR #28,
+  closes #25). 23 total Zig exports (pt_tile_* + pt_layer_* + slot helpers).
+- Draft `.twasm` schemas at `src/bridges/paint-type-{tile,layer}.twasm`
+  (PR #40, refs #39). Now compiles with `tw build` via hardcoded IR in
+  typed-wasm codegen; full general parsing gated on typed-wasm#127 + #130.
+- ABI-3 (per-platform sizes) + ABI-5 (C ABI compliance) + TP-3 (RGBA16F
+  bit-pattern classifier) Idris2 proofs. ABI category fully closed (PRs #10/#19).
+- E2E pipeline test: `tests/e2e.sh` (9 stages) + `src/ephapax/tests/
+  e2e_pipeline.rs` (2 Rust scenarios) + `tests/e2e/scenario_*.sh` probes
+  + `.github/workflows/e2e.yml` (PR #33, closes TEST-NEEDS P1).
+- Fuzz harness: `cargo-fuzz` targets for `pt_tile_blit`,
+  `pt_tile_write_pixel`, `pt_layer_opacity`; 30 s CI smoke per target
+  via `.github/workflows/fuzz-smoke.yml` (PR #35).
+- Coverage reporting: `cargo-llvm-cov` LCOV + console summary for Rust;
+  best-effort `kcov` for Zig integration tests;
+  `.github/workflows/coverage.yml` + `tests/coverage.sh` (PRs #32, #34).
+  Reporting only — no threshold gate. Codecov upload opt-in.
+- README Quick links section pointing at wiki + in-repo docs (PR #31).
+
+#### Fixed
+- Rust CI green on `main` for the first time: `.github/workflows/rust.yml`
+  now points at `src/ephapax/`, 18 clippy warnings closed, pre-checkout
+  `hashFiles()` guard dropped, workflow renamed `rust-ci.yml` → `rust.yml`
+  to force a fresh registration (PRs #36 / #37 / #38).
+- Coverage workflow handles `kcov`-missing on Ubuntu noble runners
+  gracefully (PR #34).
+- Fuzz Smoke: align Zig action to `mlugg/setup-zig@v1` + version 0.15.1
+  (0.15.0 was never published); drop `cargo install cargo-fuzz --locked`
+  whose bundled lockfile pins a rustix incompatible with current nightly
+  (PRs #42, #45).
+- E2E Pipeline: disable Zig stack-check on the static libpt module in
+  `src/interface/ffi/build.zig` (root-cause `__zig_probe_stack`
+  unresolved-symbol when Rust statically links libpt.a) (PR #45,
+  superseded the per-shell workaround in PR #43).
+- Idris CI: purge stale `.ttc`/`build` directories from `~/.idris2` before
+  `idris2 --check` (cached compiled modules hid the post-PR-#19 `TileHandle`
+  additions, leaving Foreign.idr unable to resolve them) (PR #44).
+
+#### Docs
+- EXPLAINME path fixes + v0.2.0 marked current (PR #26).
+- Status docs synced after PRs #27 / #28 / #29 (PR #30).
+- Post-15-PR comprehensive doc sync across README / EXPLAINME / TOPOLOGY /
+  ROADMAP / READINESS / PROOF-NEEDS / QUICKSTART-* / `.machine_readable/*` /
+  `docs/STATE-VISUALIZER.adoc` / `Justfile` (PR #46).
+
+#### Chore
+- Scorecard schedule aligned to weekly Mondays `'23 4 * * 1'` (PR #41).

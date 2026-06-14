@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // dispatch -- the single function the GUI calls. Pure: Document in,
 // Response out, no I/O except SavePng which writes a file.

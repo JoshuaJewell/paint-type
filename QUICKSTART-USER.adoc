@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 = paint-type — Quick Start for Users
 :toc:
 :toclevels: 2
@@ -16,8 +16,8 @@ See link:ROADMAP.adoc[ROADMAP.adoc] for the milestone plan.
 
 == What's Coming
 
-* **v0.2.0**: Brush engine, compositing, undo history
-* **v0.3.0**: Desktop application with layer panel, toolbar, and file I/O
+* **v0.2.0**: Brush engine, compositing (11 ops), undo graph, layer model — **landed in-repo as of 2026-06-01**; the only remaining v0.2.0 box is the AffineScript → typed-wasm bridge (gated on typed-wasm upstream, tracked in paint-type#39)
+* **v0.3.0**: Desktop application with layer panel, toolbar, and file I/O (first runnable release)
 * **v0.4.0**: Plugin system
 * **v0.5.0**: Real-time collaboration via Burble WebRTC
 * **v1.0.0**: Stable release

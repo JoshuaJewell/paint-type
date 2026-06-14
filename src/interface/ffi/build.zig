@@ -108,12 +108,20 @@ pub fn build(b: *std.Build) void {
     // Benchmarks (in test/bench.zig)
     //--------------------------------------------------------------------------
 
-    const bench_exe = b.addExecutable(.{
-        .name = "pt_bench",
+    // Like every other artifact above, the benchmark executable takes its
+    // sources via an explicit module. The older `.root_source_file` field on
+    // `addExecutable` was removed in Zig 0.15.2 (it survived as a deprecated
+    // shim on 0.15.1, which is why CI stayed green while local 0.15.2 builds
+    // broke here). The `b.createModule` form works on both.
+    const bench_module = b.createModule(.{
         .root_source_file = b.path("test/bench.zig"),
         .target = target,
         .optimize = .ReleaseFast,
         .link_libc = true,
+    });
+    const bench_exe = b.addExecutable(.{
+        .name = "pt_bench",
+        .root_module = bench_module,
     });
     const run_bench = b.addRunArtifact(bench_exe);
 

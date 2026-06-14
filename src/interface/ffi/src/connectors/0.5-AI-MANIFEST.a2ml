@@ -1,0 +1,26 @@
+# paint.type AI Manifest (Level 5)
+
+This is the AI manifest for the `src/interface/ffi/src/connectors/` directory (Level 5) of paint.type.
+
+## Purpose
+
+This manifest describes the purpose and structure of the `src/interface/ffi/src/connectors/` directory.
+
+## Authority Split
+
+- **Central protocol authority:** `standards/` repository
+- **Local integration authority (this directory):** src/interface/ffi/src/connectors/ specific configurations
+
+## Canonical Files\n\n- `flatbuffers.zig` -- flatbuffers configuration or data\n- `bsp.zig` -- bsp configuration or data\n- `trpc.zig` -- trpc configuration or data\n- `graphql.zig` -- graphql configuration or data\n- `ipfs.zig` -- ipfs configuration or data\n- `verisimdb_rest.zig` -- verisimdb_rest configuration or data\n- `soap.zig` -- soap configuration or data\n- `rest.zig` -- rest configuration or data\n- `websocket.zig` -- websocket configuration or data\n- `jsonrpc.zig` -- jsonrpc configuration or data\n- `scip.zig` -- scip configuration or data\n- `mqtt.zig` -- mqtt configuration or data\n- `capnproto.zig` -- capnproto configuration or data\n- `arrow_flight.zig` -- arrow_flight configuration or data\n- `bebop.zig` -- bebop configuration or data\n- `grpc.zig` -- grpc configuration or data\n\n## Invariants
+
+1. All A2ML state files must live in `.machine_readable/` ONLY, never in the repo root.
+2. Each directory at layer 5 must have its own `0.5-AI-MANIFEST.a2ml`.
+3. Each directory must have a `README.adoc` describing purpose, contents, and function.
+4. SPDX license identifiers must be consistent across all files (AGPL-3.0-or-later).
+
+## Startup Checklist for Agents
+
+1. Read this file (`0.5-AI-MANIFEST.a2ml`).
+2. Read `README.adoc` for directory overview.
+3. For subdirectories, navigate to their respective manifest files.
+4. Never edit `.machine_readable/` files directly.

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // codec -- PNG encode/decode for straight-alpha RGBA8 buffers. Decode is
 // bounded by MAX_DIM to contain the decoder attack surface.

@@ -101,6 +101,9 @@ ai-cli-crash-capture/
 # Sync artifacts
 sync_report*.txt
 
+# Typed-Wasm bridge build artifacts
+src/bridges/*.wasm
+
 # Hypatia scan cache (local-only)
 .hypatia/
 .zig-cache/

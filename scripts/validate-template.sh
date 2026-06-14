@@ -298,7 +298,7 @@ log_info "Phase 8: Documentation requirements"
 echo ""
 
 check_file_exists "docs/developer/ABI-FFI-README.adoc" "ABI/FFI documentation"
-check_file_exists "TOPOLOGY.md" "Architecture topology" || check_file_exists "docs/architecture/TOPOLOGY.md" "Architecture topology (in docs)"
+check_file_exists "TOPOLOGY.adoc" "Architecture topology" || check_file_exists "docs/architecture/TOPOLOGY.adoc" "Architecture topology (in docs)"
 check_file_exists "CONTRIBUTING.md" "Contribution guide"
 
 # Governance can be at root or in docs/governance/

@@ -1,1 +1,34 @@
-= Src Logic
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= src
+:description: Project directory
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Project directory.
+
+
+As a Level 6 directory (`third_party/gossamer/src/interface/ffi/src/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n=== Source Files\n\n* `webview_gtk.zig` — webview_gtk configuration or data\n* `csp.zig` — csp configuration or data\n* `filesystem.zig` — filesystem configuration or data\n* `plugin.zig` — plugin configuration or data\n* `main.zig` — main configuration or data\n* `dialog.zig` — dialog configuration or data\n* `webview_cocoa.zig` — webview_cocoa configuration or data\n* `clipboard.zig` — clipboard configuration or data\n* `webview_ios.zig` — webview_ios configuration or data\n* `webview_android.zig` — webview_android configuration or data\n* `ssg.zig` — ssg configuration or data\n* `file_watcher.zig` — file_watcher configuration or data\n* `groove.zig` — groove configuration or data\n* `ipc.zig` — ipc configuration or data\n* `ipc_handlers.zig` — ipc_handlers configuration or data\n* `bridge_game_server.zig` — bridge_game_server configuration or data\n* `webview_win32.zig` — webview_win32 configuration or data\n* `tray.zig` — tray configuration or data\n* `conf.zig` — conf configuration or data\n* `shell.zig` — shell configuration or data\n\n=== Other Files\n\n* `0.4-AI-MANIFEST.a2ml` — A2ML machine-readable metadata\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Source files* implement core functionality.\n
+*Other files* support directory operations.\n
+
+== AI Manifest Structure
+
+* `0.6-AI-MANIFEST.a2ml` (this file) - Level 6 manifest for `third_party/gossamer/src/interface/ffi/src/`
+
+
+
+== Related Files
+
+* link:../0.5-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

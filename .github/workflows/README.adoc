@@ -1,0 +1,144 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= GitHub Actions Workflows
+:description: CI/CD automation for paint-type
+
+This directory contains GitHub Actions workflow files that automate various aspects
+of continuous integration, testing, security, and compliance for the paint-type repository.
+
+== Purpose
+
+The workflows in this directory:
+
+* Automatically test code changes on pull requests and pushes
+* Enforce project quality standards and compliance requirements
+* Provide feedback to contributors on code health
+* Ensure the repository remains in a deployable state
+* Protect against security vulnerabilities and supply-chain attacks
+
+== Contents by Functional Grouping
+
+=== Core CI/CD
+
+* `rust.yml`:: Rust language workflow. Runs `cargo check`, `cargo clippy`, `cargo fmt`,
+  `cargo test`, and `cargo doc` for the paint_core Rust crate. Triggered on pushes and
+  pull requests to main and release branches.
+
+* `idris-ci.yml`:: Idris2 language workflow. Compiles Idris2 source files and runs
+  Idris2-specific tests. Ensures ABI and FFI implementations are correct.
+
+* `e2e.yml`:: End-to-end testing workflow. Runs the complete integration test suite
+  across multiple components. Validates that the entire system works together.
+
+=== Security and Compliance
+
+* `scorecard-enforcer.yml`:: Runs OpenSSF Scorecard checks to ensure the repository
+  meets security best practices. Checks for signed releases, branch protection,
+  dependency updates, and other security-related metrics.
+
+* `openssf-compliance.yml`:: Comprehensive OpenSSF compliance validation. Ensures
+  adherence to security standards and best practices.
+
+* `guix-nix-policy.yml`:: Enforces Guix and Nix package management policies. Blocks
+  usage of non-approved package managers and ensures reproducible builds.
+
+=== Language and Tool Policy
+
+* `npm-bun-blocker.yml`:: Blocks any usage of npm or bun package managers. Enforces
+  Deno as the approved JavaScript runtime.
+
+* `ts-blocker.yml`:: Blocks TypeScript file creation or modification. Enforces
+  ReScript or other approved alternatives.
+
+=== Quality and Maintenance
+
+* `coverage.yml`:: Measures and reports code coverage. Uses `cargo-llvm-cov` for
+  Rust and best-effort coverage for other languages. Reports are informational
+  and do not block merges.
+
+* `workflow-linter.yml`:: Lints all GitHub Actions workflow files to ensure they
+  follow best practices, have proper metadata, and are syntactically correct.
+
+* `dogfood-gate.yml`:: Validates that the project uses its own tools and libraries
+  (dogfooding). Ensures internal consistency and quality.
+
+* `host.yml`:: Host-specific configuration and validation workflow.
+
+* `mirror.yml`:: Repository mirroring and synchronization workflow.
+
+== Purpose of Each Workflow
+
+=== rust.yml
+
+Primary CI workflow for Rust code. Ensures:
+
+* Code compiles without errors
+* Clippy linting passes with no warnings
+* Code formatting follows project standards
+* All unit and integration tests pass
+* Documentation builds successfully
+
+This is the gatekeeper for any Rust code changes in paint-type.
+
+=== idris-ci.yml
+
+Idris2-specific validation. Ensures:
+
+* All Idris2 files compile successfully
+* ABI definitions are correct
+* FFI interfaces are properly defined
+* Idris2-specific proofs and validations pass
+
+Critical for maintaining the cross-language bridge between Idris2 and Zig/Rust.
+
+=== e2e.yml
+
+End-to-end integration testing. Validates:
+
+* Component interoperability
+* ABI/FFI correctness across languages
+* Complete workflow from input to output
+* System-level invariants and guarantees
+
+Runs the most comprehensive test suite available.
+
+=== scorecard-enforcer.yml
+
+Security best practice validation. Checks:
+
+* Branch protection settings
+* Signed releases
+* Dependency update frequency
+* Security policy presence
+* Code review practices
+* Issue resolution timeliness
+
+Helps maintain a high security posture for the repository.
+
+== Workflow Triggers
+
+Most workflows are triggered by:
+
+* `push` to main branch
+* `pull_request` to main branch
+* `schedule` (nightly or weekly)
+* `workflow_dispatch` (manual trigger)
+
+Check individual workflow files for specific trigger configurations.
+
+== SHA Pinning
+
+All GitHub Actions used in these workflows should be SHA-pinned to specific commits
+to prevent supply-chain attacks from compromised or updated actions.
+
+Example:
+[source,yaml]
+----
+- uses: actions/checkout@8e5e7e5ab8b370d3a0e0e70878d379440678a716 # v3.3.0
+----
+
+== Related Files
+
+* link:../0.1-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

@@ -1,0 +1,50 @@
+# AI Manifest - Level 2: .github/workflows
+
+This is the AI manifest for the `.github/workflows/` directory (Level 2) of paint-type.
+
+## Purpose
+
+The `workflows/` directory contains GitHub Actions workflow definitions that automate
+CI/CD, testing, security scanning, and compliance enforcement for the paint-type
+repository.
+
+## Authority Split
+
+- **Central protocol authority:** `standards/` repository workflows
+- **Local integration authority (this directory):** paint-type specific workflow implementations
+
+## Canonical Files
+
+GitHub Actions workflow YAML files:
+- `idris-ci.yml` -- Idris2 compilation and testing
+- `rust.yml` -- Rust compilation, clippy, formatting, and testing
+- `e2e.yml` -- End-to-end integration testing
+- `coverage.yml` -- Code coverage measurement and reporting
+- `scorecard-enforcer.yml` -- OpenSSF Scorecard security checks
+- `guix-nix-policy.yml` -- Guix/Nix package policy enforcement
+- `npm-bun-blocker.yml` -- Block npm and bun usage
+- `ts-blocker.yml` -- Block TypeScript usage
+- `workflow-linter.yml` -- Lint GitHub Actions workflows
+- `dogfood-gate.yml` -- Dogfooding validation gate
+- `openssf-compliance.yml` -- OpenSSF compliance checks
+- `host.yml` -- Host-specific configurations
+- `mirror.yml` -- Repository mirroring
+
+## Subdirectories
+
+None - all files are directly in this directory.
+
+## Invariants
+
+1. All workflow files must be valid GitHub Actions YAML.
+2. Workflows must follow the organization's security and compliance standards.
+3. SHA-pinned actions are preferred over mutable tags to prevent supply-chain attacks.
+4. All workflows must include proper SPDX license identifiers.
+
+## Startup Checklist for Agents
+
+1. Read this file (`0.2-AI-MANIFEST.a2ml`).
+2. Read `README.adoc` for workflow directory overview.
+3. Refer to central workflow standards in `standards/.github/workflows/`.
+4. Validate YAML syntax before committing changes.
+5. Ensure all workflows have proper error handling and notifications.

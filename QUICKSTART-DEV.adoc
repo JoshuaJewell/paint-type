@@ -1,14 +1,14 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 = paint-type — Quick Start for Developers
 :toc:
 :toclevels: 2
 
 == Tech Stack
 
-* **Rust** (stable) — Ephapax image core (`src/ephapax/`)
+* **Rust** (stable) — Ephapax image core (`src/paint_core/`)
 * **Idris2** — ABI type definitions and layout proofs (`src/interface/Abi/`)
 * **Zig** 0.15+ — FFI bridge to C ABI (`src/interface/ffi/`)
-* **AffineScript → typed-wasm** — bridge layer (stub, v0.2.0)
+* **AffineScript → typed-wasm** — bridge layer (DRAFT `.twasm` schemas at `src/bridges/`; compilation gated on `hyperpolymath/typed-wasm#127` + `#130`, tracked in paint-type#39)
 * **Gossamer** — linearly-typed desktop shell (v0.3.0)
 * **just** — task runner
 
@@ -21,14 +21,7 @@
 guix shell
 ----
 
-=== Option B: Nix (fallback)
-
-[source,bash]
-----
-nix develop
-----
-
-=== Option C: Manual
+=== Option B: Manual
 
 Prerequisites:
 
@@ -58,7 +51,7 @@ zig build
 
 [source,bash]
 ----
-cd src/ephapax
+cd src/paint_core
 cargo build
 ----
 
@@ -83,7 +76,7 @@ zig build test
 
 [source,bash]
 ----
-cd src/ephapax
+cd src/paint_core
 cargo test
 ----
 
@@ -100,11 +93,11 @@ just test
 ----
 paint-type/
 ├── src/
-│   ├── paint_core/         # Rust — RGBA16F tile engine (linear types)
+│   ├── ephapax/            # Rust — RGBA16F tile engine (linear types)
 │   ├── interface/
 │   │   ├── Abi/            # Idris2 — ABI types, layout proofs, FFI wrappers
 │   │   └── ffi/            # Zig — libpt C ABI bridge + integration tests
-│   ├── bridges/            # AffineScript → typed-wasm bridge stubs
+│   ├── bridges/            # AffineScript → typed-wasm bridge — draft `.twasm` schemas (paint-type-{tile,layer}.twasm)
 │   └── aspects/            # Cross-cutting: integrity, observability, security
 ├── verification/proofs/    # Formal proofs (Idris2, Lean4, Agda, Coq, TLA+)
 ├── tests/                  # Test suite
@@ -156,12 +149,12 @@ If using an AI assistant, load the warmup context first:
 just llm-context    # Outputs role-appropriate context
 ----
 
-Or read `0-AI-MANIFEST.a2ml` and `llm-warmup-dev.md` directly.
+Or read `0-AI-MANIFEST.a2ml` and `llm-warmup-dev.adoc` directly.
 
 == Get Help
 
 * **Architecture**: link:EXPLAINME.adoc[EXPLAINME.adoc]
-* **Topology**: link:TOPOLOGY.md[TOPOLOGY.md]
+* **Topology**: link:TOPOLOGY.adoc[TOPOLOGY.adoc]
 * **Roadmap**: link:ROADMAP.adoc[ROADMAP.adoc]
 * **Report issue**: https://github.com/JoshuaJewell/paint-type/issues
 * **Contact**: paint-type@pm.me

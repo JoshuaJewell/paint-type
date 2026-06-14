@@ -123,7 +123,7 @@ Run this pass at the end of a corrective/adaptive/perfective cycle:
 
 - [ ] Maintain both human and machine views of maintenance policy from a single source (generate one from the other).
 - [ ] Add policy bots for corrective/adaptive/perfective/audit modes.
-- [ ] Add repo-level architecture map (`TOPOLOGY.md`) and release-readiness dashboards.
+- [ ] Add repo-level architecture map (`TOPOLOGY.adoc`) and release-readiness dashboards.
 - [ ] Add per-repo exception registry for approved policy deviations.
 
 ### Explicit Root-Placement Rule

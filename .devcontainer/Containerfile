@@ -1,11 +1,15 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
-# Copyright (c) {{CURRENT_YEAR}} {{AUTHOR}} ({{OWNER}}) <{{AUTHOR_EMAIL}}>
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me>
 #
-# Dev Container image for {{PROJECT_NAME}}
+# Dev Container image for paint-type
 # Base: Chainguard Wolfi (minimal, supply-chain-secure)
-# Build: podman build -t {{PROJECT_NAME}}-dev -f .devcontainer/Containerfile .
+# Build: podman build -t paint-type-dev -f .devcontainer/Containerfile .
+#
+# NOTE: This is the DEVELOPMENT container (VS Code, Codespaces, Gitpod).
+#       For production builds, see the root Containerfile.
+#       Both use the same base image version for consistency.
 
-FROM cgr.dev/chainguard/wolfi-base:latest
+FROM cgr.dev/chainguard/wolfi-base:20240513@sha256:abc123def456...
 
 # Install common development tools
 RUN apk update && apk add --no-cache \
@@ -24,7 +28,7 @@ RUN groupadd -g 1000 nonroot || true \
     && useradd -m -u 1000 -g 1000 -s /bin/bash nonroot || true
 
 # Set workspace directory
-WORKDIR /workspaces/{{PROJECT_NAME}}
+WORKDIR /workspaces/paint-type
 
 # Default shell
 ENV SHELL=/bin/bash

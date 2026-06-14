@@ -17,51 +17,41 @@
 # is enforced. TEST-NEEDS P1 only requires that coverage be wired into
 # CI; gating is a separate (later) decision.
 name: Coverage
-
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 permissions:
   contents: read
-
 jobs:
   coverage:
     name: Rust + Zig coverage
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
         with:
           components: llvm-tools-preview
-
       - name: Cache cargo registry and build
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
         with:
           workspaces: src/paint_core
-
       - name: Install Zig 0.15
         uses: mlugg/setup-zig@8d6198c65fb0feaa111df26e6b467fea8345e46f # v1
         with:
           version: 0.15.1
-
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-llvm-cov
-
       - name: Install kcov (best-effort, Zig coverage)
         id: kcov_install
         continue-on-error: true
@@ -76,22 +66,18 @@ jobs:
             exit 0
           fi
           echo "kcov_available=true" >> "$GITHUB_OUTPUT"
-
       - name: Build libpt (Zig static library)
         run: |
           cd src/interface/ffi
           zig build -Doptimize=Debug
-
       - name: Run Rust coverage (cargo-llvm-cov → LCOV)
         working-directory: src/paint_core
         run: |
           cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
-
       - name: Print Rust coverage summary
         working-directory: src/paint_core
         run: |
           cargo llvm-cov report
-
       - name: Append Rust coverage to step summary
         if: always()
         working-directory: src/paint_core
@@ -103,7 +89,6 @@ jobs:
             cargo llvm-cov report 2>&1 || echo "(report unavailable)"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-
       - name: Build Zig integration-test binary
         id: zig_build_test
         continue-on-error: true
@@ -119,7 +104,6 @@ jobs:
             -lc \
             --test-no-exec \
             -femit-bin=zig-out/test/integration_test
-
       - name: Run Zig integration tests under kcov (best-effort)
         id: zig_kcov
         continue-on-error: true
@@ -137,7 +121,6 @@ jobs:
             echo "Zig test binary not built; skipping kcov."
             exit 0
           fi
-
       - name: Append Zig coverage status to step summary
         if: always()
         run: |
@@ -157,7 +140,6 @@ jobs:
               echo "non-blocking; follow-up is tracked in TEST-NEEDS.md."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
-
       - name: Upload Rust LCOV artifact
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -166,7 +148,6 @@ jobs:
           path: src/paint_core/lcov.info
           if-no-files-found: warn
           retention-days: 30
-
       - name: Upload Zig kcov artifact
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -175,7 +156,6 @@ jobs:
           path: coverage/zig
           if-no-files-found: warn
           retention-days: 30
-
       # Codecov upload is opt-in: only runs when a CODECOV_TOKEN secret
       # is present. Forks and unconfigured repos must not be gated by a
       # missing token, so we guard explicitly and never fail.
