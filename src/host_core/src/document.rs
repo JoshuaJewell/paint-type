@@ -8,7 +8,7 @@
 use paint_core::brush::{Brush, BrushTip, Stroke};
 use paint_core::layer::{Layer, LayerId, LayerStack, TileCoord};
 use paint_core::render::render_region;
-use paint_core::{Tile, TILE_SIZE};
+use paint_core::{f32_to_f16_bits, Tile, TILE_SCALARS, TILE_SIZE};
 
 /// An axis-aligned dirty rectangle in canvas pixels.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,10 +26,11 @@ pub struct Document {
     active: LayerId,
     colour: [f32; 4],
     diameter: u32,
+    hardness: f32,
     stroke: Stroke,
-    // The current brush is cached and rebuilt only when the colour or
-    // diameter changes; rebuilding allocates the tip mask, so it must not
-    // happen per stamp on the painting hot path.
+    // The current brush is cached and rebuilt only when the colour,
+    // diameter, or hardness changes; rebuilding allocates the tip mask,
+    // so it must not happen per stamp on the painting hot path.
     brush: Brush,
 }
 
@@ -40,6 +41,7 @@ impl Document {
         let active = stack.push(Layer::new("Layer 1"));
         let colour = [0.0, 0.0, 0.0, 1.0];
         let diameter = 16;
+        let hardness = 0.0;
         Self {
             width,
             height,
@@ -47,8 +49,9 @@ impl Document {
             active,
             colour,
             diameter,
+            hardness,
             stroke: Stroke::new(),
-            brush: build_brush(diameter, colour),
+            brush: build_brush(diameter, hardness, colour),
         }
     }
 
@@ -62,12 +65,60 @@ impl Document {
 
     pub fn set_colour(&mut self, r: f32, g: f32, b: f32, a: f32) {
         self.colour = [r, g, b, a];
-        self.brush = build_brush(self.diameter, self.colour);
+        self.brush = build_brush(self.diameter, self.hardness, self.colour);
     }
 
-    pub fn set_brush(&mut self, diameter: u32) {
+    pub fn set_brush(&mut self, diameter: u32, hardness: f32) {
         self.diameter = diameter.clamp(1, TILE_SIZE);
-        self.brush = build_brush(self.diameter, self.colour);
+        self.hardness = hardness;
+        self.brush = build_brush(self.diameter, self.hardness, self.colour);
+    }
+
+    /// Replace the document contents with the given RGBA8 image. Resets the
+    /// layer stack to a single layer named "Layer 1" populated with tiles
+    /// converted from the supplied pixel data. Returns a `Rect` covering the
+    /// entire canvas so callers can trigger a full repaint.
+    pub fn load_png(&mut self, rgba8: &[u8], w: u32, h: u32) -> Rect {
+        self.width = w;
+        self.height = h;
+        self.stack = LayerStack::new();
+        let active = self.stack.push(Layer::new("Layer 1"));
+        self.active = active;
+
+        let tiles_x = w.div_ceil(TILE_SIZE);
+        let tiles_y = h.div_ceil(TILE_SIZE);
+
+        for ty in 0..tiles_y {
+            for tx in 0..tiles_x {
+                let Some(tile) = Tile::alloc(tx, ty) else {
+                    continue;
+                };
+                let mut buf = [0u16; TILE_SCALARS];
+                // Populate the tile buffer from the source RGBA8 pixels.
+                for row in 0..TILE_SIZE {
+                    let canvas_y = ty * TILE_SIZE + row;
+                    for col in 0..TILE_SIZE {
+                        let canvas_x = tx * TILE_SIZE + col;
+                        // Pixels outside the image bounds stay zero (transparent).
+                        if canvas_x >= w || canvas_y >= h {
+                            continue;
+                        }
+                        let src = ((canvas_y * w + canvas_x) * 4) as usize;
+                        let dst = ((row * TILE_SIZE + col) * 4) as usize;
+                        buf[dst]     = f32_to_f16_bits(rgba8[src]     as f32 / 255.0);
+                        buf[dst + 1] = f32_to_f16_bits(rgba8[src + 1] as f32 / 255.0);
+                        buf[dst + 2] = f32_to_f16_bits(rgba8[src + 2] as f32 / 255.0);
+                        buf[dst + 3] = f32_to_f16_bits(rgba8[src + 3] as f32 / 255.0);
+                    }
+                }
+                let _ = tile.write_buffer(&buf);
+                if let Some(layer) = self.stack.get_mut(active) {
+                    layer.put_tile(TileCoord::new(tx, ty), tile);
+                }
+            }
+        }
+
+        Rect { x: 0, y: 0, w, h }
     }
 
     /// Stamp the brush at canvas-pixel centre `(cx, cy)`, dispatching to
@@ -154,8 +205,13 @@ impl Document {
     }
 }
 
-fn build_brush(diameter: u32, colour: [f32; 4]) -> Brush {
-    Brush::new(BrushTip::soft_round(diameter), colour, 0.25)
+fn build_brush(diameter: u32, hardness: f32, colour: [f32; 4]) -> Brush {
+    let tip = if hardness >= 0.5 {
+        BrushTip::hard_round(diameter)
+    } else {
+        BrushTip::soft_round(diameter)
+    };
+    Brush::new(tip, colour, 0.25)
 }
 
 fn union(a: Rect, b: Rect) -> Rect {

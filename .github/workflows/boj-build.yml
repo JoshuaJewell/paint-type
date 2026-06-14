@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
 # OPTIONAL: BoJ Server Build Trigger
 # This workflow notifies a BoJ Server instance when code is pushed.

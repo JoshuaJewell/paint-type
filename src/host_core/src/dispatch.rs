@@ -27,9 +27,29 @@ pub fn dispatch(doc: &mut Option<Document>, cmd: Command) -> Response {
             document.set_colour(r, g, b, a);
             Response::Ack
         }
-        Command::SetBrush { diameter } => {
-            document.set_brush(diameter);
+        Command::SetBrush { diameter, hardness } => {
+            document.set_brush(diameter, hardness);
             Response::Ack
+        }
+        Command::OpenPng { path } => {
+            match crate::codec::load_png(&path) {
+                Err(e) => Response::Error { message: e },
+                Ok((rgba, w, h)) => {
+                    let full = document.load_png(&rgba, w, h);
+                    let pixels = document.render_all();
+                    let rgba_base64 =
+                        base64::engine::general_purpose::STANDARD.encode(&pixels);
+                    Response::Loaded {
+                        dirty: DirtyRect {
+                            x: full.x,
+                            y: full.y,
+                            w: document.width(),
+                            h: document.height(),
+                            rgba_base64,
+                        },
+                    }
+                }
+            }
         }
         Command::PointerDown { x, y } => {
             let rect = document.pointer_down(x, y);
@@ -96,7 +116,7 @@ mod tests {
             Response::Ack
         );
         assert_eq!(
-            dispatch(&mut doc, Command::SetBrush { diameter: 16 }),
+            dispatch(&mut doc, Command::SetBrush { diameter: 16, hardness: 0.0 }),
             Response::Ack
         );
 
@@ -119,6 +139,49 @@ mod tests {
         let mut doc: Option<Document> = None;
         let r = dispatch(&mut doc, Command::PointerDown { x: 1.0, y: 1.0 });
         assert!(matches!(r, Response::Error { .. }));
+    }
+
+    #[test]
+    fn open_png_round_trips_pixels() {
+        use crate::codec;
+
+        // Build a 4x4 RGBA8 image with a known colour at pixel (1, 1):
+        // pure green, fully opaque.
+        let w: u32 = 4;
+        let h: u32 = 4;
+        let mut src = vec![0u8; (w * h * 4) as usize];
+        let target_offset = ((1 * w + 1) * 4) as usize;
+        src[target_offset]     = 0;
+        src[target_offset + 1] = 200;
+        src[target_offset + 2] = 0;
+        src[target_offset + 3] = 255;
+
+        let path = std::env::temp_dir().join("pt_dispatch_open_png.png");
+        let path_str = path.to_str().unwrap();
+        codec::save_png(path_str, &src, w, h).expect("save temp png");
+
+        let mut doc: Option<Document> = None;
+        assert_eq!(dispatch(&mut doc, Command::NewDoc { w, h }), Response::Ack);
+
+        let response = dispatch(&mut doc, Command::OpenPng { path: path_str.to_string() });
+        let Response::Loaded { dirty } = response else {
+            panic!("expected Loaded, got {response:?}");
+        };
+
+        // The dirty rect must span the full canvas.
+        assert_eq!(dirty.x, 0);
+        assert_eq!(dirty.y, 0);
+        assert_eq!(dirty.w, w);
+        assert_eq!(dirty.h, h);
+
+        // Decode the rendered bytes and verify the known pixel.
+        let rendered = decode(&dirty.rgba_base64);
+        assert_eq!(rendered.len() as u32, w * h * 4);
+        // Pixel (1,1) in row-major RGBA8. Allow a small rounding tolerance
+        // from f32 -> f16 -> f32 -> u8 conversion.
+        let px = &rendered[target_offset..target_offset + 4];
+        assert!(px[1] > 190, "green channel at (1,1) expected ~200, got {}", px[1]);
+        assert!(px[3] > 250, "alpha at (1,1) expected ~255, got {}", px[3]);
     }
 
 }

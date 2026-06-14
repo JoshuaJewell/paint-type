@@ -1,4 +1,4 @@
-;; SPDX-License-Identifier: PMPL-1.0-or-later
+;; SPDX-License-Identifier: AGPL-3.0-or-later
 ;;
 ;; Root Hygiene Rules — enforced by Hypatia scan + gitbot-fleet
 ;;
@@ -155,9 +155,9 @@
   ;; THIRD-PARTY / FORK PROTECTION — never relicense
   ;; =========================================================================
   (third-party-protection
-    (description "Repos that are forks or contributions to upstream projects must NOT have PMPL headers applied. Respect the original license.")
+    (description "Repos that are forks or contributions to upstream projects must NOT have AGPL headers applied. Respect the original license of the upstream tree (hyperpolymath ecosystem components are MPL-2.0; other upstreams keep their own).")
     (detection "Check if repo is a GitHub fork, or if LICENSE contains multiple licenses, or if repo name matches a known upstream project")
-    (action "SKIP all SPDX header changes. SKIP PMPL enforcement. Flag for manual review.")
+    (action "SKIP all SPDX header changes. SKIP AGPL enforcement. Flag for manual review.")
     (known-forks ("rescript" "rescript-tea" "rescript-vite" "rescript-dom-mounter"))
     (notes "The chatgpt-codex-connector bot correctly flagged this in rescript. Never repeat this mistake."))
 

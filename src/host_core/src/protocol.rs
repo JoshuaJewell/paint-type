@@ -24,7 +24,8 @@ pub struct DirtyRect {
 pub enum Command {
     NewDoc { w: u32, h: u32 },
     SetColour { r: f32, g: f32, b: f32, a: f32 },
-    SetBrush { diameter: u32 },
+    SetBrush { diameter: u32, hardness: f32 },
+    OpenPng { path: String },
     PointerDown { x: f32, y: f32 },
     PointerMove { x: f32, y: f32 },
     PointerUp,
@@ -41,6 +42,8 @@ pub enum Response {
     Painted { dirty: DirtyRect },
     /// A file was written.
     Saved { path: String },
+    /// A PNG was opened; the dirty rect covers the full canvas.
+    Loaded { dirty: DirtyRect },
     /// Something failed; `message` is human-readable.
     Error { message: String },
 }

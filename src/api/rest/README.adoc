@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= REST adapter
+
+REST + JSON over HTTP/1.1 + HTTP/2 + HTTP/3, with the OpenAPI schema generated from `Abstract.idr`.
+
+* Idiomatic resource URLs for canvas, layers, sessions, plugin manifests.
+* `Accept: application/cbor` and `Accept: application/x-msgpack` for binary-leaning clients.
+* Conditional requests (`If-Match`, `If-None-Match`) for tile fetches.

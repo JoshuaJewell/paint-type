@@ -1,0 +1,11 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Physics backends
+
+Used for: simulated brush dynamics (fluid, ink-flow, hair brushes), gesture damping, and collision-based tools.
+
+| Backend | Engine
+|---|---
+| `BulletCpuBackend` | Bullet 3 (SIMD CPU)
+| `PhysxBackend` | NVIDIA PhysX 5
+| `JoltCpuBackend` | Jolt Physics
+| `WebGpuPhysicsBackend` | WebGPU compute custom kernels

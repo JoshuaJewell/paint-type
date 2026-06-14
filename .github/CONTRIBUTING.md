@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 # Contributing to paint-type
 
 Thank you for contributing to paint-type! This file covers how to set up a development
@@ -13,8 +13,11 @@ environment, submit changes, and navigate the codebase.
 git clone https://github.com/JoshuaJewell/paint-type.git
 cd paint-type
 
-# Reproducible dev shell (Guix is the only supported vehicle)
+# Using Guix (preferred)
 guix shell
+
+# Or using Nix (fallback)
+nix develop
 
 # Verify setup
 just doctor
@@ -31,7 +34,7 @@ zig build test
 ### Rust Ephapax (requires Rust stable)
 
 ```bash
-cd src/ephapax
+cd src/paint_core
 cargo test
 ```
 
@@ -40,7 +43,7 @@ cargo test
 ```
 paint-type/
 ├── src/
-│   ├── ephapax/          # Rust image core (RGBA16F tiles, compositing)
+│   ├── paint_core/       # Rust image core (RGBA16F tiles, compositing)
 │   ├── interface/
 │   │   ├── Abi/          # Idris2 ABI definitions (Perimeter 1 — formally verified)
 │   │   └── ffi/          # Zig FFI bridge (Perimeter 1 — C ABI)
@@ -53,7 +56,7 @@ paint-type/
 ├── .machine_readable/    # Machine-readable content (Perimeter 1)
 │   ├── *.a2ml            # State files (STATE, META, ECOSYSTEM, etc.)
 │   ├── bot_directives/   # Bot configs
-│   └── contractiles/     # Policy contracts (k9, dust, lust, must, trust)
+│   └── contractiles/     # Policy contracts (k9, dust, intend, must, trust)
 ├── .well-known/          # Protocol files (Perimeter 1-3)
 ├── .github/              # GitHub config (Perimeter 1)
 ├── CHANGELOG.md
@@ -62,7 +65,8 @@ paint-type/
 ├── LICENSE
 ├── README.adoc
 ├── SECURITY.md
-├── guix.scm              # Guix package — canonical (Perimeter 1)
+├── flake.nix             # Nix flake — fallback (Perimeter 1)
+├── guix.scm              # Guix package — primary (Perimeter 1)
 └── Justfile              # Task runner (Perimeter 1)
 ```
 

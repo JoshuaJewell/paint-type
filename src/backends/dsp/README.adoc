@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= DSP / audio backends
+
+OS audio server backends. paint.type uses these for tool feedback, brush sonification (optional), session audio in collaborative mode, and as a substrate for DSP-style image filters (when an audio DSP block is available and idle).
+
+| Backend | Host
+|---|---
+| `AlsaBackend` | Linux — ALSA direct
+| `PipeWireBackend` | Linux — PipeWire (preferred when present)
+| `JackBackend` | Linux / BSD / macOS — JACK pro-audio
+| `CoreAudioBackend` | macOS / iOS — Core Audio + AudioUnit
+| `WasapiBackend` | Windows — WASAPI exclusive + shared
+| `OboeBackend` | Android — Oboe
+| `WebAudioBackend` | Browsers — Web Audio API via typed-wasm

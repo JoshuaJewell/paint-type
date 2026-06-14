@@ -36,11 +36,16 @@ allow = [
 ]
 
 deny = [
-    "AGPL-3.0-only",
-    "AGPL-3.0-or-later",
+    # paint.type itself is AGPL-3.0-or-later, so allow it (above). Block
+    # GPL-3.0 / GPL-2.0 dependencies that would create stricter combined
+    # obligations than AGPL imposes on its own.
+    "GPL-3.0-only",
+    "GPL-3.0-or-later",
+    "GPL-2.0-only",
+    "GPL-2.0-or-later",
 ]
 
-copyleft = "warn"
+copyleft = "allow"
 
 [[licenses.exceptions]]
 allow = ["OpenSSL"]

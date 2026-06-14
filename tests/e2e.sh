@@ -2,190 +2,141 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
-# paint-type — End-to-End Test Orchestrator.
+# RSR Standard E2E Test Template
 #
-# This script walks the full editing pipeline that v0.2.0 ships:
-#
-#   1. Build the Zig FFI library (libpt) — `zig build` in
-#      src/interface/ffi/. Produces both static (libpt.a, linked into
-#      paint_core) and shared (libpt.so / .dylib / .dll, used by other
-#      embedders) artifacts.
-#   2. Run the existing Zig integration-test target (`zig build test`)
-#      as a smoke check that the FFI exports we are about to drive
-#      from Rust really do work.
-#   3. Run the Rust e2e_pipeline integration test
-#      (`cargo test --test e2e_pipeline`). That binary exercises:
-#        - Tile alloc / fill / read / write / drop via the safe Tile API
-#        - Tile::composite_over (Porter-Duff "over" pixel-by-pixel)
-#        - UndoGraph snapshots between edit stages
-#        - pt_layer_stack_new / pt_layer_push / pt_layer_reorder_to /
-#          pt_layer_get_name / pt_layer_count / pt_layer_get_id_at /
-#          pt_layer_stack_free
-#        - BrushTip::hard_round + Brush::stamp driven by a Stroke that
-#          emits at least five stamps; pixel values verified before and
-#          after the stroke.
-#   4. Run any extra scenario scripts in tests/e2e/scenario_*.sh.
-#
-# Exits 0 only if every stage succeeds. Any failure prints a clear
-# diagnostic and exits non-zero.
+# End-to-end tests validate the full pipeline: build → run → verify output.
+# Customise this file for your project. Delete the examples that don't apply.
 #
 # Usage:
-#   bash tests/e2e.sh        # from repo root
+#   bash tests/e2e.sh
 #   just e2e
+#
+# Merge requirements (STANDING): All 6 test categories must pass before merge:
+#   P2P, E2E (this file), aspect, execution, lifecycle, benchmarks
 
-set -eu
+set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-# PT_TMPDIR overrides the per-stage log directory. Default /tmp/ is fine
-# for normal hosts; CI sandboxes / read-only /tmp/ / container builds
-# can point this elsewhere. Closes the panic-attack PathTraversal medium
-# finding without breaking the developer-discoverable log-path convention.
-PT_TMPDIR="${PT_TMPDIR:-/tmp}"
 
 PASS=0
 FAIL=0
+SKIP=0
 
-# ─── Colour helpers (no-op outside a TTY) ────────────────────────────
-if [ -t 1 ]; then
-    green() { printf '\033[32m%s\033[0m\n' "$*"; }
-    red()   { printf '\033[31m%s\033[0m\n' "$*"; }
-    yellow(){ printf '\033[33m%s\033[0m\n' "$*"; }
-    bold()  { printf '\033[1m%s\033[0m\n' "$*"; }
-else
-    green() { printf '%s\n' "$*"; }
-    red()   { printf '%s\n' "$*"; }
-    yellow(){ printf '%s\n' "$*"; }
-    bold()  { printf '%s\n' "$*"; }
-fi
+# ─── Colour helpers ──────────────────────────────────────────────────
+green() { printf '\033[32m%s\033[0m\n' "$*"; }
+red()   { printf '\033[31m%s\033[0m\n' "$*"; }
+yellow(){ printf '\033[33m%s\033[0m\n' "$*"; }
+bold()  { printf '\033[1m%s\033[0m\n' "$*"; }
 
-stage_pass() {
-    green "  PASS: $1"
-    PASS=$((PASS + 1))
+# ─── Assertion helpers ───────────────────────────────────────────────
+
+# check <label> <expected-substring> <actual>
+check() {
+    local name="$1" expected="$2" actual="$3"
+    if echo "$actual" | grep -q "$expected"; then
+        green "  PASS: $name"
+        PASS=$((PASS + 1))
+    else
+        red "  FAIL: $name (expected '$expected', got '${actual:0:120}')"
+        FAIL=$((FAIL + 1))
+    fi
 }
 
-stage_fail() {
-    red "  FAIL: $1"
-    FAIL=$((FAIL + 1))
+# check_status <label> <expected-http-status> <actual-http-status>
+check_status() {
+    local name="$1" expected="$2" actual="$3"
+    if [ "$actual" = "$expected" ]; then
+        green "  PASS: $name (HTTP $actual)"
+        PASS=$((PASS + 1))
+    else
+        red "  FAIL: $name (expected HTTP $expected, got HTTP $actual)"
+        FAIL=$((FAIL + 1))
+    fi
 }
 
-echo "==============================================================="
-echo "  paint-type — End-to-End Pipeline Tests"
-echo "==============================================================="
+# skip <label> <reason>
+skip_test() {
+    yellow "  SKIP: $1 ($2)"
+    SKIP=$((SKIP + 1))
+}
+
+echo "═══════════════════════════════════════════════════════════════"
+echo "  paint-type — End-to-End Tests"
+echo "═══════════════════════════════════════════════════════════════"
 echo ""
 
 # ─── Preflight ───────────────────────────────────────────────────────
-bold "Preflight"
+bold "Preflight checks"
 
-if ! command -v zig >/dev/null 2>&1; then
-    red "  zig not found on PATH; install Zig 0.15+ before running this test."
-    exit 2
-fi
-stage_pass "zig present ($(zig version))"
+# TODO: Check that your binary/server is built
+# Example:
+# BINARY="$PROJECT_DIR/target/release/my-tool"
+# if [ ! -f "$BINARY" ]; then
+#     red "Binary not found at $BINARY — run 'just build' first"
+#     exit 1
+# fi
+# green "  Binary found: $BINARY"
 
-if ! command -v cargo >/dev/null 2>&1; then
-    red "  cargo not found on PATH; install Rust before running this test."
-    exit 2
-fi
-stage_pass "cargo present ($(cargo --version))"
+# TODO: Check dependencies
+# command -v curl >/dev/null 2>&1 || { red "curl not found"; exit 1; }
+# command -v jq >/dev/null 2>&1   || { red "jq not found"; exit 1; }
 
-if [ ! -d "$PROJECT_DIR/src/interface/ffi" ]; then
-    red "  src/interface/ffi missing — repo layout broken?"
-    exit 2
-fi
-if [ ! -d "$PROJECT_DIR/src/paint_core" ]; then
-    red "  src/paint_core missing — repo layout broken?"
-    exit 2
-fi
-stage_pass "source tree layout intact"
 echo ""
 
-# ─── Stage 1: build libpt ────────────────────────────────────────────
-bold "Stage 1: build libpt"
+# ═══════════════════════════════════════════════════════════════════════
+# TODO: Add your E2E test sections below. Examples:
+# ═══════════════════════════════════════════════════════════════════════
 
-if (cd "$PROJECT_DIR/src/interface/ffi" && zig build -Doptimize=ReleaseSafe) >"${PT_TMPDIR}/pt-e2e-zig-build.log" 2>&1; then
-    stage_pass "zig build (static + shared libpt)"
-else
-    stage_fail "zig build"
-    yellow "    --- zig build log (last 40 lines) ---"
-    tail -40 "${PT_TMPDIR}/pt-e2e-zig-build.log" || true
-    yellow "    -------------------------------------"
-    exit 1
-fi
+# ─── Example: CLI tool E2E ───────────────────────────────────────────
+# bold "Section 1: CLI happy path"
+# OUTPUT=$($BINARY --help 2>&1)
+# check "help flag works" "Usage:" "$OUTPUT"
+#
+# OUTPUT=$($BINARY process input.txt --output /tmp/e2e-output.json 2>&1)
+# check "process command succeeds" "complete" "$OUTPUT"
+#
+# OUTPUT=$(cat /tmp/e2e-output.json)
+# check "output is valid JSON" '"status"' "$OUTPUT"
 
-if [ ! -f "$PROJECT_DIR/src/interface/ffi/zig-out/lib/libpt.a" ] \
-   && [ ! -f "$PROJECT_DIR/src/interface/ffi/zig-out/lib/pt.lib" ]; then
-    stage_fail "libpt.a / pt.lib not present in zig-out/lib/"
-    exit 1
-fi
-stage_pass "libpt static artifact present"
-echo ""
+# ─── Example: Server E2E ────────────────────────────────────────────
+# bold "Section 2: Server lifecycle"
+# $BINARY serve --port 9999 &
+# SERVER_PID=$!
+# trap "kill $SERVER_PID 2>/dev/null" EXIT
+# sleep 2
+#
+# STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9999/health)
+# check_status "health endpoint" "200" "$STATUS"
+#
+# BODY=$(curl -s http://localhost:9999/health)
+# check "health response" '"status":"ok"' "$BODY"
+#
+# kill $SERVER_PID 2>/dev/null
 
-# ─── Stage 2: Zig integration tests ──────────────────────────────────
-bold "Stage 2: Zig integration smoke (zig build test)"
-
-if (cd "$PROJECT_DIR/src/interface/ffi" && zig build test) >"${PT_TMPDIR}/pt-e2e-zig-test.log" 2>&1; then
-    stage_pass "zig build test"
-else
-    stage_fail "zig build test"
-    yellow "    --- zig build test log (last 40 lines) ---"
-    tail -40 "${PT_TMPDIR}/pt-e2e-zig-test.log" || true
-    yellow "    ------------------------------------------"
-    exit 1
-fi
-echo ""
-
-# ─── Stage 3: Rust e2e_pipeline integration test ─────────────────────
-bold "Stage 3: cargo test --test e2e_pipeline (full pipeline scenario)"
-
-if (cd "$PROJECT_DIR/src/paint_core" && cargo test --test e2e_pipeline -- --test-threads=1) \
-        >"${PT_TMPDIR}/pt-e2e-cargo.log" 2>&1; then
-    stage_pass "cargo test --test e2e_pipeline"
-    yellow "    --- last 10 lines of cargo output ---"
-    tail -10 "${PT_TMPDIR}/pt-e2e-cargo.log" || true
-    yellow "    -------------------------------------"
-else
-    stage_fail "cargo test --test e2e_pipeline"
-    yellow "    --- cargo log (last 60 lines) ---"
-    tail -60 "${PT_TMPDIR}/pt-e2e-cargo.log" || true
-    yellow "    --------------------------------"
-    exit 1
-fi
-echo ""
-
-# ─── Stage 4: extra scenarios ────────────────────────────────────────
-bold "Stage 4: tests/e2e/scenario_*.sh"
-
-SCENARIO_COUNT=0
-SCENARIO_FAIL=0
-for scenario in "$SCRIPT_DIR"/e2e/scenario_*.sh; do
-    [ -e "$scenario" ] || continue
-    SCENARIO_COUNT=$((SCENARIO_COUNT + 1))
-    name="$(basename "$scenario")"
-    if bash "$scenario" "$PROJECT_DIR" >"${PT_TMPDIR}/pt-e2e-scenario.log" 2>&1; then
-        stage_pass "scenario: $name"
-    else
-        stage_fail "scenario: $name"
-        SCENARIO_FAIL=$((SCENARIO_FAIL + 1))
-        yellow "    --- $name log (last 40 lines) ---"
-        tail -40 "${PT_TMPDIR}/pt-e2e-scenario.log" || true
-        yellow "    ---------------------------------"
-    fi
-done
-if [ "$SCENARIO_COUNT" -eq 0 ]; then
-    yellow "  (no scenario_*.sh files found — Rust integration test covers the pipeline)"
-fi
-if [ "$SCENARIO_FAIL" -gt 0 ]; then
-    exit 1
-fi
-echo ""
+# ─── Example: VeriSimDB integration ─────────────────────────────────
+# bold "Section 3: VeriSimDB persistence"
+# VERISIM_URL="${VERISIM_API_URL:-http://localhost:9090}"
+# if ! curl -sf "$VERISIM_URL/health" >/dev/null 2>&1; then
+#     skip_test "VeriSimDB integration" "gateway not available"
+# else
+#     STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$VERISIM_URL/api/v1/hexads" \
+#         -H "Content-Type: application/json" \
+#         -d '{"tool":"paint-type","modality":"document","content":"e2e test"}')
+#     check_status "hexad POST" "201" "$STATUS"
+# fi
 
 # ═══════════════════════════════════════════════════════════════════════
 # Summary
 # ═══════════════════════════════════════════════════════════════════════
-echo "==============================================================="
-bold  "Results: PASS=$PASS  FAIL=$FAIL"
-echo "==============================================================="
+echo ""
+echo "═══════════════════════════════════════════════════════════════"
+printf "  Results: "
+green "PASS=$PASS" | tr -d '\n'
+echo -n "  "
+if [ "$FAIL" -gt 0 ]; then red "FAIL=$FAIL" | tr -d '\n'; else echo -n "FAIL=0"; fi
+echo -n "  "
+if [ "$SKIP" -gt 0 ]; then yellow "SKIP=$SKIP"; else echo "SKIP=0"; fi
+echo "═══════════════════════════════════════════════════════════════"
 
 exit "$FAIL"

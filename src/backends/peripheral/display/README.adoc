@@ -1,0 +1,18 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Display backends
+
+Present-a-frame backends, with HDR / wide-gamut / high-refresh-rate awareness where the host exposes it.
+
+| Backend | Host surface
+|---|---
+| `WaylandBackend` | Wayland — wl_surface + DMA-BUF for zero-copy
+| `XBackend` | X11 — XCB Present + DRI3
+| `DrmKmsBackend` | Linux — direct DRM/KMS (headless, kiosk, embedded)
+| `CoreGraphicsBackend` | macOS — Core Animation layer
+| `MetalLayerBackend` | macOS / iOS — `CAMetalLayer` direct
+| `DxgiBackend` | Windows — DXGI swapchain
+| `AndroidSurfaceBackend` | Android — Surface / SurfaceTexture
+| `WebGpuCanvasBackend` | Browsers — WebGPU canvas
+| `WebGl2CanvasBackend` | Browsers (older) — WebGL2 canvas
+| `FbDevBackend` | Linux framebuffer (legacy)
+| `HaikuViewBackend` | Haiku — BView
