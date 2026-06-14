@@ -120,6 +120,38 @@ updated on next sync.
 
 **Leverage insight:** the spine (DEP-01..04) is yours and mostly close, so paint-type's near-term excellence is gated on **AffineScript + Gossamer**, amplified by **standards**. cerro-torre is the only genuinely *missing* capability.
 
+## Standing / continuous items
+
+These are **not** one-off make-great tasks — they are continuous obligations addressed
+"as they arise" each session, with **no per-occurrence board churn**. The underlying
+items (scanner alerts, wiki gaps) auto-add/remove at source; the board carries **one
+durable `STAND-NN` item** per obligation that points at that source. This is the answer
+to "do we add/subtract as they occur?": no — one standing item, a recurring triage.
+
+| ID | Standing item | Owner | Source of truth | Protocol |
+|----|---------------|-------|-----------------|----------|
+| STAND-01 | Code-scanning / Scorecard remediation | hyperpolymath | `.../paint-type/security/code-scanning` | Each session: triage **open** alerts — fix real ones, dismiss stale with a reason. Do **not** open a board item per alert. |
+| STAND-02 | Wiki development | Joshua / shared | `paint-type.wiki` | Keep the wiki current + growing as features land; treat doc-drift as a wiki task. |
+| STAND-03 | Standards-doc + machine-readable currency | hyperpolymath | `TEMPLATE-STANDARDS-AUDIT.adoc`, `.machine_readable/{STATE,ECOSYSTEM,META}.a2ml`, contractiles | On any state/architecture/integration change, update the matching manifest **in the same unit of work**. The RSR audit doc must be **generated, not hand-authored**, so it cannot silently go stale (it did: v1.1/2026-06-01 predates `paint_core`, Hexadeca, the MVP, the proofs). |
+
+### STAND-01 Code-scanning — current state (2026-06-14)
+8 open, **all Scorecard** (no CodeQL vulns): 4× `BinaryArtifacts` on `zig-out/` (binaries are **not** git-tracked → alerts likely **stale**, dismiss-with-reason), + `CodeReview` / `Maintained` / `BranchProtection` / `CIIBestPractices` (governance checks — raised by `standards` posture, see DEP-09).
+- [ ] Triage the 4 `BinaryArtifacts` alerts (confirm `zig-out/` gitignored; dismiss stale, else `git rm --cached`)
+- [ ] Lift the governance checks via `standards` (branch protection, required review, CII best-practices)
+- [ ] Recurring: bots read this item each session and triage net-new alerts
+
+### STAND-02 Wiki development
+- [ ] Keep the Home page + component map current as v0.3 ships
+- [ ] Document the verified vertical + the discharged proofs (link `PROOF-STATUS.adoc`)
+- [ ] Mirror this dependency scheduler into a wiki page Joshua can browse
+
+### STAND-03 Standards-doc + machine-readable currency
+The hand-authored `TEMPLATE-STANDARDS-AUDIT.adoc` (v1.1 / 2026-06-01) silently went stale — the root cause of the "yikes". Fix the instance **and** the class:
+- [ ] Regenerate `TEMPLATE-STANDARDS-AUDIT.adoc` to current state (post `paint_core` rename, Hexadeca, MVP, proofs)
+- [ ] Make the audit **generated** (a `just standards-audit` recipe that emits it from the live tree) so it can't drift — not hand-maintained
+- [ ] Strengthen `verify-manifests.yml` to flag stale `STATE`/`ECOSYSTEM`/`META.a2ml` vs reality (drift-as-CI-failure)
+- [ ] Run a machine-readable **currency checkpoint** as part of every substantial change (estate pattern, e.g. gossamer#76)
+
 ## Maintenance / bot protocol
 
 - This file is the **source of truth**; GitHub Project #41 is the **live kanban** mirror. Keep them in sync.
