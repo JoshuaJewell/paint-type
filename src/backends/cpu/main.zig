@@ -681,15 +681,17 @@ fn cpu_viewport_fit(canvas: u64, oz: *f64, opx: *f64, opy: *f64) callconv(.c) u3
 // 6. MVP-3 — Pencil stub (placeholder, writes one pixel per point)
 //==============================================================================
 
-fn cpu_tool_stroke_pencil(canvas: u64, layer: u64, n: u32, points: [*]const f64, colour: *const [4]f32) callconv(.c) u32 {
+fn cpu_tool_stroke_pencil(canvas: u64, layer: u64, n: u32, points: [*]const f64, points_len: usize, colour: *const [4]f32) callconv(.c) u32 {
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
     if (layer == 0 or layer > c.layers.items.len) return @intFromEnum(dispatcher.ResultCode.invalid_param);
     const l = c.layers.items[@intCast(layer - 1)];
-    // NOTE: `n` is caller-declared with no companion buffer length across the
-    // FFI, so an `n` larger than the real `points` buffer is an out-of-bounds
-    // read we cannot detect here — see the security report's ABI finding.
-    // `i` is usize so `i * 2` cannot wrap the index arithmetic.
+    // Each pencil point is a flat (x, y) f64 pair, so the buffer must hold 2*n
+    // elements. Validate against the caller-declared length before indexing —
+    // without it an over-large `n` is an out-of-bounds read. `i` is usize so
+    // `i * 2` cannot wrap the index arithmetic.
+    const needed = std.math.mul(usize, n, 2) catch return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    if (needed > points_len) return @intFromEnum(dispatcher.ResultCode.invalid_param);
     var i: usize = 0;
     while (i < n) : (i += 1) {
         const px = points[i * 2];
@@ -1033,11 +1035,15 @@ fn cpu_tool_stroke_brush(
     brush_state: *const dispatcher.BrushStateC,
     n: u32,
     points: [*]const dispatcher.StrokePointC,
+    points_len: usize,
     colour: *const [4]f32,
 ) callconv(.c) u32 {
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
     if (layer == 0 or layer > c.layers.items.len) return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    // `points` holds one StrokePointC per point; reject an `n` larger than the
+    // caller-declared buffer before indexing.
+    if (n > points_len) return @intFromEnum(dispatcher.ResultCode.invalid_param);
     const l = c.layers.items[@intCast(layer - 1)];
 
     const radius: f64 = brush_state.radius;
@@ -1083,12 +1089,13 @@ fn cpu_tool_stroke_brush(
     return @intFromEnum(dispatcher.ResultCode.ok);
 }
 
-fn cpu_tool_stroke_eraser(_c: u64, _l: u64, _bs: *const dispatcher.BrushStateC, _n: u32, _p: [*]const dispatcher.StrokePointC, _m: u32) callconv(.c) u32 {
+fn cpu_tool_stroke_eraser(_c: u64, _l: u64, _bs: *const dispatcher.BrushStateC, _n: u32, _p: [*]const dispatcher.StrokePointC, _pl: usize, _m: u32) callconv(.c) u32 {
     _ = _c;
     _ = _l;
     _ = _bs;
     _ = _n;
     _ = _p;
+    _ = _pl;
     _ = _m;
     return @intFromEnum(dispatcher.ResultCode.not_implemented);
 }

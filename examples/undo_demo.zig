@@ -39,7 +39,7 @@ fn paintCurve(canvas: u64, layer: u64, state: *const dispatcher.BrushStateC, col
             .tilt_y = 0.0,
         };
     }
-    const rc = dispatcher.pt_tool_stroke_brush(canvas, layer, state, pts.len, &pts, &colour);
+    const rc = dispatcher.pt_tool_stroke_brush(canvas, layer, state, pts.len, &pts, pts.len, &colour);
     if (rc != @intFromEnum(dispatcher.ResultCode.ok)) return error.BrushFailed;
 }
 
