@@ -105,7 +105,7 @@ paint.type is the answer to those constraints.
 * Real-time collaboration via https://github.com/hyperpolymath/burble[Burble] — built in, not bolted on
 * The same simplicity contract Paint.NET made with its users, kept
 
-This is not a GIMP. It is not a Krita. It is not a Photoshop. It is the tool Paint.NET users have been asking for, built by one of them.
+This is not a GIMP. It is not a Krita. It is not a Photoshop. It is the tool Paint.NET users have been asking for, being built by, well, at the moment, just one of them.
 
 ---
 
@@ -357,5 +357,4 @@ for informational purposes only.
 == Author
 
 Joshua Jewell — https://github.com/JoshuaJewell[JoshuaJewell]
-
-Built within the https://github.com/hyperpolymath[hyperpolymath] ecosystem.
+with help from Jonathan D.A. Jewell - https://github.com/hyperpolymath[hyperpolymath]
