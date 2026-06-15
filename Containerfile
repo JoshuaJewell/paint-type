@@ -11,7 +11,11 @@
 #       Both use the same base image version for consistency.
 
 # --- Build stage ---
-FROM cgr.dev/chainguard/wolfi-base:20240513@sha256:abc123def456... AS build
+# Pinned by digest (Chainguard rolls :latest frequently — refresh deliberately):
+#   docker pull cgr.dev/chainguard/wolfi-base:latest && \
+#     docker inspect --format='{{index .RepoDigests 0}}' cgr.dev/chainguard/wolfi-base:latest
+# NOTE: the build steps below are still template TODOs — complete them before use.
+FROM cgr.dev/chainguard/wolfi-base:latest@sha256:34977aa13765da89f60fee8fe5230e2bb1c55192df08e383c58221ee0d1277fb AS build
 
 # TODO: Install build dependencies for your stack
 # Examples:
@@ -29,7 +33,8 @@ COPY . .
 #   RUN zig build -Doptimize=ReleaseSafe
 
 # --- Runtime stage ---
-FROM cgr.dev/chainguard/static:20240513@sha256:789xyzabc123...
+# Pinned by digest; refresh as above with cgr.dev/chainguard/static:latest.
+FROM cgr.dev/chainguard/static:latest@sha256:77d8b8925dc27970ec2f48243f44c7a260d52c49cd778288e4ee97566e0cb75b
 
 # Copy built artifact from build stage
 # TODO: Replace with your binary/artifact path

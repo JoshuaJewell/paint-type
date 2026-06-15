@@ -34,8 +34,12 @@ jobs:
 
       - name: Clone Hypatia
         run: |
+          # Pinned to a specific commit so a branch-tip change of hyperpolymath/
+          # hypatia cannot execute new code in this repo's CI. Bump deliberately.
+          HYPATIA_SHA=8a368d637342526bed01f38bbf51604915a0b82b
           if [ ! -d "$HOME/hypatia" ]; then
             git clone https://github.com/hyperpolymath/hypatia.git "$HOME/hypatia"
+            git -C "$HOME/hypatia" checkout "$HYPATIA_SHA"
           fi
 
       - name: Build Hypatia scanner (if needed)
@@ -90,9 +94,13 @@ jobs:
         run: |
           echo "📤 Submitting ${{ steps.scan.outputs.findings_count }} findings to gitbot-fleet..."
 
-          # Clone gitbot-fleet to temp directory
-          FLEET_DIR="/tmp/gitbot-fleet-$$"
+          # Clone gitbot-fleet to a temp directory. mktemp avoids the
+          # predictable /tmp/...-$$ path; the SHA pin stops a branch-tip change
+          # of gitbot-fleet from running new code here. Bump deliberately.
+          FLEET_SHA=9eff1904b922502e01ff7ec5e92687275fabb1ae
+          FLEET_DIR="$(mktemp -d)"
           git clone https://github.com/hyperpolymath/gitbot-fleet.git "$FLEET_DIR"
+          git -C "$FLEET_DIR" checkout "$FLEET_SHA"
 
           # Run submission script
           FINDINGS_FILE="$PWD/hypatia-findings.json"
