@@ -9,6 +9,21 @@ This directory is part of the paint.type project.
 
 Project directory.
 
+== Tooling and Security
+
+This static site is generated using *casket-ssg*.
+
+=== Dependency Pinning
+
+* *Tool*: `casket-ssg`
+* *Version/Commit*: `v0.1.4` (commit `8c3b772b144e59df29c66cb1a8c3d9a4b276ff11`)
+* *Pin Verification*: Verify with `casket-ssg --version` or hash match during container builds.
+
+=== Escaping Contract
+
+* `{{title}}` & `{{description}}`: Automatically HTML-escaped by `casket-ssg` at template compilation time to prevent XSS.
+* `{{content}}`: Raw HTML block generated from Markdown. The template trust model assumes markdown content is generated from trusted repository files and contains no unescaped user-controlled input.
+
 
 As a Level 3 directory (`third_party/gossamer/site/`), it supports the overall
 project structure.

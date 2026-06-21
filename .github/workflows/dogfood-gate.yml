@@ -138,11 +138,11 @@ jobs:
               -o -name '*.yml' -o -name '*.yaml' -o -name '*.md' -o -name '*.adoc' \
               -o -name '*.idr' -o -name '*.zig' -o -name '*.v' -o -name '*.jl' \
               -o -name '*.gleam' -o -name '*.hs' -o -name '*.ml' -o -name '*.sh' \) \
-            -exec grep -Prl "$PATTERNS" {} \; > /tmp/empty-lint-results.txt 2>/dev/null
+            -exec grep -Prl "$PATTERNS" {} \; > "$RUNNER_TEMP/empty-lint-results.txt" 2>/dev/null
           EL_EXIT=$?
           set -e
 
-          FINDINGS=$(wc -l < /tmp/empty-lint-results.txt 2>/dev/null || echo 0)
+          FINDINGS=$(wc -l < "$RUNNER_TEMP/empty-lint-results.txt" 2>/dev/null || echo 0)
           echo "findings=$FINDINGS" >> "$GITHUB_OUTPUT"
           echo "exit_code=$EL_EXIT" >> "$GITHUB_OUTPUT"
           echo "ready=true" >> "$GITHUB_OUTPUT"
@@ -152,7 +152,7 @@ jobs:
             [ -z "$filepath" ] && continue
             REL_PATH="${filepath#$GITHUB_WORKSPACE/}"
             echo "::warning file=${REL_PATH}::Invisible Unicode characters detected (zero-width space, BOM, NBSP, etc.)"
-          done < /tmp/empty-lint-results.txt
+          done < "$RUNNER_TEMP/empty-lint-results.txt"
 
       - name: Write summary
         run: |

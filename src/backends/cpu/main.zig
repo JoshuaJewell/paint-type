@@ -54,7 +54,22 @@ const Layer = struct {
     }
 };
 
+const SpinLock = struct {
+    state: std.atomic.Value(u32) = std.atomic.Value(u32).init(0),
+
+    pub fn lock(self: *SpinLock) void {
+        while (self.state.swap(1, .acquire) == 1) {
+            std.Thread.yield() catch {};
+        }
+    }
+
+    pub fn unlock(self: *SpinLock) void {
+        self.state.store(0, .release);
+    }
+};
+
 const Canvas = struct {
+    lock: SpinLock = .{},
     width: u32,
     height: u32,
     format: u32, // 0=RGBA16F, 1=RGBA8, ...
@@ -163,6 +178,75 @@ const History = struct {
     }
 };
 
+fn saturatingAdd(a: u64, b: u64) u64 {
+    const res = @addWithOverflow(a, b);
+    return if (res[1] != 0) std.math.maxInt(u64) else res[0];
+}
+
+fn saturatingSub(a: u64, b: u64) u64 {
+    const res = @subWithOverflow(a, b);
+    return if (res[1] != 0) 0 else res[0];
+}
+
+fn deleteSubtree(alloc: std.mem.Allocator, history: *History, node_id: u64) void {
+    if (history.nodes.fetchRemove(node_id)) |kv| {
+        const node = kv.value;
+        for (node.children.items) |child_id| {
+            deleteSubtree(alloc, history, child_id);
+        }
+        history.used_bytes = saturatingSub(history.used_bytes, node.cost_bytes);
+        node.deinit(alloc);
+        alloc.destroy(node);
+    }
+}
+
+fn pruneHistory(alloc: std.mem.Allocator, c: *Canvas) void {
+    while (c.history.used_bytes > c.history.budget_bytes) {
+        const root_id = c.history.root;
+        const cur_id = c.history.current;
+        if (root_id == cur_id) {
+            break;
+        }
+
+        var p = cur_id;
+        var parent_id: ?u64 = null;
+        while (true) {
+            const node = c.history.nodes.get(p) orelse break;
+            if (node.parent) |parent| {
+                if (parent == root_id) {
+                    parent_id = parent;
+                    break;
+                }
+                p = parent;
+            } else {
+                break;
+            }
+        }
+
+        if (parent_id == null) {
+            break;
+        }
+
+        const old_root_node = c.history.nodes.get(root_id) orelse break;
+
+        var i: usize = 0;
+        while (i < old_root_node.children.items.len) {
+            if (old_root_node.children.items[i] == p) {
+                _ = old_root_node.children.swapRemove(i);
+            } else {
+                i += 1;
+            }
+        }
+
+        if (c.history.nodes.get(p)) |p_node| {
+            p_node.parent = null;
+        }
+        c.history.root = p;
+
+        deleteSubtree(alloc, &c.history, root_id);
+    }
+}
+
 fn cloneTileMap(alloc: std.mem.Allocator, src: *const TileMap) !TileMap {
     var out: TileMap = .empty;
     var it = src.iterator();
@@ -252,11 +336,11 @@ const State = struct {
     alloc: std.mem.Allocator,
     canvases: std.AutoHashMapUnmanaged(u64, *Canvas) = .empty,
     next_canvas_id: u64 = 1,
-    // mutex retired pending Zig 0.16 std.Thread.Mutex resolution; same
-    // note as in dispatcher.zig — re-introduce when the accelerator path
-    // becomes asynchronous.
+    lock: SpinLock = .{},
 
     fn put(self: *State, c: *Canvas) !u64 {
+        self.lock.lock();
+        defer self.lock.unlock();
         const id = self.next_canvas_id;
         self.next_canvas_id += 1;
         try self.canvases.put(self.alloc, id, c);
@@ -264,6 +348,8 @@ const State = struct {
     }
 
     fn get(self: *State, id: u64) ?*Canvas {
+        self.lock.lock();
+        defer self.lock.unlock();
         return self.canvases.get(id);
     }
 };
@@ -496,6 +582,8 @@ fn cpu_canvas_resize(canvas: u64, w: u32, h: u32, _ax: f64, _ay: f64) callconv(.
     _ = _ay;
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
     c.width = w;
     c.height = h;
     // Existing tiles outside the new bounds are not eagerly dropped; that's a
@@ -512,6 +600,8 @@ fn cpu_layer_new(canvas: u64, _after: u64, _has_after: u32, name: [*:0]const u8,
     _ = _has_after;
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
     const l = s.alloc.create(Layer) catch return @intFromEnum(dispatcher.ResultCode.out_of_memory);
     const name_copy = s.alloc.dupe(u8, std.mem.span(name)) catch {
         s.alloc.destroy(l);
@@ -532,6 +622,8 @@ fn cpu_layer_new(canvas: u64, _after: u64, _has_after: u32, name: [*:0]const u8,
 fn cpu_layer_delete(canvas: u64, layer: u64) callconv(.c) u32 {
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
     if (layer == 0 or layer > c.layers.items.len) return @intFromEnum(dispatcher.ResultCode.invalid_param);
     const idx = @as(usize, layer - 1);
     const l = c.layers.orderedRemove(idx);
@@ -543,6 +635,8 @@ fn cpu_layer_delete(canvas: u64, layer: u64) callconv(.c) u32 {
 fn cpu_layer_reorder(canvas: u64, layer: u64, new_index: u32) callconv(.c) u32 {
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
     if (layer == 0 or layer > c.layers.items.len) return @intFromEnum(dispatcher.ResultCode.invalid_param);
     if (new_index >= c.layers.items.len) return @intFromEnum(dispatcher.ResultCode.invalid_param);
     const old_idx: usize = @intCast(layer - 1);
@@ -554,6 +648,8 @@ fn cpu_layer_reorder(canvas: u64, layer: u64, new_index: u32) callconv(.c) u32 {
 fn cpu_layer_set_visible(canvas: u64, layer: u64, visible: u32) callconv(.c) u32 {
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
     if (layer == 0 or layer > c.layers.items.len) return @intFromEnum(dispatcher.ResultCode.invalid_param);
     c.layers.items[@intCast(layer - 1)].visible = visible != 0;
     return @intFromEnum(dispatcher.ResultCode.ok);
@@ -562,6 +658,8 @@ fn cpu_layer_set_visible(canvas: u64, layer: u64, visible: u32) callconv(.c) u32
 fn cpu_layer_set_opacity(canvas: u64, layer: u64, opacity: f64) callconv(.c) u32 {
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
     if (layer == 0 or layer > c.layers.items.len) return @intFromEnum(dispatcher.ResultCode.invalid_param);
     c.layers.items[@intCast(layer - 1)].opacity = std.math.clamp(opacity, 0.0, 1.0);
     return @intFromEnum(dispatcher.ResultCode.ok);
@@ -570,15 +668,15 @@ fn cpu_layer_set_opacity(canvas: u64, layer: u64, opacity: f64) callconv(.c) u32
 fn cpu_layer_set_blend(canvas: u64, layer: u64, mode: u32) callconv(.c) u32 {
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
     if (layer == 0 or layer > c.layers.items.len) return @intFromEnum(dispatcher.ResultCode.invalid_param);
     if (mode > @intFromEnum(BlendMode.screen)) return @intFromEnum(dispatcher.ResultCode.invalid_param);
     c.layers.items[@intCast(layer - 1)].blend = @enumFromInt(mode);
     return @intFromEnum(dispatcher.ResultCode.ok);
 }
 
-fn cpu_canvas_render_rgba8(canvas: u64, x: u32, y: u32, w: u32, h: u32, out_buf: [*]u8, out_buf_len: usize) callconv(.c) u32 {
-    const s = requireState();
-    const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+fn cpu_canvas_render_rgba8_internal(c: *const Canvas, x: u32, y: u32, w: u32, h: u32, out_buf: [*]u8, out_buf_len: usize) u32 {
     if (@as(u64, x) + @as(u64, w) > @as(u64, c.width)) return @intFromEnum(dispatcher.ResultCode.invalid_param);
     if (@as(u64, y) + @as(u64, h) > @as(u64, c.height)) return @intFromEnum(dispatcher.ResultCode.invalid_param);
 
@@ -612,6 +710,14 @@ fn cpu_canvas_render_rgba8(canvas: u64, x: u32, y: u32, w: u32, h: u32, out_buf:
     return @intFromEnum(dispatcher.ResultCode.ok);
 }
 
+fn cpu_canvas_render_rgba8(canvas: u64, x: u32, y: u32, w: u32, h: u32, out_buf: [*]u8, out_buf_len: usize) callconv(.c) u32 {
+    const s = requireState();
+    const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
+    return cpu_canvas_render_rgba8_internal(c, x, y, w, h, out_buf, out_buf_len);
+}
+
 //==============================================================================
 // 5. MVP-11 — Viewport (real implementation)
 //==============================================================================
@@ -619,6 +725,8 @@ fn cpu_canvas_render_rgba8(canvas: u64, x: u32, y: u32, w: u32, h: u32, out_buf:
 fn cpu_viewport_set(canvas: u64, zoom: f64, px: f64, py: f64, rot: f64) callconv(.c) u32 {
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
     c.viewport = .{ .zoom = zoom, .pan_x = px, .pan_y = py, .rotation = rot };
     return @intFromEnum(dispatcher.ResultCode.ok);
 }
@@ -626,9 +734,10 @@ fn cpu_viewport_set(canvas: u64, zoom: f64, px: f64, py: f64, rot: f64) callconv
 fn cpu_viewport_fit(canvas: u64, oz: *f64, opx: *f64, opy: *f64) callconv(.c) u32 {
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
     // Fit-to-window heuristic; without a viewport size from the display
     // backend we just return zoom=1, pan=0.
-    _ = c;
     oz.* = 1.0;
     opx.* = 0.0;
     opy.* = 0.0;
@@ -642,6 +751,8 @@ fn cpu_viewport_fit(canvas: u64, oz: *f64, opx: *f64, opy: *f64) callconv(.c) u3
 fn cpu_tool_stroke_pencil(canvas: u64, layer: u64, n: u32, points: [*]const f64, colour: *const [4]f32) callconv(.c) u32 {
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
     if (layer == 0 or layer > c.layers.items.len) return @intFromEnum(dispatcher.ResultCode.invalid_param);
     const l = c.layers.items[@intCast(layer - 1)];
     var i: u32 = 0;
@@ -989,6 +1100,8 @@ fn cpu_tool_stroke_brush(
 ) callconv(.c) u32 {
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
     if (layer == 0 or layer > c.layers.items.len) return @intFromEnum(dispatcher.ResultCode.invalid_param);
     const l = c.layers.items[@intCast(layer - 1)];
 
@@ -1184,6 +1297,8 @@ fn cpu_history_record(canvas: u64, opcode: [*:0]const u8, _n: u32, _p: [*]const 
     _ = _rc;
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
     ensureHistoryInit(s.alloc, c) catch return @intFromEnum(dispatcher.ResultCode.out_of_memory);
 
     // Capture the post-op state.
@@ -1215,13 +1330,16 @@ fn cpu_history_record(canvas: u64, opcode: [*:0]const u8, _n: u32, _p: [*]const 
         parent.children.append(s.alloc, node.id) catch return @intFromEnum(dispatcher.ResultCode.out_of_memory);
     }
     c.history.current = node.id;
-    c.history.used_bytes +%= cost;
+    c.history.used_bytes = saturatingAdd(c.history.used_bytes, cost);
+    pruneHistory(s.alloc, c);
     return @intFromEnum(dispatcher.ResultCode.ok);
 }
 
 fn cpu_history_undo(canvas: u64) callconv(.c) u32 {
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
     ensureHistoryInit(s.alloc, c) catch return @intFromEnum(dispatcher.ResultCode.out_of_memory);
 
     const cur = c.history.nodes.get(c.history.current) orelse return @intFromEnum(dispatcher.ResultCode.err);
@@ -1236,6 +1354,8 @@ fn cpu_history_undo(canvas: u64) callconv(.c) u32 {
 fn cpu_history_redo(canvas: u64) callconv(.c) u32 {
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
     ensureHistoryInit(s.alloc, c) catch return @intFromEnum(dispatcher.ResultCode.out_of_memory);
 
     const cur = c.history.nodes.get(c.history.current) orelse return @intFromEnum(dispatcher.ResultCode.err);
@@ -1329,3 +1449,140 @@ pub export fn pt_cpu_reference_register(allocator: ?*anyopaque) callconv(.c) u32
     dispatcher.register(&cpu_reference_impl) catch return @intFromEnum(dispatcher.ResultCode.err);
     return @intFromEnum(dispatcher.ResultCode.ok);
 }
+
+test "history budget pruning" {
+    const alloc = std.testing.allocator;
+    var canvas = Canvas{
+        .width = 16,
+        .height = 16,
+        .format = 1,
+        .background = .{ 0.0, 0.0, 0.0, 0.0 },
+    };
+    defer canvas.deinit(alloc);
+
+    // Initialise history
+    try ensureHistoryInit(alloc, &canvas);
+
+    // Set a small budget (e.g. 300 bytes)
+    canvas.history.budget_bytes = 300;
+
+    // The root node (id 0) is already added in ensureHistoryInit.
+    // Let's verify we have 1 node.
+    try std.testing.expectEqual(@as(usize, 1), canvas.history.nodes.count());
+    const initial_cost = canvas.history.used_bytes;
+    try std.testing.expect(initial_cost > 0);
+
+    // Create a new layer so subsequent snapshots have some cost
+    const layer = try alloc.create(Layer);
+    layer.* = .{
+        .name = try alloc.dupe(u8, "layer1"),
+        .visible = true,
+        .opacity = 1.0,
+        .blend = .normal,
+        .tiles = .empty,
+    };
+    try canvas.layers.append(alloc, layer);
+
+    // Record some history entries manually to avoid global state.
+    var i: u32 = 0;
+    while (i < 5) : (i += 1) {
+        var snap = try snapshotCanvas(alloc, &canvas);
+        errdefer snap.deinit(alloc);
+        const cost = snapshotByteCost(&snap);
+
+        const node = try alloc.create(HistoryNode);
+        const name = try alloc.dupe(u8, "dummy_op");
+        node.* = .{
+            .id = canvas.history.next_id,
+            .parent = canvas.history.current,
+            .op_name = name,
+            .cost_bytes = cost,
+            .snapshot = snap,
+        };
+        canvas.history.next_id += 1;
+        try canvas.history.nodes.put(alloc, node.id, node);
+
+        if (canvas.history.nodes.get(canvas.history.current)) |parent| {
+            try parent.children.append(alloc, node.id);
+        }
+        canvas.history.current = node.id;
+        canvas.history.used_bytes = saturatingAdd(canvas.history.used_bytes, cost);
+
+        // Run pruner
+        pruneHistory(alloc, &canvas);
+    }
+
+    // Since budget_bytes is 300, and each snapshot has a cost, some early nodes must have been pruned!
+    try std.testing.expect(canvas.history.used_bytes <= canvas.history.budget_bytes or canvas.history.root == canvas.history.current);
+    // Also verify that the root node is no longer 0 (since it was pruned).
+    try std.testing.expect(canvas.history.root > 0);
+    // Verify that the old root (0) is deleted from the map.
+    try std.testing.expect(!canvas.history.nodes.contains(0));
+}
+
+test "concurrent history records" {
+    const alloc = std.testing.allocator;
+    var canvas = Canvas{
+        .width = 16,
+        .height = 16,
+        .format = 1,
+        .background = .{ 0.0, 0.0, 0.0, 0.0 },
+    };
+    defer canvas.deinit(alloc);
+
+    try ensureHistoryInit(alloc, &canvas);
+
+    const Context = struct {
+        c: *Canvas,
+        alloc: std.mem.Allocator,
+    };
+    const threadFn = struct {
+        fn run(ctx: Context) void {
+            var j: u32 = 0;
+            while (j < 10) : (j += 1) {
+                ctx.c.lock.lock();
+                defer ctx.c.lock.unlock();
+                const node = ctx.alloc.create(HistoryNode) catch return;
+                const name = ctx.alloc.dupe(u8, "dummy_concurrent") catch {
+                    ctx.alloc.destroy(node);
+                    return;
+                };
+                var snap = snapshotCanvas(ctx.alloc, ctx.c) catch {
+                    ctx.alloc.free(name);
+                    ctx.alloc.destroy(node);
+                    return;
+                };
+                const cost = snapshotByteCost(&snap);
+                node.* = .{
+                    .id = ctx.c.history.next_id,
+                    .parent = ctx.c.history.current,
+                    .op_name = name,
+                    .cost_bytes = cost,
+                    .snapshot = snap,
+                };
+                ctx.c.history.next_id += 1;
+                ctx.c.history.nodes.put(ctx.alloc, node.id, node) catch {
+                    node.deinit(ctx.alloc);
+                    ctx.alloc.destroy(node);
+                    return;
+                };
+                if (ctx.c.history.nodes.get(ctx.c.history.current)) |parent| {
+                    parent.children.append(ctx.alloc, node.id) catch {};
+                }
+                ctx.c.history.current = node.id;
+                ctx.c.history.used_bytes = saturatingAdd(ctx.c.history.used_bytes, cost);
+                pruneHistory(ctx.alloc, ctx.c);
+            }
+        }
+    }.run;
+
+    var threads: [4]std.Thread = undefined;
+    for (&threads) |*t| {
+        t.* = try std.Thread.spawn(.{}, threadFn, .{Context{ .c = &canvas, .alloc = alloc }});
+    }
+    for (threads) |t| {
+        t.join();
+    }
+}
+
+

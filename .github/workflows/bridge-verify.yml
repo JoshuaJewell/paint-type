@@ -50,13 +50,13 @@ jobs:
             --rev "$TYPED_WASM_REV" typed-wasm-verify
       - name: Compile .twasm schemas -> .wasm
         run: |
-          tw build src/bridges/paint-type-tile.twasm  -o /tmp/tile.wasm
-          tw build src/bridges/paint-type-layer.twasm -o /tmp/layer.wasm
+          tw build src/bridges/paint-type-tile.twasm  -o "$RUNNER_TEMP/tile.wasm"
+          tw build src/bridges/paint-type-layer.twasm -o "$RUNNER_TEMP/layer.wasm"
       - name: Assert verifier accepts emitted wasm
         run: |
-          tw-verify /tmp/tile.wasm
-          tw-verify /tmp/layer.wasm
+          tw-verify "$RUNNER_TEMP/tile.wasm"
+          tw-verify "$RUNNER_TEMP/layer.wasm"
       - name: Assert emit matches committed artifacts (no drift)
         run: |
-          cmp /tmp/tile.wasm  src/bridges/paint-type-tile.wasm
-          cmp /tmp/layer.wasm src/bridges/paint-type-layer.wasm
+          cmp "$RUNNER_TEMP/tile.wasm"  src/bridges/paint-type-tile.wasm
+          cmp "$RUNNER_TEMP/layer.wasm" src/bridges/paint-type-layer.wasm

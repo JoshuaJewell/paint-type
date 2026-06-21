@@ -327,8 +327,8 @@ jobs:
           done
 
           # Tag each finding with its source scanner
-          jq '[.[] | . + {"scanner": "panic-attack"}]' "$PA_FILE" > /tmp/pa-tagged.json
-          jq '[.[] | . + {"scanner": "hypatia"}]'      "$HYP_FILE" > /tmp/hyp-tagged.json
+          jq '[.[] | . + {"scanner": "panic-attack"}]' "$PA_FILE" > "$RUNNER_TEMP/pa-tagged.json"
+          jq '[.[] | . + {"scanner": "hypatia"}]'      "$HYP_FILE" > "$RUNNER_TEMP/hyp-tagged.json"
 
           # Read bridge report (CVE triage, not findings array)
           BRIDGE_FILE="findings/bridge-report.json"
@@ -343,8 +343,8 @@ jobs:
             --arg ref    "${{ github.ref }}" \
             --arg run_id "${{ github.run_id }}" \
             --arg ts     "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --slurpfile pa     /tmp/pa-tagged.json \
-            --slurpfile hyp    /tmp/hyp-tagged.json \
+            --slurpfile pa     "$RUNNER_TEMP/pa-tagged.json" \
+            --slurpfile hyp    "$RUNNER_TEMP/hyp-tagged.json" \
             --slurpfile bridge "$BRIDGE_FILE" \
             '{
               schema_version: "1.1.0",

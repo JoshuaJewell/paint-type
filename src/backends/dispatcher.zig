@@ -209,18 +209,33 @@ const Registry = struct {
     }
 };
 
+const SpinLock = struct {
+    state: std.atomic.Value(u32) = std.atomic.Value(u32).init(0),
+
+    pub fn lock(self: *SpinLock) void {
+        while (self.state.swap(1, .acquire) == 1) {
+            std.Thread.yield() catch {};
+        }
+    }
+
+    pub fn unlock(self: *SpinLock) void {
+        self.state.store(0, .release);
+    }
+};
+
+var global_registry_lock: SpinLock = .{};
 var global_registry: ?Registry = null;
-// NOTE: mutex protection of the registry is a future v0.1.0 task — concurrency
-// becomes meaningful once accelerator backends register asynchronously. For
-// the single-threaded MVP path, plain access is fine and keeps the demo
-// portable across Zig std-lib API churn.
 
 pub fn init(allocator: std.mem.Allocator) !void {
+    global_registry_lock.lock();
+    defer global_registry_lock.unlock();
     if (global_registry != null) return;
     global_registry = Registry.init(allocator);
 }
 
 pub fn deinit() void {
+    global_registry_lock.lock();
+    defer global_registry_lock.unlock();
     if (global_registry) |*r| {
         r.deinit();
         global_registry = null;
@@ -228,6 +243,8 @@ pub fn deinit() void {
 }
 
 pub fn register(impl: *const BackendImpl) !void {
+    global_registry_lock.lock();
+    defer global_registry_lock.unlock();
     if (global_registry == null) return error.RegistryNotInitialised;
     try global_registry.?.register(impl);
 }
@@ -246,6 +263,8 @@ pub fn register(impl: *const BackendImpl) !void {
 //==============================================================================
 
 fn pickFor(comptime field_name: []const u8) ?*const BackendImpl {
+    global_registry_lock.lock();
+    defer global_registry_lock.unlock();
     var r = &global_registry.?;
     // Forward sweep: pick the first non-reference backend that implements the op.
     // (Selection-priority policy is a follow-up; for the MVP, registration
@@ -269,6 +288,8 @@ fn invokeOrFallback(
     if (fp_opt) |fp| {
         const rc: u32 = @call(.auto, fp, args);
         if (rc == @intFromEnum(ResultCode.not_implemented)) {
+            global_registry_lock.lock();
+            defer global_registry_lock.unlock();
             global_registry.?.recordFallback(field_name);
             const ref = global_registry.?.reference();
             const rfp = @field(ref, field_name).?;
@@ -278,6 +299,8 @@ fn invokeOrFallback(
     }
     // Should not happen — pickFor either returns the reference or a backend
     // whose field is non-null. Belt-and-braces.
+    global_registry_lock.lock();
+    defer global_registry_lock.unlock();
     global_registry.?.recordFallback(field_name);
     const ref = global_registry.?.reference();
     const rfp = @field(ref, field_name).?;
@@ -467,6 +490,8 @@ pub export fn pt_canvas_render_rgba8(canvas: u64, x: u32, y: u32, w: u32, h: u32
 /// Emit a structured capability report as JSON to the caller-provided buffer.
 /// Returns the number of bytes written, or 0 on overflow.
 pub export fn pt_capability_report(out_buf: [*]u8, out_cap: usize) callconv(.c) usize {
+    global_registry_lock.lock();
+    defer global_registry_lock.unlock();
     if (global_registry == null) return 0;
     var pos: usize = 0;
     const buf = out_buf[0..out_cap];
