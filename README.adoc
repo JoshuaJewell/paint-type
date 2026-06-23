@@ -361,5 +361,6 @@ for informational purposes only.
 == Author
 
 Joshua Jewell — https://github.com/JoshuaJewell[JoshuaJewell]
+Jonathan D.A. Jewell - https://github.com/hyperpolymath[hyperpolymath]
 
 Built within the https://github.com/hyperpolymath[hyperpolymath] ecosystem.
