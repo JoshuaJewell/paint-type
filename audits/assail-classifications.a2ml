@@ -9,13 +9,19 @@
 ;; This file is consumed by panic-attack's suppression engine to mark
 ;; specific findings as suppressed=true while retaining them in reports
 ;; for audit transparency.
+;;
+;; NOTE (2026-06-23): under panic-attack 2.5.5 this registry is an AUDIT TRAIL,
+;; not an active suppression input — 2.5.5 suppresses via its context-aware
+;; kanren engine + inline `// panic-attack: accepted` markers and does not read
+;; this file. Retained as the reviewable, canonical record. See
+;; audits/audit-track-c-2026-06-23.md.
 
 (assail-classifications
   (metadata
     (version "1.0.0")
     (project "paint-type")
-    (last-updated "2026-06-07")
-    (entries 9)
+    (last-updated "2026-06-23")
+    (entries 43)
     (status "active"))
 
   ;; ===========================================================================
@@ -93,4 +99,227 @@
     (classification "hardened-via-env-var")
     (audit "audits/audit-pathtraversal.md")
     (rationale "All /tmp/ paths use PT_TMPDIR variable (default /tmp). Fixed in PR #50. PT_TMPDIR allows CI sandboxes and read-only /tmp/ hosts to redirect to safe locations."))
+
+  ;; ===========================================================================
+  ;; Track C (2026-06-23) — vendored third_party/gossamer findings
+  ;; gossamer is its own upstream repo (JoshuaJewell/gossamer); these are a
+  ;; vendored copy, not paint-type code. Classified here so paint-type scans are
+  ;; clean; the source of truth for fixing any of these is the gossamer repo.
+  ;; ===========================================================================
+
+  (classification
+    (file "third_party/gossamer/src/abi/PanelIsolation.idr")
+    (category "ProofDrift")
+    (classification "vendored-documented-axiom")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer. believe_me asserts commutativity of String inequality over the backend primitive prim__eq_String — a documented class-J FFI-boundary axiom (see the in-file note), NOT a soundness hole: panel isolation is enforced by phantom panel-tag types regardless of this lemma. Not paint-type code; fix belongs upstream in gossamer if the trusted base is reduced."))
+  (classification
+    (file "third_party/gossamer/src/interface/abi/PanelIsolation.idr")
+    (category "ProofDrift")
+    (classification "vendored-documented-axiom")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer. believe_me asserts commutativity of String inequality over the backend primitive prim__eq_String — a documented class-J FFI-boundary axiom (see the in-file note), NOT a soundness hole: panel isolation is enforced by phantom panel-tag types regardless of this lemma. Not paint-type code; fix belongs upstream in gossamer if the trusted base is reduced."))
+  (classification
+    (file "third_party/gossamer/src/interface/Gossamer/ABI/PanelIsolation.idr")
+    (category "ProofDrift")
+    (classification "vendored-documented-axiom")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer. believe_me asserts commutativity of String inequality over the backend primitive prim__eq_String — a documented class-J FFI-boundary axiom (see the in-file note), NOT a soundness hole: panel isolation is enforced by phantom panel-tag types regardless of this lemma. Not paint-type code; fix belongs upstream in gossamer if the trusted base is reduced."))
+  (classification
+    (file "third_party/gossamer/benchmarks/startup-bench.sh")
+    (category "CommandInjection")
+    (classification "false-positive-cli-flag")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer benchmark. The flagged 'eval' is the gossamer binary's --eval command-line flag with a hardcoded literal argument (window.close()), not the shell eval builtin; there is no injection vector."))
+  (classification
+    (file "third_party/gossamer/cli/launcher/src/bridges.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/cli/launcher/src/main.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/clipboard.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/conf.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/csp.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/dialog.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/file_watcher.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/groove.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/ipc_handlers.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/main.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/plugin.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/shell.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/ssg.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/tray.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/webview_cocoa.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/webview_gtk.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/webview_ios.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/webview_win32.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer webview/desktop-shell. Zig unsafe pointer casts at the platform/native FFI boundary (webview, IPC, tray, dialog, etc.); not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/cli/launcher/src/bridges.zig")
+    (category "UnsafeFFI")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer. Zig @cImport / extern-C interop declaration at the platform FFI boundary; not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/cli/launcher/src/main.zig")
+    (category "UnsafeFFI")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer. Zig @cImport / extern-C interop declaration at the platform FFI boundary; not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/clipboard.zig")
+    (category "UnsafeFFI")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer. Zig @cImport / extern-C interop declaration at the platform FFI boundary; not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/csp.zig")
+    (category "UnsafeFFI")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer. Zig @cImport / extern-C interop declaration at the platform FFI boundary; not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/dialog.zig")
+    (category "UnsafeFFI")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer. Zig @cImport / extern-C interop declaration at the platform FFI boundary; not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/file_watcher.zig")
+    (category "UnsafeFFI")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer. Zig @cImport / extern-C interop declaration at the platform FFI boundary; not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/tray.zig")
+    (category "UnsafeFFI")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer. Zig @cImport / extern-C interop declaration at the platform FFI boundary; not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/webview_cocoa.zig")
+    (category "UnsafeFFI")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer. Zig @cImport / extern-C interop declaration at the platform FFI boundary; not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/webview_gtk.zig")
+    (category "UnsafeFFI")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer. Zig @cImport / extern-C interop declaration at the platform FFI boundary; not paint-type code. Source of truth is the gossamer repo."))
+  (classification
+    (file "third_party/gossamer/src/interface/ffi/src/webview_ios.zig")
+    (category "UnsafeFFI")
+    (classification "legitimate-vendored-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Vendored third_party/gossamer. Zig @cImport / extern-C interop declaration at the platform FFI boundary; not paint-type code. Source of truth is the gossamer repo."))
+
+  ;; ===========================================================================
+  ;; Track C (2026-06-23) — paint-type own-code FFI boundary (audited legitimate)
+  ;; ===========================================================================
+
+  (classification
+    (file "examples/undo_demo.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "@ptrCast of the address of a stack-allocated [256]u8 buffer to a C nul-terminated string ([*:0]const u8) for a stdlib fopen call; the nul terminator is set explicitly beforehand. No untrusted data."))
+  (classification
+    (file "src/backends/storage/verisimdb.zig")
+    (category "UnsafeCode")
+    (classification "legitimate-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "@constCast(@ptrCast(&dummy)) builds an opaque *anyopaque vtable context pointer to a program-lifetime static; the stub Transport never dereferences ctx, so the const removal is sound."))
+  (classification
+    (file "src/ephapax/src/lib.rs")
+    (category "UnsafeCode")
+    (classification "legitimate-ffi")
+    (audit "audits/audit-track-c-2026-06-23.md")
+    (rationale "Five extern \"C\" calls into the Zig libpt C ABI (pt_tile_alloc/is_initialized/fill/read_pixel/free), each with a // SAFETY: comment; handles are uniquely owned (freed once in Drop), pointer-to-stack-local output params live across the call, and libpt validates null + magic-word internally."))
 )
