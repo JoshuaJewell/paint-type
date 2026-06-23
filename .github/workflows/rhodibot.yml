@@ -24,6 +24,13 @@ permissions:
 jobs:
   rhodibot:
     runs-on: ubuntu-latest
+    # For workflow_run triggers, only act on this repo's own successful runs —
+    # never on a run that originated from a fork. (schedule / workflow_dispatch
+    # are maintainer-initiated and pass through unconditionally.)
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.head_repository.full_name == github.repository &&
+       github.event.workflow_run.conclusion == 'success')
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -171,9 +178,40 @@ jobs:
           } >> $GITHUB_OUTPUT
       - name: Create PR with fixes
         if: steps.fix.outputs.CHANGED == 'true'
-        run: "git config user.name \"rhodibot\"\ngit config user.email \"rhodibot@hyperpolymath.dev\"\nBRANCH=\"rhodibot/rsr-compliance-$(date +%Y%m%d)\"\ngit checkout -b \"$BRANCH\"\ngit add -A\ngit commit -m \"fix(rhodibot): automated RSR compliance fixes\n\n${{ steps.fix.outputs.FIXES }}\n\nCo-Authored-By: rhodibot <rhodibot@hyperpolymath.dev>\"\n\ngit push origin \"$BRANCH\"\n\nBODY=\"## \U0001F916 Rhodibot — RSR Compliance Fixes\n\n### Changes Made\n${{ steps.fix.outputs.FIXES }}\n\"\n\nif [ -n \"${{ steps.fix.outputs.ISSUES }}\" ]; then\n  BODY=\"$BODY\n### Issues Found (manual fix needed)\n${{ steps.fix.outputs.ISSUES }}\n\"\nfi\n\nif [ -n \"${{ steps.fix.outputs.DANGEROUS }}\" ]; then\n  BODY=\"$BODY\n### ⚠️ Dangerous Patterns Detected\n${{ steps.fix.outputs.DANGEROUS }}\n\n_These bypass formal verification. See \\`proven\\` repo for alternatives._\n\"\nfi\n\ngh pr create \\\n  --title \"\U0001F916 Rhodibot: RSR compliance fixes\" \\\n  --body \"$BODY\" \\\n  --base main \\\n  --head \"$BRANCH\"\n"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Pass step outputs through the environment, NOT via ${{ }} inside the
+          # run: script. Interpolating them into the shell would let a crafted
+          # filename (one containing $(...) or backticks, matched by the scan
+          # globs) execute as a command in this contents:write /
+          # pull-requests:write job. printf '%s' treats them as inert data.
+          FIXES: ${{ steps.fix.outputs.FIXES }}
+          ISSUES: ${{ steps.fix.outputs.ISSUES }}
+          DANGEROUS: ${{ steps.fix.outputs.DANGEROUS }}
+        run: |
+          set -euo pipefail
+          git config user.name "rhodibot"
+          git config user.email "rhodibot@hyperpolymath.dev"
+          BRANCH="rhodibot/rsr-compliance-$(date +%Y%m%d)"
+          git checkout -b "$BRANCH"
+          git add -A
+          COMMIT_MSG=$(printf 'fix(rhodibot): automated RSR compliance fixes\n\n%s\n\nCo-Authored-By: rhodibot <rhodibot@hyperpolymath.dev>' "$FIXES")
+          git commit -m "$COMMIT_MSG"
+          git push origin "$BRANCH"
+
+          BODY=$(printf '## \360\237\244\226 Rhodibot — RSR Compliance Fixes\n\n### Changes Made\n%s\n' "$FIXES")
+          if [ -n "$ISSUES" ]; then
+            BODY=$(printf '%s\n### Issues Found (manual fix needed)\n%s\n' "$BODY" "$ISSUES")
+          fi
+          if [ -n "$DANGEROUS" ]; then
+            BODY=$(printf '%s\n### \342\232\240\357\270\217 Dangerous Patterns Detected\n%s\n\n_These bypass formal verification. See `proven` repo for alternatives._\n' "$BODY" "$DANGEROUS")
+          fi
+
+          gh pr create \
+            --title "🤖 Rhodibot: RSR compliance fixes" \
+            --body "$BODY" \
+            --base main \
+            --head "$BRANCH"
       - name: Report (no changes needed)
         if: steps.fix.outputs.CHANGED != 'true'
         run: |

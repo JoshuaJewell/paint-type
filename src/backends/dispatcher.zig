@@ -101,11 +101,15 @@ pub const BackendImpl = extern struct {
     io_save: ?*const fn (canvas: u64, path: [*:0]const u8, fmt: [*:0]const u8, opts_json: [*:0]const u8) callconv(.c) u32,
 
     // MVP-3
-    tool_stroke_pencil: ?*const fn (canvas: u64, layer: u64, point_count: u32, points: [*]const f64, colour: *const [4]f32) callconv(.c) u32,
-    tool_stroke_brush: ?*const fn (canvas: u64, layer: u64, brush_state: *const BrushStateC, point_count: u32, points: [*]const StrokePointC, colour: *const [4]f32) callconv(.c) u32,
+    // `points_len` is the number of elements the `points` buffer actually
+    // holds (f64 count for pencil's flat x/y pairs, StrokePointC count for
+    // brush/eraser). It lets the backend reject a `point_count` larger than the
+    // real allocation instead of reading out of bounds — see SECURITY.md.
+    tool_stroke_pencil: ?*const fn (canvas: u64, layer: u64, point_count: u32, points: [*]const f64, points_len: usize, colour: *const [4]f32) callconv(.c) u32,
+    tool_stroke_brush: ?*const fn (canvas: u64, layer: u64, brush_state: *const BrushStateC, point_count: u32, points: [*]const StrokePointC, points_len: usize, colour: *const [4]f32) callconv(.c) u32,
 
     // MVP-4
-    tool_stroke_eraser: ?*const fn (canvas: u64, layer: u64, brush_state: *const BrushStateC, point_count: u32, points: [*]const StrokePointC, mode: u32) callconv(.c) u32,
+    tool_stroke_eraser: ?*const fn (canvas: u64, layer: u64, brush_state: *const BrushStateC, point_count: u32, points: [*]const StrokePointC, points_len: usize, mode: u32) callconv(.c) u32,
 
     // MVP-5
     tool_sample_colour: ?*const fn (canvas: u64, at_x: f64, at_y: f64, area_px: u32, out_colour: *[4]f32) callconv(.c) u32,
@@ -343,19 +347,19 @@ pub export fn pt_io_save(canvas: u64, path: [*:0]const u8, fmt: [*:0]const u8, o
     return @intFromEnum(invokeOrFallback("io_save", chosen, .{ canvas, path, fmt, opts }));
 }
 
-pub export fn pt_tool_stroke_pencil(canvas: u64, layer: u64, n: u32, points: [*]const f64, colour: *const [4]f32) callconv(.c) u32 {
+pub export fn pt_tool_stroke_pencil(canvas: u64, layer: u64, n: u32, points: [*]const f64, points_len: usize, colour: *const [4]f32) callconv(.c) u32 {
     const chosen = pickFor("tool_stroke_pencil").?;
-    return @intFromEnum(invokeOrFallback("tool_stroke_pencil", chosen, .{ canvas, layer, n, points, colour }));
+    return @intFromEnum(invokeOrFallback("tool_stroke_pencil", chosen, .{ canvas, layer, n, points, points_len, colour }));
 }
 
-pub export fn pt_tool_stroke_brush(canvas: u64, layer: u64, state: *const BrushStateC, n: u32, points: [*]const StrokePointC, colour: *const [4]f32) callconv(.c) u32 {
+pub export fn pt_tool_stroke_brush(canvas: u64, layer: u64, state: *const BrushStateC, n: u32, points: [*]const StrokePointC, points_len: usize, colour: *const [4]f32) callconv(.c) u32 {
     const chosen = pickFor("tool_stroke_brush").?;
-    return @intFromEnum(invokeOrFallback("tool_stroke_brush", chosen, .{ canvas, layer, state, n, points, colour }));
+    return @intFromEnum(invokeOrFallback("tool_stroke_brush", chosen, .{ canvas, layer, state, n, points, points_len, colour }));
 }
 
-pub export fn pt_tool_stroke_eraser(canvas: u64, layer: u64, state: *const BrushStateC, n: u32, points: [*]const StrokePointC, mode: u32) callconv(.c) u32 {
+pub export fn pt_tool_stroke_eraser(canvas: u64, layer: u64, state: *const BrushStateC, n: u32, points: [*]const StrokePointC, points_len: usize, mode: u32) callconv(.c) u32 {
     const chosen = pickFor("tool_stroke_eraser").?;
-    return @intFromEnum(invokeOrFallback("tool_stroke_eraser", chosen, .{ canvas, layer, state, n, points, mode }));
+    return @intFromEnum(invokeOrFallback("tool_stroke_eraser", chosen, .{ canvas, layer, state, n, points, points_len, mode }));
 }
 
 pub export fn pt_tool_sample_colour(canvas: u64, x: f64, y: f64, area: u32, out_colour: *[4]f32) callconv(.c) u32 {

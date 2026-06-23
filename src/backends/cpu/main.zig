@@ -25,6 +25,41 @@ const TILE_SIZE: u32 = 64;
 const TILE_CHANNELS: u32 = 4;
 const TILE_SCALARS: usize = @as(usize, TILE_SIZE) * TILE_SIZE * TILE_CHANNELS;
 
+// Upper bound on canvas dimensions. width/height arrive as raw u32 across the
+// FFI from callers we don't trust and feed allocation + PNG-encoder size
+// arithmetic (width*height*4, (row_bytes+1)*height). Without a cap those
+// products can overflow `usize` on 32-bit targets — yielding a buffer too small
+// for the full-size write that follows (heap overflow) — and on any target
+// invite an allocation-DoS. 16384 mirrors the Rust codec's MAX_DIM.
+const MAX_CANVAS_DIM: u32 = 16384;
+
+// Hard cap on the number of stamps a single brush-stroke segment may emit, so a
+// caller passing far-apart points can't drive an unbounded stamp loop.
+const MAX_STROKE_STAMPS: u32 = 1 << 20;
+
+// `@intFromFloat` is illegal behaviour for NaN, ±Inf, or out-of-range values: a
+// safety-check panic in Debug and undefined behaviour in ReleaseFast. Stroke
+// coordinates and brush geometry are caller-supplied f64s, so every conversion
+// goes through these guards rather than a bare `@intFromFloat`.
+
+/// Floor `v` to an integer in [0, limit), or null if `v` is non-finite,
+/// negative, or beyond the limit (caller should skip the value).
+fn finiteFloorU32(v: f64, limit: u32) ?u32 {
+    if (!std.math.isFinite(v) or v < 0) return null;
+    const f = @floor(v);
+    if (f >= @as(f64, @floatFromInt(limit))) return null;
+    return @intFromFloat(f);
+}
+
+/// Convert `v` to an i64 clamped to [lo, hi]; NaN maps to `lo`. Keeps an
+/// attacker-large bbox coordinate from overflowing the i64 cast.
+fn finiteToI64Clamped(v: f64, lo: i64, hi: i64) i64 {
+    if (std.math.isNan(v)) return lo;
+    if (v <= @as(f64, @floatFromInt(lo))) return lo;
+    if (v >= @as(f64, @floatFromInt(hi))) return hi;
+    return @intFromFloat(v);
+}
+
 const Tile = struct {
     /// RGBA16F pixel data stored as u16 bit-patterns of f16 values. Same
     /// convention as src/interface/ffi/src/main.zig and src/ephapax/src/lib.rs.
@@ -506,6 +541,9 @@ fn blend(below: [4]f32, above: [4]f32, opacity: f32, mode: BlendMode) [4]f32 {
 }
 
 fn quantizeU8(v: f32) u8 {
+    // clamp() propagates NaN, and @intFromFloat(NaN) is illegal behaviour; map
+    // a NaN channel (e.g. from a caller-supplied colour) to 0.
+    if (std.math.isNan(v)) return 0;
     return @intFromFloat(std.math.clamp(v, 0.0, 1.0) * 255.0 + 0.5);
 }
 
@@ -535,6 +573,8 @@ fn writePixelF16(layer: *Layer, alloc: std.mem.Allocator, x: u32, y: u32, c: [4]
 
 fn cpu_canvas_new(width: u32, height: u32, fmt: u32, bg_r: f32, bg_g: f32, bg_b: f32, bg_a: f32, out_canvas: *u64) callconv(.c) u32 {
     const s = requireState();
+    if (width == 0 or height == 0 or width > MAX_CANVAS_DIM or height > MAX_CANVAS_DIM)
+        return @intFromEnum(dispatcher.ResultCode.invalid_param);
     const c = s.alloc.create(Canvas) catch return @intFromEnum(dispatcher.ResultCode.out_of_memory);
     c.* = .{
         .width = width,
@@ -582,8 +622,8 @@ fn cpu_canvas_resize(canvas: u64, w: u32, h: u32, _ax: f64, _ay: f64) callconv(.
     _ = _ay;
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
-    c.lock.lock();
-    defer c.lock.unlock();
+    if (w == 0 or h == 0 or w > MAX_CANVAS_DIM or h > MAX_CANVAS_DIM)
+        return @intFromEnum(dispatcher.ResultCode.invalid_param);
     c.width = w;
     c.height = h;
     // Existing tiles outside the new bounds are not eagerly dropped; that's a
@@ -748,21 +788,25 @@ fn cpu_viewport_fit(canvas: u64, oz: *f64, opx: *f64, opy: *f64) callconv(.c) u3
 // 6. MVP-3 — Pencil stub (placeholder, writes one pixel per point)
 //==============================================================================
 
-fn cpu_tool_stroke_pencil(canvas: u64, layer: u64, n: u32, points: [*]const f64, colour: *const [4]f32) callconv(.c) u32 {
+fn cpu_tool_stroke_pencil(canvas: u64, layer: u64, n: u32, points: [*]const f64, points_len: usize, colour: *const [4]f32) callconv(.c) u32 {
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
     c.lock.lock();
     defer c.lock.unlock();
     if (layer == 0 or layer > c.layers.items.len) return @intFromEnum(dispatcher.ResultCode.invalid_param);
     const l = c.layers.items[@intCast(layer - 1)];
-    var i: u32 = 0;
+    // Each pencil point is a flat (x, y) f64 pair, so the buffer must hold 2*n
+    // elements. Validate against the caller-declared length before indexing —
+    // without it an over-large `n` is an out-of-bounds read. `i` is usize so
+    // `i * 2` cannot wrap the index arithmetic.
+    const needed = std.math.mul(usize, n, 2) catch return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    if (needed > points_len) return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    var i: usize = 0;
     while (i < n) : (i += 1) {
         const px = points[i * 2];
         const py = points[i * 2 + 1];
-        if (px < 0 or py < 0) continue;
-        const ix: u32 = @intFromFloat(@floor(px));
-        const iy: u32 = @intFromFloat(@floor(py));
-        if (ix >= c.width or iy >= c.height) continue;
+        const ix = finiteFloorU32(px, c.width) orelse continue;
+        const iy = finiteFloorU32(py, c.height) orelse continue;
         writePixelF16(l, s.alloc, ix, iy, colour.*) catch return @intFromEnum(dispatcher.ResultCode.out_of_memory);
     }
     return @intFromEnum(dispatcher.ResultCode.ok);
@@ -805,18 +849,22 @@ fn stampBrush(
     colour: [4]f32,
 ) !void {
     if (radius <= 0) return;
+    if (!std.math.isFinite(cx) or !std.math.isFinite(cy) or !std.math.isFinite(radius)) return;
     const bbox_x0_f = @floor(cx - radius - 1.0);
     const bbox_y0_f = @floor(cy - radius - 1.0);
     const bbox_x1_f = @ceil(cx + radius + 1.0);
     const bbox_y1_f = @ceil(cy + radius + 1.0);
 
-    const x0: i64 = @intFromFloat(bbox_x0_f);
-    const y0: i64 = @intFromFloat(bbox_y0_f);
-    const x1: i64 = @intFromFloat(bbox_x1_f);
-    const y1: i64 = @intFromFloat(bbox_y1_f);
-
     const w_i: i64 = @intCast(canvas_w);
     const h_i: i64 = @intCast(canvas_h);
+
+    // Clamp the footprint bbox into the canvas before the i64 cast: this bounds
+    // the iteration and prevents an attacker-large coordinate from overflowing
+    // the conversion.
+    const x0: i64 = finiteToI64Clamped(bbox_x0_f, 0, w_i);
+    const y0: i64 = finiteToI64Clamped(bbox_y0_f, 0, h_i);
+    const x1: i64 = finiteToI64Clamped(bbox_x1_f, 0, w_i);
+    const y1: i64 = finiteToI64Clamped(bbox_y1_f, 0, h_i);
 
     var y: i64 = y0;
     while (y <= y1) : (y += 1) {
@@ -1062,10 +1110,18 @@ fn cpu_io_open(_path: [*:0]const u8, _fmt: ?[*:0]const u8, _out: *u64) callconv(
     return @intFromEnum(dispatcher.ResultCode.not_implemented);
 }
 
+// SECURITY: `path` is written verbatim via fopen() with no canonicalisation or
+// sandboxing. That is correct for the local desktop app, whose user chooses the
+// save location ("Save As anywhere"). It is NOT safe to forward a request-
+// supplied path here from a network surface: any future REST/connector dispatch
+// that reaches io_save MUST constrain paths to a sandbox and reject
+// traversal/absolute/symlink-escaping paths at that boundary. See
+// audits/SECURITY-REVIEW-2026-06-15.md (M2).
 fn cpu_io_save(canvas: u64, path: [*:0]const u8, fmt: [*:0]const u8, _opts: [*:0]const u8) callconv(.c) u32 {
     _ = _opts;
     const s = requireState();
     const c = s.get(canvas) orelse return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    if (std.mem.span(path).len == 0) return @intFromEnum(dispatcher.ResultCode.invalid_param);
 
     // Step 1 — composite the canvas into an RGBA8 buffer through the same
     // render path the rest of the pipeline uses.
@@ -1096,6 +1152,7 @@ fn cpu_tool_stroke_brush(
     brush_state: *const dispatcher.BrushStateC,
     n: u32,
     points: [*]const dispatcher.StrokePointC,
+    points_len: usize,
     colour: *const [4]f32,
 ) callconv(.c) u32 {
     const s = requireState();
@@ -1103,6 +1160,9 @@ fn cpu_tool_stroke_brush(
     c.lock.lock();
     defer c.lock.unlock();
     if (layer == 0 or layer > c.layers.items.len) return @intFromEnum(dispatcher.ResultCode.invalid_param);
+    // `points` holds one StrokePointC per point; reject an `n` larger than the
+    // caller-declared buffer before indexing.
+    if (n > points_len) return @intFromEnum(dispatcher.ResultCode.invalid_param);
     const l = c.layers.items[@intCast(layer - 1)];
 
     const radius: f64 = brush_state.radius;
@@ -1123,12 +1183,19 @@ fn cpu_tool_stroke_brush(
     while (i < n) : (i += 1) {
         const prev = points[i - 1];
         const curr = points[i];
+        if (!std.math.isFinite(prev.x) or !std.math.isFinite(prev.y) or
+            !std.math.isFinite(curr.x) or !std.math.isFinite(curr.y)) continue;
         const dx = curr.x - prev.x;
         const dy = curr.y - prev.y;
         const dist = @sqrt(dx * dx + dy * dy);
         if (dist <= 0) continue;
         const stamps_f = dist / spacing_px;
-        const stamps: u32 = if (stamps_f < 1.0) 1 else @as(u32, @intFromFloat(@ceil(stamps_f)));
+        const stamps: u32 = if (stamps_f < 1.0)
+            1
+        else if (stamps_f >= @as(f64, @floatFromInt(MAX_STROKE_STAMPS)))
+            MAX_STROKE_STAMPS
+        else
+            @intFromFloat(@ceil(stamps_f));
         var k: u32 = 1;
         while (k <= stamps) : (k += 1) {
             const t: f64 = @as(f64, @floatFromInt(k)) / @as(f64, @floatFromInt(stamps));
@@ -1141,12 +1208,13 @@ fn cpu_tool_stroke_brush(
     return @intFromEnum(dispatcher.ResultCode.ok);
 }
 
-fn cpu_tool_stroke_eraser(_c: u64, _l: u64, _bs: *const dispatcher.BrushStateC, _n: u32, _p: [*]const dispatcher.StrokePointC, _m: u32) callconv(.c) u32 {
+fn cpu_tool_stroke_eraser(_c: u64, _l: u64, _bs: *const dispatcher.BrushStateC, _n: u32, _p: [*]const dispatcher.StrokePointC, _pl: usize, _m: u32) callconv(.c) u32 {
     _ = _c;
     _ = _l;
     _ = _bs;
     _ = _n;
     _ = _p;
+    _ = _pl;
     _ = _m;
     return @intFromEnum(dispatcher.ResultCode.not_implemented);
 }

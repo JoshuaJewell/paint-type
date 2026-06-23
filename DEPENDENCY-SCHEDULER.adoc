@@ -25,16 +25,16 @@ updated on next sync.
 
 | ID | Dependency | Tier | Owner | Readiness | Priority | Status | Role in paint-type · milestone |
 |----|------------|------|-------|-----------|----------|--------|--------------------------------|
-| DEP-01 | **Ephapax** | Spine | hyperpolymath | C | P1 | In&nbsp;Progress | Region-calculus / linear-affine core; `paint_core` is ex-ephapax; Gossamer's safety backend · all |
-| DEP-02 | **typed-wasm** | Spine | hyperpolymath | A | Maintain | **Done** | Verified WASM bridge target · v0.2 (paint-type slice closed) |
-| DEP-03 | **AffineScript** | Spine | hyperpolymath | C | P1 | In&nbsp;Progress | UI language + ABI→`.twasm` generator · v0.2/v0.3 |
-| DEP-04 | **Gossamer** | Spine | hyperpolymath | B | P1 | In&nbsp;Progress | Desktop shell / webview host · v0.3 |
+| DEP-01 (#71) | **Ephapax** | Spine | hyperpolymath | C | P1 | In&nbsp;Progress | Region-calculus / linear-affine core; `paint_core` is ex-ephapax; Gossamer's safety backend · all |
+| DEP-02 (#72) | **typed-wasm** | Spine | hyperpolymath | A | Maintain | **Done** | Verified WASM bridge target · v0.2 (paint-type slice closed) |
+| DEP-03 (#73) | **AffineScript** | Spine | hyperpolymath | C | P1 | In&nbsp;Progress | UI language + ABI→`.twasm` generator · v0.2/v0.3 |
+| DEP-04 (#74) | **Gossamer** | Spine | hyperpolymath | B | P1 | In&nbsp;Progress | Desktop shell / webview host · v0.3 |
 | DEP-05 | **cerro-torre** | Plugin/Supply-chain | hyperpolymath | Missing | P2 | Todo | ML-DSA plugin signing (in `stapeln`) · v0.4 |
 | DEP-06 | **Burble** | Collaboration | hyperpolymath (son-shared, AGPL) | Unknown | P2 | Todo | WebRTC session, sub-10ms shared canvas · v0.5 |
 | DEP-07 | **groove-protocol** | Collaboration | hyperpolymath | B | P2 | Todo | Zero-config peer discovery (`.well-known/groove/`) · v0.5 |
 | DEP-08 | **boj-server** | Collaboration | hyperpolymath | B | P3 | Todo | MCP LLM channel + plugin package index · v0.4/v0.5 |
-| DEP-09 | **standards** | Governance | hyperpolymath | B | P1 | In&nbsp;Progress | RSR governance multiplier (CI reusables, contractiles, CRG, 6a2, session-mgmt) · all |
-| DEP-10 | **proven** | Proof-foundation | hyperpolymath | B | P1 | In&nbsp;Progress | Idris2 verified-foundations library · all |
+| DEP-09 (#75) | **standards** | Governance | hyperpolymath | B | P1 | In&nbsp;Progress | RSR governance multiplier (CI reusables, contractiles, CRG, 6a2, session-mgmt) · all |
+| DEP-10 (#76) | **proven** | Proof-foundation | hyperpolymath | B | P1 | In&nbsp;Progress | Idris2 verified-foundations library · all |
 | DEP-11 | **echo-types** | Proof-foundation | hyperpolymath | C | P2 | Todo | Estate proof discipline (audit-first) · all |
 | DEP-12 | **panic-attack** | Tooling | hyperpolymath | B | Maintain | In&nbsp;Progress | `assail` dangerous-pattern gate · all |
 | DEP-13 | **Container / supply-chain stack** | Plugin/Supply-chain | hyperpolymath | C | P2 | Todo | stapeln · selur · Svalinn · Vordr · Chainguard/Wolfi · cerro-torre · v0.4+ |
