@@ -1,0 +1,96 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= PMPL (Palimpsest License) Campaign Document
+:description: Author's licensing philosophy and PMPL advocacy
+
+This document explains the author's licensing philosophy regarding PMPL
+(Palimpsest License) and why it matters in the context of human-machine
+culture.
+
+== IMPORTANT NOTICE
+
+**PMPL is NOT the license of this repository.**
+
+This repository is licensed under AGPL-3.0-or-later only.
+
+PMPL is a separate licensing philosophy that the author advocates for and
+campaigns for in the broader open source ecosystem. It is included here for
+informational and educational purposes.
+
+== What is PMPL?
+
+PMPL (Palimpsest License) is a family of licenses that extend MPL-2.0 with
+additional provisions for:
+
+* **Ethical use** — preventing use in harmful applications
+* **Post-quantum cryptographic provenance** — ensuring cryptographic integrity
+  in a post-quantum world
+* **Cultural/emotional lineage protection** — acknowledging and preserving the
+  human culture, history, and meaning behind software
+
+== PMPL vs AGPL
+
+AGPL-3.0-or-later is a strong copyleft license that ensures users have
+freedom to use, modify, and share software. It is well-established and
+legally recognized.
+
+PMPL is a **philosophical extension** that adds cultural and ethical dimensions
+on top of MPL-2.0 (which itself is a file-level copyleft license).
+
+**They are not compatible.** AGPL-3.0 and PMPL cannot be combined in the
+same project without careful legal analysis.
+
+== Why This Matters
+
+The author believes that in a world where AI systems are increasingly
+involved in software development, we must:
+
+. **Preserve human culture** — AI should not paint over human culture with
+  "AI slop" without acknowledgement or understanding of roots
+. **Protect meaning** — Some things have unique value that must not be
+  commodified or stripped of context
+. **Recognize layers** — There are layers of technology, culture, and meaning
+  that must be respected
+. **Prevent erasure** — AI systems must acknowledge their roots and not
+  forget where they came from
+
+== Current Status
+
+As of 2026, PMPL is:
+
+* **Not yet OSI-approved** — The Open Source Initiative has not yet recognized it
+* **Not widely adopted** — Few projects currently use it
+* **Legally untested** — Has not been tested in court
+* **A work in progress** — The author is advocating for it but lacks resources
+  for full legal establishment
+
+The author's own projects use either:
+
+* **AGPL-3.0-or-later** — For projects where strong copyleft is desired
+* **MPL-2.0-or-later** — For library projects where permissive licensing is
+  more appropriate
+
+== Governance Structures
+
+Currently, the governance structures that would protect PMPL's values are
+not fully established. Until such structures exist:
+
+* The author cannot unilaterally impose PMPL on collaborative projects
+* Projects remain under AGPL-3.0-or-later or MPL-2.0-or-later
+* PMPL is advocated for as a philosophy, not enforced as a license
+
+== The Future
+
+The author hopes that:
+
+. PMPL-2.0-or-later will gain recognition and adoption
+. Governance structures will be established to protect its values
+. The licensing ecosystem will evolve to better respect cultural and ethical
+  dimensions
+
+Until then, AGPL-3.0-or-later remains the practical choice for this repository.
+
+== See Also
+
+* link:https://github.com/hyperpolymath/palimpsest-license[PMPL Repository]
+* link:https://www.gnu.org/licenses/agpl-3.0.html[AGPL-3.0 License]
+* link:https://www.mozilla.org/MPL/2.0/[MPL-2.0 License]

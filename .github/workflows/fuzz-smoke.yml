@@ -6,35 +6,28 @@
 # Catches regressions in the pt_tile_* / pt_layer_* FFI surface
 # (TEST-NEEDS P2). Not exhaustive; the long-form corpus lives off-CI.
 name: Fuzz Smoke
-
 on:
   pull_request:
     branches: [main]
   push:
     branches: [main]
-
 permissions:
   contents: read
-
 concurrency:
   group: fuzz-smoke-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
   fuzz-smoke:
     name: cargo-fuzz 30s per target
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-
       - name: Install Zig (for libpt)
         uses: mlugg/setup-zig@8d6198c65fb0feaa111df26e6b467fea8345e46f # v1
         with:
           version: 0.15.1
-
       - name: Build libpt static library
         # ReleaseFast (rather than the build.rs default ReleaseSafe)
         # strips Zig's debug-self-info path, which would otherwise drag in
@@ -44,43 +37,35 @@ jobs:
         run: |
           cd src/interface/ffi
           zig build -Doptimize=ReleaseFast
-
       - name: Install Rust nightly toolchain
         uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
         with:
           toolchain: nightly
           components: rust-src
-
       - name: Cache cargo registry and build
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
         with:
           workspaces: |
             src/paint_core
             src/paint_core/fuzz
-
       - name: Install cargo-fuzz
         # `--locked` would pin cargo-fuzz's bundled Cargo.lock which
         # captures a too-old `rustix 0.36.x` that does not build on
         # current Rust nightly (uses internal `rustc_attrs` cfg flags
         # that the compiler now rejects). Let cargo resolve fresh.
         run: cargo install cargo-fuzz
-
       - name: Compile-check fuzz targets
         working-directory: src/paint_core
         run: cargo +nightly fuzz check
-
       - name: Fuzz — pt_tile_blit (30s)
         working-directory: src/paint_core
         run: cargo +nightly fuzz run pt_tile_blit -- -max_total_time=30 -timeout=10
-
       - name: Fuzz — pt_tile_write_pixel (30s)
         working-directory: src/paint_core
         run: cargo +nightly fuzz run pt_tile_write_pixel -- -max_total_time=30 -timeout=10
-
       - name: Fuzz — pt_layer_opacity (30s)
         working-directory: src/paint_core
         run: cargo +nightly fuzz run pt_layer_opacity -- -max_total_time=30 -timeout=10
-
       - name: Upload crash artifacts on failure
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -88,7 +73,6 @@ jobs:
           name: fuzz-artifacts
           path: src/paint_core/fuzz/artifacts/
           retention-days: 7
-
       - name: Write summary
         if: always()
         run: |

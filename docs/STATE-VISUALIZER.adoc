@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 = paint-type — Project State Visualizer
-// Last updated: 2026-05-11
+// Last updated: 2026-06-01
 
 [source]
 ----
-# paint-type — Project Topology (v0.1.0)
+# paint-type — Project Topology (v0.2.0 closing)
 
 ## System Architecture
 
@@ -13,6 +13,9 @@
                     │  (Gossamer shell + Web UI chrome — v0.3.0)       │
                     └──────────────────────┬──────────────────────────┘
                                            │ AffineScript → typed-wasm
+                                           │ (DRAFT .twasm in src/bridges/;
+                                           │  gated on typed-wasm#127 + #130;
+                                           │  paint-type#39)
                                            ▼
                     ┌─────────────────────────────────────────────────┐
                     │              ABI Bridge Layer                    │
@@ -20,16 +23,18 @@
                     │  │  Idris2 ABI   │  │  Zig FFI (libpt)     │   │
                     │  │  (Types,      │  │  C ABI bridge        │   │
                     │  │   Layout,     │  │  src/interface/ffi/  │   │
-                    │  │   Foreign)    │  └──────────────────────┘   │
-                    │  └───────────────┘                              │
+                    │  │   Foreign)    │  │  23 exports          │   │
+                    │  └───────────────┘  └──────────────────────┘   │
                     └──────────────────────┬──────────────────────────┘
-                                           │ C ABI (pt_*)
+                                           │ C ABI (pt_tile_* + pt_layer_*)
                                            ▼
                     ┌─────────────────────────────────────────────────┐
                     │              Ephapax Image Core (Rust)           │
-                    │  RGBA16F tiles · compositing · undo graph        │
+                    │  RGBA16F tiles · 11 compositing ops · UndoGraph  │
+                    │  Layer / LayerStack · Brush engine               │
                     │  linear types · no aliased mutable tile refs     │
-                    │  src/ephapax/                                    │
+                    │  src/paint_core/  (lib + composite + undo + layer + │
+                    │                 brush — 98/98 tests + 1 doctest) │
                     └──────────────────────┬──────────────────────────┘
                                            │
                           ┌────────────────┼────────────────┐
@@ -46,16 +51,19 @@ COMPONENT                          STATUS              NOTES
 ─────────────────────────────────  ──────────────────  ──────────────────────────────
 FOUNDATION (v0.1.0) ✓
   Idris2 ABI (Types/Layout/Foreign) ██████████ 100%   Proofs typecheck, FFI wrappers done
-  Zig FFI bridge (libpt)            ██████████ 100%   Integration tests pass
-  Rust Ephapax skeleton             ██████████ 100%   Crate builds, unit tests pass
-  CI/CD pipeline                    ██████████ 100%   GitHub Actions, OpenSSF, SPDX
+  Zig FFI bridge (libpt)            ██████████ 100%   29/29 tests; 23 exports
+  Rust Ephapax skeleton             ██████████ 100%   98/98 tests + 1 doctest
+  CI/CD pipeline                    ██████████ 100%   Rust CI green on main since 2026-06-01
   Repository governance             ██████████ 100%   CRG Grade D, machine-readable complete
 
 CORE IMAGE OPS (v0.2.0)
-  Ephapax brush engine              ░░░░░░░░░░   0%   Planned
-  Compositing (over, alpha)         ░░░░░░░░░░   0%   Planned
-  Undo graph                        ░░░░░░░░░░   0%   Planned
-  AffineScript bridge               ░░░░░░░░░░   0%   Stub only
+  Ephapax brush engine              ██████████ 100%   BrushTip + Brush::stamp + Stroke (PR #29)
+  Compositing (11 ops)              ██████████ 100%   over/masked/flatten + lerp/mul/screen/in/out/atop/xor (PRs #20/#21/#27)
+  Undo graph                        ██████████ 100%   Persistent UndoGraph + benches (PR #21)
+  Layer model                       ██████████ 100%   Layer/LayerStack + pt_layer_* FFI (PRs #23/#28)
+  ABI category proofs               ██████████ 100%   ABI-1..5 + TP-1/TP-3 closed
+  E2E + fuzz + coverage             ██████████ 100%   Wired (PRs #32/#33/#34/#35); CI green
+  AffineScript bridge               ████░░░░░░  40%   DRAFT `.twasm` at src/bridges/ (PR #40); `tw build` gated on typed-wasm#127 + #130
 
 DESKTOP SHELL (v0.3.0)
   Gossamer shell integration        ░░░░░░░░░░   0%   Not started
@@ -72,7 +80,7 @@ COLLABORATION (v0.5.0)
   CRDT tile merge                   ░░░░░░░░░░   0%   Not started
 
 ─────────────────────────────────────────────────────────────────────────────
-OVERALL:                            █░░░░░░░░░  10%   v0.1.0 Foundation complete
+OVERALL:                            ██░░░░░░░░  22%   v0.2.0 in-repo work done; bridge gated upstream
 
 ## Update Protocol
 

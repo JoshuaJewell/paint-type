@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 = paint-type Standards Audit
 Codex
-v1.0, 2026-05-11
+v1.1, 2026-06-01
 :toc:
 :toclevels: 3
 :sectnums:
@@ -21,49 +21,49 @@ Audit scope:
 | Claimed item | Claimed by | Expected path | Actual status | Notes | Recommended action
 
 | Tile primitive ABI
-| `TOPOLOGY.md`, `README.adoc`
+| `TOPOLOGY.adoc`, `README.adoc`
 | `src/interface/Abi/Types.idr`
 | exists
 | Idris2 types, layout proofs, and FFI wrappers all present and typechecking.
 | Keep; no action needed.
 
 | Zig FFI bridge
-| `TOPOLOGY.md`, `docs/developer/ABI-FFI-README.adoc`
+| `TOPOLOGY.adoc`, `docs/developer/ABI-FFI-README.adoc`
 | `src/interface/ffi/src/main.zig`, `build.zig`, `test/integration_test.zig`
 | exists
 | Builds with Zig 0.15+, integration tests pass.
 | Keep; no action needed.
 
 | Ephapax Rust crate
-| `TOPOLOGY.md`, `ROADMAP.adoc`
-| `src/ephapax/`
-| exists (skeleton)
-| Crate compiles and `cargo test` passes. Feature work starts at v0.2.0.
-| Keep; develop in v0.2.0.
+| `TOPOLOGY.adoc`, `ROADMAP.adoc`
+| `src/paint_core/`
+| exists (v0.2.0 in-repo complete)
+| 5 modules (lib, composite, undo, layer, brush). 11 compositing ops, persistent UndoGraph, Layer/LayerStack, Brush engine. cargo test 98/98 + 1 doctest. Rust CI green on main.
+| Keep; bridge work remaining for v0.2.0 close.
 
 | Idris2 layout proofs
-| `PROOF-NEEDS.md`, `TOPOLOGY.md`
+| `PROOF-NEEDS.adoc`, `TOPOLOGY.adoc`
 | `src/interface/Abi/Layout.idr`
 | exists
 | Layout correctness lemmas typecheck in Idris2.
 | Keep; formal verification proofs in `verification/proofs/idris2/` remain future work.
 
 | AffineScript bridge
-| `TOPOLOGY.md`
-| `src/bridges/`
-| stub only
-| Bridge stub directory exists; code generator not yet integrated. Planned for v0.2.0.
-| Leave stub; implement at v0.2.0.
+| `TOPOLOGY.adoc`
+| `src/bridges/paint-type-{tile,layer}.twasm`
+| draft .twasm landed (PR #40)
+| Hand-modelled `.twasm` schemas for `pt_tile_*` + `pt_layer_*` surfaces live in `src/bridges/`. Cannot yet be compiled by `tw build` (typed-wasm codegen v0 only handles example-01); gated on `hyperpolymath/typed-wasm#127` (D1) + `#130` (D2 round-trip). Tracked in paint-type#39.
+| Keep DRAFT; wait on upstream.
 
 | Gossamer shell integration
-| `TOPOLOGY.md`, `ROADMAP.adoc`
+| `TOPOLOGY.adoc`, `ROADMAP.adoc`
 | (Gossamer is a separate repo)
 | not started
 | Correctly documented as v0.3.0 work.
 | No action; keep in ROADMAP.
 
 | Collaboration layer (Burble/Groove)
-| `TOPOLOGY.md`, `ROADMAP.adoc`
+| `TOPOLOGY.adoc`, `ROADMAP.adoc`
 | (Burble and Groove are separate repos)
 | not started
 | Correctly documented as v0.5.0 work.
@@ -150,9 +150,9 @@ paint-type/
   AUDIT.adoc
   0-AI-MANIFEST.a2ml
   EXPLAINME.adoc
-  TOPOLOGY.md
+  TOPOLOGY.adoc
   ROADMAP.adoc
-  READINESS.md
+  READINESS.adoc
   Justfile
   coordination.k9
   session/
@@ -161,11 +161,11 @@ paint-type/
     custom-checks.k9
     local-hooks.sh
   src/
-    ephapax/          (Rust — RGBA16F tile engine skeleton)
+    ephapax/          (Rust — RGBA16F tile engine: 11 ops + UndoGraph + Layer + Brush)
     interface/
       Abi/            (Idris2 — ABI types, layout proofs, FFI wrappers)
-      ffi/            (Zig — libpt C ABI bridge + integration tests)
-    bridges/          (AffineScript → typed-wasm stub)
+      ffi/            (Zig — libpt C ABI bridge: 23 exports + integration tests)
+    bridges/          (AffineScript → typed-wasm — draft .twasm; gated upstream)
     aspects/          (cross-cutting: integrity, observability, security)
   docs/               (human documentation)
   verification/       (formal proofs — Idris2, Lean4, Agda, Coq, TLA+)

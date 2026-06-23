@@ -1,16 +1,26 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
----
-### [META]
-id: "whitepapers-track-outreach"
-level: 3
-parent: "../0.2-AI-MANIFEST.a2ml"
+# paint.type AI Manifest (Level 3)
 
----
-### [AI_MANIFEST]
-description: |
-  Documentation track for outreach, education, and general-audience
-  engagement. Focuses on accessibility and high-level conceptual clarity.
+This is the AI manifest for the `docs/whitepapers/outreach/` directory (Level 3) of paint.type.
 
-invariants:
-  - "Language MUST be accessible to non-technical audiences"
-  - "Avoid deep technical jargon without providing clear definitions"
+## Purpose
+
+This manifest describes the purpose and structure of the `docs/whitepapers/outreach/` directory.
+
+## Authority Split
+
+- **Central protocol authority:** `standards/` repository
+- **Local integration authority (this directory):** docs/whitepapers/outreach/ specific configurations
+
+## Invariants
+
+1. All A2ML state files must live in `.machine_readable/` ONLY, never in the repo root.
+2. Each directory at layer 3 must have its own `0.3-AI-MANIFEST.a2ml`.
+3. Each directory must have a `README.adoc` describing purpose, contents, and function.
+4. SPDX license identifiers must be consistent across all files (AGPL-3.0-or-later).
+
+## Startup Checklist for Agents
+
+1. Read this file (`0.3-AI-MANIFEST.a2ml`).
+2. Read `README.adoc` for directory overview.
+3. For subdirectories, navigate to their respective manifest files.
+4. Never edit `.machine_readable/` files directly.

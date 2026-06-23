@@ -1,12 +1,18 @@
-# paint-type AI Manifest (Read First)
+# paint.type AI Manifest (Read First)
 
-This is the root AI manifest for paint-type.
+This is the root AI manifest for paint.type.
 
 ## Project
 
-paint-type is a cross-platform open-source image editor in the spirit of Paint.NET.
+**NAME CLARIFICATION:** The *project* is named "paint.type" (similar to Paint.NET). The *GitHub repository* is named "paint-type" (GitHub does not allow dots in repository names). All references should use "paint.type" as the project name.
+
+paint.type is a cross-platform open-source image editor in the spirit of Paint.NET.
 Repo: JoshuaJewell/paint-type. License: AGPL-3.0-or-later.
-Contact: paint-type@pm.me. Status: early development — tile primitive landed.
+Contact: paint-type@pm.me. Status: pre-alpha — v0.2.0 Core Image Operations
+closing (compositing primitives + UndoGraph + Layer model + brush engine +
+pt_layer_* FFI all landed; ABI category fully proven; Rust CI green on main).
+Only AffineScript → typed-wasm bridge remains, gated on
+hyperpolymath/typed-wasm#127 + #130 (paint-type#39). Last updated: 2026-06-07.
 
 ## Authority Split
 
@@ -21,13 +27,28 @@ Contact: paint-type@pm.me. Status: early development — tile primitive landed.
 
 ## What Has Already Been Done (Do Not Redo)
 
-- `src/interface/Abi/Types.idr` — Idris2 ABI types for tile primitive
-- `src/interface/Abi/Layout.idr` — Idris2 layout proofs
-- `src/interface/Abi/Foreign.idr` — Idris2 pt_ FFI wrappers
-- `src/interface/ffi/src/main.zig` — Zig libpt implementation
+- `src/interface/Abi/{Types,Layout,Foreign}.idr` — Idris2 ABI types + layout
+  proofs + pt_* FFI wrappers
+- `verification/proofs/idris2/ABI/{Platform,Compliance}.idr` +
+  `verification/proofs/idris2/Pixel.idr` — ABI-3, ABI-5, TP-3 proofs (CI-checked)
+- `src/interface/ffi/src/main.zig` — Zig libpt implementation; 23 exports
+  (`pt_tile_*` + `pt_layer_*` + slot helpers)
 - `src/interface/ffi/build.zig` — Zig build file
-- `src/interface/ffi/test/integration_test.zig` — integration tests
-- `src/ephapax/` — Rust image core crate skeleton
+- `src/interface/ffi/test/integration_test.zig` — 29/29 passing integration tests
+- `src/paint_core/` — Rust image core: 5 modules (lib, composite, undo, layer,
+  brush). 11 compositing ops, persistent UndoGraph, Layer/LayerStack, Brush
+  engine (BrushTip + Brush::stamp + Stroke). cargo test 98/98 + 1 doctest.
+- `src/bridges/paint-type-{tile,layer}.twasm` — DRAFT typed-wasm schemas
+  (not yet `tw build`-compilable; gated on hyperpolymath/typed-wasm#127 + #130;
+  paint-type#39)
+- `tests/aspect_tests.sh` — 7 aspects PASS (SPDX, dangerous-pattern, ABI/FFI
+  contract, Rust panic-safety, RGBA16F constants, Idris2 ABI check, file-I/O)
+- `tests/e2e.sh` + `src/paint_core/tests/e2e_pipeline.rs` — 9-stage E2E pipeline
+- `src/paint_core/fuzz/` — 3 cargo-fuzz targets (pt_tile_blit, pt_tile_write_pixel,
+  pt_layer_opacity); 30 s CI smoke per target via `.github/workflows/fuzz-smoke.yml`
+- `.github/workflows/coverage.yml` + `tests/coverage.sh` — cargo-llvm-cov +
+  best-effort kcov; reporting only, no gate
+- `.github/workflows/rust.yml` — Rust CI (clippy / fmt / test); GREEN on main
 
 ## Architecture
 
@@ -66,7 +87,7 @@ Contact: paint-type@pm.me. Status: early development — tile primitive landed.
 - `AUDIT.adoc` (local audit gate summary)
 - `README.adoc` (project overview)
 - `EXPLAINME.adoc` (directory structure guide)
-- `TOPOLOGY.md` (architecture topology)
+- `TOPOLOGY.adoc` (architecture topology)
 - `ROADMAP.adoc` (milestone plan)
 - `session/README.md` (session-binding usage)
 - `.machine_readable/` (machine-readable repo policy/state files)
@@ -78,5 +99,5 @@ Contact: paint-type@pm.me. Status: early development — tile primitive landed.
 3. Read `.machine_readable/STATE.a2ml` for current phase and blockers.
 4. Read `.machine_readable/MUST.contractile` before making any changes.
 5. Use canonical session commands through `session/dispatch.sh` or Just aliases.
-6. Do not touch `src/interface/Abi/`, `src/interface/ffi/`, or `src/ephapax/` without reviewing existing proofs and tests first.
+6. Do not touch `src/interface/Abi/`, `src/interface/ffi/`, or `src/paint_core/` without reviewing existing proofs and tests first.
 7. Avoid claiming files/paths exist unless verified in this repository.

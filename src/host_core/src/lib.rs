@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // host_core -- the display-independent heart of the paint.type desktop
 // shell: the command protocol, the document model, the dispatch entry

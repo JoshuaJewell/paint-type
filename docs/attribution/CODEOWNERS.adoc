@@ -12,7 +12,7 @@ Our ownership model is based on the "Perimeter" architecture:
 
 == Automated Enforcement
 
-The technical rules for automatic review assignments are maintained in the machine-readable link:../../.github/CODEOWNERS[.github/CODEOWNERS] file. GitHub uses this to automatically notify owners when changes are proposed to their sections.
+The technical rules for automatic review assignments are maintained in the machine-readable link:../../CODEOWNERS[root CODEOWNERS] file. GitHub uses this to automatically notify owners when changes are proposed to their sections.
 
 == Component Owners
 

@@ -1,0 +1,135 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
+//
+// Copyright (c) 2026 Joshua Jewell (JoshuaJewell)
+// Copyright (c) 2026 Joshua Jewell (hyperpolymath)
+//
+= Container Architecture Guide
+:description: Relationship between dev and production container configurations
+
+This document explains the containerization strategy for paint-type, including
+the relationship between development and production container configurations.
+
+== Overview
+
+paint-type uses a **dual-container** strategy:
+
+* **Development Container** (`.devcontainer/Containerfile`) - Used by VS Code, GitHub Codespaces, Gitpod
+* **Production Container** (`Containerfile`) - Multi-stage build for deployment
+
+Both containers are designed to work with **Podman** as the primary container runtime
+and use **Chainguard Wolfi** images for supply-chain security.
+
+== Container Configuration Comparison
+
+| Aspect | Development Container | Production Container |
+|--------|----------------------|---------------------|
+| **File Location** | `.devcontainer/Containerfile` | `Containerfile` (root) |
+| **Purpose** | Interactive development | Build and runtime |
+| **Base Image** | `cgr.dev/chainguard/wolfi-base:20240513@sha256:...` | Same (build stage) |
+| **Runtime Image** | N/A | `cgr.dev/chainguard/static:20240513@sha256:...` |
+| **Stages** | Single | Multi-stage (build + runtime) |
+| **Tools** | Full dev toolchain (git, build-base, etc.) | Minimal runtime only |
+| **Workspace** | `/workspaces/paint-type` | `/build` → runtime |
+| **User** | `nonroot` (UID 1000) | `nonroot` (Chainguard default) |
+| **Used By** | VS Code, Codespaces, Gitpod | CI/CD, deployment |
+
+== Development Container (.devcontainer/)
+
+=== Configuration Files
+
+* `Containerfile` - Container image definition with development tools
+* `devcontainer.json` - VS Code/GitHub Codespaces configuration
+* Features:
+  * Git
+  * Just (build tool)
+  * Nickel-lang
+
+=== Building
+
+[source,bash]
+----
+podman build -t paint-type-dev -f .devcontainer/Containerfile .
+----
+
+=== Running
+
+[source,bash]
+----
+podman run --rm -it -v $(pwd):/workspaces/paint-type paint-type-dev
+----
+
+=== Features
+
+* Full development environment
+* Pre-configured extensions (VS Code)
+* Non-root user matching host UID
+* Persistent workspace mounting
+
+== Production Container (root)
+
+=== Architecture
+
+This is a **multi-stage build**:
+
+1. **Build Stage** (`wolfi-base`) - Compiles the application
+2. **Runtime Stage** (`static`) - Minimal image with only the binary
+
+=== Building
+
+[source,bash]
+----
+podman build -t paint-type -f Containerfile .
+----
+
+=== Running
+
+[source,bash]
+----
+podman run --rm -it paint-type
+----
+
+=== Sealing (selur)
+
+[source,bash]
+----
+selur seal paint-type
+----
+
+== Base Image Version Synchronization
+
+Both containers use the **same pinned base image version** to ensure consistency:
+
+* Build base: `cgr.dev/chainguard/wolfi-base:20240513@sha256:...`
+* Runtime: `cgr.dev/chainguard/static:20240513@sha256:...`
+
+This ensures that:
+
+1. Development environment matches production build environment
+2. Security patches are applied consistently
+3. No drift between dev and prod dependencies
+
+== When to Use Each
+
+| Scenario | Use |
+|----------|-----|
+| Local development | Development Container |
+| VS Code/GitHub Codespaces | Development Container |
+| CI/CD pipeline | Production Container |
+| Deployment | Production Container |
+| Testing production build | Production Container |
+| Debugging build issues | Development Container |
+
+== Image Update Process
+
+1. Check for new Chainguard Wolfi releases
+2. Update version and SHA256 in **both** Containerfiles
+3. Test development container locally
+4. Test production build in CI
+5. Commit both changes together
+
+== Related Files
+
+* link:.devcontainer/README.adoc[.devcontainer README]
+* link:.devcontainer/devcontainer.json[Dev Container Configuration]
+* link:Containerfile[Production Containerfile]

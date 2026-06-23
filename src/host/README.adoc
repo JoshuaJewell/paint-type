@@ -1,48 +1,33 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
-= host -- paint.type desktop binary
+// SPDX-License-Identifier: CC-BY-SA-4.0
 
-The Gossamer webview shell for paint.type. It boots a window, loads the
-web UI from `src/ui/index.html` (or, if `PT_UI_FILE` is set, from that path
-on disk), and bridges each `__gossamer_invoke("dispatch", ...)` call to
-`host_core::dispatch`.
+= host
+:description: Project directory
 
-== Build and run
+This directory is part of the paint.type project.
 
-On a normal Linux dev box, install the system libraries, then build:
+== Purpose
 
-[source,sh]
-----
-sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
-# vendor Gossamer under third_party/gossamer, then:
-cd third_party/gossamer/src/interface/ffi && zig build && cd -
-cargo build --manifest-path src/host/Cargo.toml
-cargo run   --manifest-path src/host/Cargo.toml
-----
+Project directory.
 
-Where `sudo` is unavailable, `scripts/build-host-local.sh` assembles a
-root-free WebKitGTK sysroot from downloaded `.deb` packages and builds
-against it:
 
-[source,sh]
-----
-scripts/build-host-local.sh all     # build the sysroot + libgossamer + host
-scripts/build-host-local.sh run     # launch the window (needs $DISPLAY)
-----
+As a Level 2 directory (`src/host/`), it supports the overall
+project structure.
 
-== Status (verified 2026-06-02)
+== Contents by Functional Grouping\n\n== Subdirectories\n\n[cols="1,2", options="header"]\n|===\n| Directory | Purpose\n| `src/` | |\n|===\n\n=== Configuration\n\n* `Cargo.toml` — Rust package manifest\n\n
+== Purpose of Each Component
 
-Working end to end. The binary compiles and links against `libgossamer` +
-WebKitGTK, launches a real WebKitGTK window, and the live webview's
-JavaScript-to-Rust IPC round-trips: a brush stroke made in the page drives
-`host_core::dispatch` -> the `ephapax` brush/compositor -> the PNG codec, and
-saves a real image. A scripted smoke (a diagonal stroke saved to a temp file)
-produced a 1024x768 RGBA PNG with 5214 red stroke pixels.
+Each file in this directory serves a specific purpose.
 
-Note on the IPC fix: an earlier vendored Gossamer dropped invoke payloads
-because its native message parser did not unescape the doubly-encoded payload
-string, so every command arrived empty. That defect was fixed upstream (see
-`../gossamer/gossamer-type-fix.md`) and the corrected source is vendored under
-`third_party/gossamer`. If you re-vendor a Gossamer revision that predates the
-fix, the window will open but painting will silently do nothing; rebuild
-`libgossamer` from a revision that parses the IPC envelope with a real JSON
-parser.
+*Configuration files* define build, test, and deployment parameters.\n
+
+== AI Manifest Structure
+
+* `0.2-AI-MANIFEST.a2ml` (this file) - Level 2 manifest for `src/host/`
+
+* Each subdirectory has its own `0.3-AI-MANIFEST.a2ml`
+
+== Related Files
+
+* link:../0.1-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

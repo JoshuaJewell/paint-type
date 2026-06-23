@@ -1,0 +1,160 @@
+# paint-type Dependency Scheduler
+// SPDX-License-Identifier: CC-BY-SA-4.0
+<!-- Source of truth for the estate dependencies paint-type inherits, and the
+     "make-great" work each needs. Mirrors GitHub Project #41 (the live kanban).
+     FOR BOTS: read this at session start to know what to work toward; update the
+     matching DEP-NN item on Project #41 when status changes. FOR JOSHUA: the
+     kanban view is the Project; this file is the diff-able record. -->
+
+**Live board:** https://github.com/users/hyperpolymath/projects/41 — *paint-type Dependency Scheduler*
+**Maintained by:** hyperpolymath (estate owner). paint-type is JoshuaJewell's; these are the upstream estate repos it depends on.
+**Last synced:** 2026-06-14.
+
+## Purpose
+
+paint-type's quality is bounded by the estate dependencies underneath it. This is the
+register of those dependencies, their current readiness, and the prioritized work to
+make each one great so Joshua's paint-type can be the best it can be. Two readiness
+numbers (Gossamer, Burble/Groove) are being refined by in-flight audits and will be
+updated on next sync.
+
+**Legend** — *Tier*: where it sits. *Readiness*: CRG grade (A best … D / Missing / Unknown).
+*Priority*: P1 (on the critical path now) … P3 / Maintain. *Status*: Todo / In&nbsp;Progress / Done.
+
+## Registry
+
+| ID | Dependency | Tier | Owner | Readiness | Priority | Status | Role in paint-type · milestone |
+|----|------------|------|-------|-----------|----------|--------|--------------------------------|
+| DEP-01 (#71) | **Ephapax** | Spine | hyperpolymath | C | P1 | In&nbsp;Progress | Region-calculus / linear-affine core; `paint_core` is ex-ephapax; Gossamer's safety backend · all |
+| DEP-02 (#72) | **typed-wasm** | Spine | hyperpolymath | A | Maintain | **Done** | Verified WASM bridge target · v0.2 (paint-type slice closed) |
+| DEP-03 (#73) | **AffineScript** | Spine | hyperpolymath | C | P1 | In&nbsp;Progress | UI language + ABI→`.twasm` generator · v0.2/v0.3 |
+| DEP-04 (#74) | **Gossamer** | Spine | hyperpolymath | B | P1 | In&nbsp;Progress | Desktop shell / webview host · v0.3 |
+| DEP-05 | **cerro-torre** | Plugin/Supply-chain | hyperpolymath | Missing | P2 | Todo | ML-DSA plugin signing (in `stapeln`) · v0.4 |
+| DEP-06 | **Burble** | Collaboration | hyperpolymath (son-shared, AGPL) | Unknown | P2 | Todo | WebRTC session, sub-10ms shared canvas · v0.5 |
+| DEP-07 | **groove-protocol** | Collaboration | hyperpolymath | B | P2 | Todo | Zero-config peer discovery (`.well-known/groove/`) · v0.5 |
+| DEP-08 | **boj-server** | Collaboration | hyperpolymath | B | P3 | Todo | MCP LLM channel + plugin package index · v0.4/v0.5 |
+| DEP-09 (#75) | **standards** | Governance | hyperpolymath | B | P1 | In&nbsp;Progress | RSR governance multiplier (CI reusables, contractiles, CRG, 6a2, session-mgmt) · all |
+| DEP-10 (#76) | **proven** | Proof-foundation | hyperpolymath | B | P1 | In&nbsp;Progress | Idris2 verified-foundations library · all |
+| DEP-11 | **echo-types** | Proof-foundation | hyperpolymath | C | P2 | Todo | Estate proof discipline (audit-first) · all |
+| DEP-12 | **panic-attack** | Tooling | hyperpolymath | B | Maintain | In&nbsp;Progress | `assail` dangerous-pattern gate · all |
+| DEP-13 | **Container / supply-chain stack** | Plugin/Supply-chain | hyperpolymath | C | P2 | Todo | stapeln · selur · Svalinn · Vordr · Chainguard/Wolfi · cerro-torre · v0.4+ |
+| DEP-14 | **Hypatia** (Hexadeca source) | Spine | hyperpolymath | B | P2 | Todo | Source of the 16-protocol unified connector pattern · convention |
+| DEP-15 | **Toolchain & formats** | Tooling | hyperpolymath | C | P1 | In&nbsp;Progress | Guix · Nickel · k9 · a2ml · rsr-template · launcher std · provers · eclexiaiser · all |
+
+## Make-great tasks (per dependency)
+
+### DEP-01 Ephapax — *keep canonical, don't let it hollow*
+- [ ] Keep the region-calculus canonical (guard against interstitial-drift / framework-hollowing).
+- [ ] Verify Gossamer's Ephapax integration is genuinely load-bearing, not namechecked.
+- [ ] Service-handle region modelling (gossamer#69).
+
+### DEP-02 typed-wasm — *done for paint-type; maintain*
+- [x] paint-type slice closed (#127 closed; #130 slice green via PR#165 `ba3c7d9`).
+- [ ] Keep `tw`/`tw-verify` pinned in paint-type.
+- [ ] (Non-critical) full #130 corpus; D6 human-readable errors (#126).
+
+### DEP-03 AffineScript — *P1: widen + generator*
+- [ ] Widen typed-wasm enforcement from L7/L10/L13 to L1–L5 (#462 access-sites, #562 fixtures).
+- [ ] Build the ABI→`.twasm` generator (paint-type#39 producer side).
+- [ ] Compile the UI chrome (layer-panel / tool-bar / canvas-viewport).
+
+### DEP-04 Gossamer — *P1: close drift, fix versioning*
+- [ ] Close the Idris2-ABI-vs-full-Zig-FFI surface drift (audit `wqbb3mhzf`).
+- [ ] Reconcile versioning (git tag `v0.1.0` vs README `v0.3.1`).
+- [ ] Nix→Guix migration.
+- [ ] Android: #67 NDK CI · #68 APK/AAB signing · #69 Ephapax Service handles · #71 JVM shims.
+
+### DEP-05 cerro-torre — *the one genuinely-missing capability*
+- [ ] Graduate from `stapeln/container-stack/cerro-torre/` to a standalone repo, **or** add a plugin-manifest signing surface.
+- [ ] Add ML-DSA-87 (SECURITY-STACK-AUDIT flags it a CRITICAL gap; today it's Ed25519 container signing).
+- [ ] Decide a thin paint-type-local interim signer (reuse `proven-pqc` ML-DSA).
+
+### DEP-06 Burble — *prove the data-channel*
+- [ ] Prove the WebRTC data-channel can carry tile-edit traffic (it's voice-first today).
+- [ ] Sub-10ms session/signalling API.
+- [ ] burble↔groove signalling wiring.
+
+### DEP-07 groove-protocol — *finish the bindings*
+- [ ] Finish the 8/10 untested FFI binding targets.
+- [ ] paint-type emits/consumes a Groove manifest as a peer.
+
+### DEP-08 boj-server
+- [ ] Stable cartridge surface for the paint-type LLM channel.
+- [ ] Package-index tier for the plugin browser.
+
+### DEP-09 standards — *the multiplier; lifts everything at once*
+- [ ] Keep CI/CD reusables green (Actions billing-wall / `startup_failure`).
+- [ ] Contractile trident canon = standards subdir master (NOT rsr-template's stale flat copy).
+- [ ] CRG + 6a2 manifest currency.
+
+### DEP-10 proven
+- [ ] Keep `proven` consumable as the Idris2 proof foundation.
+- [ ] Track-C security triage (proven#68).
+
+### DEP-11 echo-types
+- [ ] Keep the local Agda build env working (the `~/.agda/libraries` path-drift).
+- [ ] Audit-and-record echo-types for each new paint-type proof.
+
+### DEP-12 panic-attack
+- [ ] Keep the `assail` gate green in paint-type CI (no `believe_me`/`sorry`/`postulate`).
+
+### DEP-13 Container / supply-chain stack
+- [ ] Signed container build pipeline (paint-type Containerfile = Wolfi + ML-DSA-87).
+- [ ] cerro-torre ML-DSA integration (see DEP-05); Svalinn gateway + Vordr runtime wiring.
+
+### DEP-14 Hypatia (Hexadeca source)
+- [ ] Keep the Hexadeca 16-protocol reference canonical.
+- [ ] Keep paint-type's connector copy conformant (no drift).
+
+### DEP-15 Toolchain & formats
+- [ ] Nix→Guix migration (estate-wide directive; Nix is now debt).
+- [ ] Pin provers (Idris2 0.8.0 / Lean4 4.13.0 / Agda 2.8.0 / Coq / TLA+); a2ml + k9 currency.
+- [ ] Reconcile rsr-template's flat-contractile drift against the standards canon.
+
+## Critical path (sequencing)
+
+1. **Now — unblocks shipping v0.2→v0.3:** DEP-03 **AffineScript** (widen + generator) and DEP-04 **Gossamer** (close ABI drift + versioning), on the DEP-01 **Ephapax** foundation. These are what stand between you and a dogfoodable app.
+2. **Continuous multiplier:** DEP-09 **standards** — every repo above inherits its CI/contractiles/CRG; lifting it lifts them all.
+3. **v0.4 plugins:** DEP-05 **cerro-torre** (the one missing *capability* — ML-DSA + plugin-manifest signing) + DEP-13 supply-chain stack.
+4. **v0.5 collaboration:** DEP-06 **Burble** (prove data-channel) + DEP-07 **groove-protocol** (finish bindings) + DEP-08 **boj-server**.
+
+**Leverage insight:** the spine (DEP-01..04) is yours and mostly close, so paint-type's near-term excellence is gated on **AffineScript + Gossamer**, amplified by **standards**. cerro-torre is the only genuinely *missing* capability.
+
+## Standing / continuous items
+
+These are **not** one-off make-great tasks — they are continuous obligations addressed
+"as they arise" each session, with **no per-occurrence board churn**. The underlying
+items (scanner alerts, wiki gaps) auto-add/remove at source; the board carries **one
+durable `STAND-NN` item** per obligation that points at that source. This is the answer
+to "do we add/subtract as they occur?": no — one standing item, a recurring triage.
+
+| ID | Standing item | Owner | Source of truth | Protocol |
+|----|---------------|-------|-----------------|----------|
+| STAND-01 | Code-scanning / Scorecard remediation | hyperpolymath | `.../paint-type/security/code-scanning` | Each session: triage **open** alerts — fix real ones, dismiss stale with a reason. Do **not** open a board item per alert. |
+| STAND-02 | Wiki development | Joshua / shared | `paint-type.wiki` | Keep the wiki current + growing as features land; treat doc-drift as a wiki task. |
+| STAND-03 | Standards-doc + machine-readable currency | hyperpolymath | `TEMPLATE-STANDARDS-AUDIT.adoc`, `.machine_readable/{STATE,ECOSYSTEM,META}.a2ml`, contractiles | On any state/architecture/integration change, update the matching manifest **in the same unit of work**. The RSR audit doc must be **generated, not hand-authored**, so it cannot silently go stale (it did: v1.1/2026-06-01 predates `paint_core`, Hexadeca, the MVP, the proofs). |
+
+### STAND-01 Code-scanning — current state (2026-06-14)
+8 open, **all Scorecard** (no CodeQL vulns): 4× `BinaryArtifacts` on `zig-out/` (binaries are **not** git-tracked → alerts likely **stale**, dismiss-with-reason), + `CodeReview` / `Maintained` / `BranchProtection` / `CIIBestPractices` (governance checks — raised by `standards` posture, see DEP-09).
+- [ ] Triage the 4 `BinaryArtifacts` alerts (confirm `zig-out/` gitignored; dismiss stale, else `git rm --cached`)
+- [ ] Lift the governance checks via `standards` (branch protection, required review, CII best-practices)
+- [ ] Recurring: bots read this item each session and triage net-new alerts
+
+### STAND-02 Wiki development
+- [ ] Keep the Home page + component map current as v0.3 ships
+- [ ] Document the verified vertical + the discharged proofs (link `PROOF-STATUS.adoc`)
+- [ ] Mirror this dependency scheduler into a wiki page Joshua can browse
+
+### STAND-03 Standards-doc + machine-readable currency
+The hand-authored `TEMPLATE-STANDARDS-AUDIT.adoc` (v1.1 / 2026-06-01) silently went stale — the root cause of the "yikes". Fix the instance **and** the class:
+- [ ] Regenerate `TEMPLATE-STANDARDS-AUDIT.adoc` to current state (post `paint_core` rename, Hexadeca, MVP, proofs)
+- [ ] Make the audit **generated** (a `just standards-audit` recipe that emits it from the live tree) so it can't drift — not hand-maintained
+- [ ] Strengthen `verify-manifests.yml` to flag stale `STATE`/`ECOSYSTEM`/`META.a2ml` vs reality (drift-as-CI-failure)
+- [ ] Run a machine-readable **currency checkpoint** as part of every substantial change (estate pattern, e.g. gossamer#76)
+
+## Maintenance / bot protocol
+
+- This file is the **source of truth**; GitHub Project #41 is the **live kanban** mirror. Keep them in sync.
+- When a `make-great` task completes, tick it here **and** move the matching `DEP-NN` item on Project #41.
+- IDs (`DEP-NN`) are stable — reference them in commits, issues, and bot prompts.
+- Bots: treat P1 / In Progress items as the working set each session; do not start design-blocked work (DEP items have no blocked tasks here — those live in `PROOF-STATUS.adoc` for SEC/CONC).

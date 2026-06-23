@@ -385,7 +385,7 @@ When using paint-type, we recommend:
 |---------|---------|
 | **Security issues** | [Report via GitHub](https://github.com/JoshuaJewell/paint-type/security/advisories/new) or paint-type@pm.me |
 | **General questions** | [GitHub Discussions](https://github.com/JoshuaJewell/paint-type/discussions) |
-| **Other enquiries** | See [README](README.md) for contact information |
+| **Other enquiries** | See [README](../README.adoc) for contact information |
 
 ---
 

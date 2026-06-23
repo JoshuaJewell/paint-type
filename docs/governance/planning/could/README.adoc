@@ -1,1 +1,33 @@
-= Could Unit
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= could
+:description: Project directory
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Project directory.
+
+
+As a Level 4 directory (`docs/governance/planning/could/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n=== Other Files\n\n* `0.3-AI-MANIFEST.a2ml` — A2ML machine-readable metadata\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Other files* support directory operations.\n
+
+== AI Manifest Structure
+
+* `0.4-AI-MANIFEST.a2ml` (this file) - Level 4 manifest for `docs/governance/planning/could/`
+
+
+
+== Related Files
+
+* link:../0.3-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

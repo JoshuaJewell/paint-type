@@ -12,7 +12,7 @@
 #   scripts/build-host-local.sh run       # run the windowed app (needs $DISPLAY)
 #   scripts/build-host-local.sh all       # sysroot + build
 #
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 set -o pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

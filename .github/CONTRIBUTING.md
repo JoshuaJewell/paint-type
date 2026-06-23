@@ -34,7 +34,7 @@ zig build test
 ### Rust Ephapax (requires Rust stable)
 
 ```bash
-cd src/ephapax
+cd src/paint_core
 cargo test
 ```
 
@@ -43,7 +43,7 @@ cargo test
 ```
 paint-type/
 ├── src/
-│   ├── ephapax/          # Rust image core (RGBA16F tiles, compositing)
+│   ├── paint_core/       # Rust image core (RGBA16F tiles, compositing)
 │   ├── interface/
 │   │   ├── Abi/          # Idris2 ABI definitions (Perimeter 1 — formally verified)
 │   │   └── ffi/          # Zig FFI bridge (Perimeter 1 — C ABI)

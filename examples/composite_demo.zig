@@ -42,7 +42,7 @@ fn fillRect(canvas: u64, layer: u64, x0: u32, y0: u32, x1: u32, y1: u32, colour:
             i += 1;
         }
     }
-    const rc = dispatcher.pt_tool_stroke_pencil(canvas, layer, @intCast(count), buf.ptr, &colour);
+    const rc = dispatcher.pt_tool_stroke_pencil(canvas, layer, @intCast(count), buf.ptr, buf.len, &colour);
     if (rc != @intFromEnum(dispatcher.ResultCode.ok)) return error.PencilFailed;
 }
 

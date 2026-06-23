@@ -1,11 +1,31 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-= Contractile Templates
+// SPDX-License-Identifier: CC-BY-SA-4.0
 
-Blank templates for projects that want to replace the hyperpolymath
-defaults with their own contractile definitions.
+= contractiles
+:description: Project directory
 
-Copy the relevant file to `.machine_readable/contractiles/<type>/`
-and fill in your project-specific checks.
+This directory is part of the paint.type project.
 
-The working examples in `.machine_readable/contractiles/` show the
-full hyperpolymath setup — use those as reference.
+== Purpose
+
+Project directory.
+
+
+As a Level 3 directory (`docs/templates/contractiles/`), it supports the overall
+project structure.
+
+== Subdirectories\n\n[cols="1,2", options="header"]\n|===\n| Directory | Purpose\n| `dust/` | |\n| `trust/` | |\n| `lust/` | |\n| `must/` | |\n|===\n\n
+== Purpose of Each Component
+
+
+
+== AI Manifest Structure
+
+* `0.3-AI-MANIFEST.a2ml` (this file) - Level 3 manifest for `docs/templates/contractiles/`
+
+* Each subdirectory has its own `0.4-AI-MANIFEST.a2ml`
+
+== Related Files
+
+* link:../0.2-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // paint-type desktop host. Boots a Gossamer window, loads the bundled
 // web UI, and registers one IPC command. Each

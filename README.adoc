@@ -1,6 +1,5 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
 = paint.type
-image:https://img.shields.io/badge/OpenSSF-Best_Practices-green?logo=openssourcesecurity[OpenSSF Best Practices,link="https://www.bestpractices.dev/en/projects/new?repo_url=https://github.com/JoshuaJewell/paint-type"]
-
 :toc: left
 :toc-title: Contents
 :toclevels: 2
@@ -10,9 +9,91 @@ image:https://img.shields.io/badge/OpenSSF-Best_Practices-green?logo=openssource
 
 The open, cross-platform image editor Paint.NET users are actually asking for.
 
-image:https://img.shields.io/badge/license-AGPL--3.0--or--later-blue[License: AGPL-3.0-or-later]
-image:https://img.shields.io/badge/status-starting-orange[Status: Starting]
+image:https://img.shields.io/badge/license-AGPL--3.0--or--later-red[License: AGPL-3.0-or-later]
+image:https://img.shields.io/badge/CRG-D-orange?style=flat-square[CRG D,link=https://github.com/hyperpolymath/standards/tree/main/component-readiness-grades]
+image:https://img.shields.io/badge/status-pre--alpha%20(v0.2.0%20closing)-yellow[Status: pre-alpha — v0.2.0 closing]
 image:https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey[Platforms]
+image:https://github.com/JoshuaJewell/paint-type/actions/workflows/rust.yml/badge.svg[Rust CI,link=https://github.com/JoshuaJewell/paint-type/actions/workflows/rust.yml]
+image:https://github.com/JoshuaJewell/paint-type/actions/workflows/idris-ci.yml/badge.svg[Idris2 CI,link=https://github.com/JoshuaJewell/paint-type/actions/workflows/idris-ci.yml]
+image:https://github.com/JoshuaJewell/paint-type/actions/workflows/e2e.yml/badge.svg[E2E,link=https://github.com/JoshuaJewell/paint-type/actions/workflows/e2e.yml]
+image:https://github.com/JoshuaJewell/paint-type/actions/workflows/coverage.yml/badge.svg[Coverage,link=https://github.com/JoshuaJewell/paint-type/actions/workflows/coverage.yml]
+image:https://img.shields.io/badge/docs-CC--BY--SA--4.0-blue[Docs: CC-BY-SA-4.0,link=https://creativecommons.org/licenses/by-sa/4.0/]
+image:https://img.shields.io/badge/Idris-Inside-5E5086?logo=idris&logoColor=white[Idris Inside,link=https://www.idris-lang.org]
+image:https://img.shields.io/badge/RSR-Bronze-cd7f32[RSR Standard,link=https://github.com/hyperpolymath/standards]
+image:https://api.securityscorecards.dev/projects/github.com/JoshuaJewell/paint-type/badge[OpenSSF Scorecard,link=https://securityscorecards.dev/viewer/?uri=github.com/JoshuaJewell/paint-type]
+
+TIP: For quick project orientation, see the link:https://github.com/JoshuaJewell/paint-type/wiki[Project Wiki].
+
+[TIP]
+====
+**Working with an AI? Point it here.** Tell any capable LLM: +
+[.text-center]
+`Read github.com/JoshuaJewell/paint-type, warm up, and tell me where paint.type is at — I want to try / develop / contribute.` +
+It reads link:0-AI-MANIFEST.a2ml[`0-AI-MANIFEST.a2ml`] (the read-first router), loads the right warm-up, and reports the real status, limits, and next unblocked task. <<ai-start,Details below>>.
+====
+
+---
+
+[[ai-start]]
+== Start with an AI (recommended)
+
+paint.type is built to be **AI-legible**. A single read-first manifest routes any
+LLM to a fast, machine-readable picture of where the project is, what works, what
+doesn't, and how to help — so you (or your AI) don't have to read this whole README.
+
+=== Just say it
+
+Point your AI at the repo and state your intent:
+
+[source,text]
+----
+Read github.com/JoshuaJewell/paint-type, warm up via 0-AI-MANIFEST.a2ml,
+and tell me the current status, limitations, and how I can help.
+I want to:  try it  |  develop it  |  contribute a plugin  |  just understand it
+----
+
+Once it has the repo, shorter forms work:
+
+* "Warm up on paint.type and give me the current status."
+* "I want to develop paint.type — what's the next unblocked task?"
+* "What can I contribute right now, and what's off-limits?"
+
+=== What the AI reads (the a2ml-fast on-ramp)
+
+You never hard-code a path: read-first manifest in, everything else routed out. It
+is machine-readable (a2ml / contractiles / 6a2), so an AI orients in seconds.
+
+[cols="1,2",options="header"]
+|===
+| Entry point | What it gives the AI
+
+| link:0-AI-MANIFEST.a2ml[`0-AI-MANIFEST.a2ml`]
+| **Read first.** Routes to everything below + "what's already done — do not redo".
+
+| `llm-warmup-{user,dev}.adoc` (maintainer warm-up coming)
+| The right warm-up for *you* — user, developer, or platform maintainer.
+
+| `.machine_readable/6a2/STATE.a2ml` (+ ECOSYSTEM / META / PLAYBOOK / AGENTIC / NEUROSYM)
+| Live status, integrations, architecture decisions, the playbook — not the prose below.
+
+| `.machine_readable/contractiles/` (Intent · Must · Trust · Adjust, + Dust · Bust)
+| Rules of engagement: what to keep, what's banned, what's deprecated, how to fail safely.
+
+| link:PROOF-STATUS.adoc[`PROOF-STATUS.adoc`] · link:READINESS.adoc[`READINESS.adoc`]
+| What's formally proven (currently 11/16) and the component-readiness grade.
+
+| link:DEPENDENCY-SCHEDULER.adoc[`DEPENDENCY-SCHEDULER.adoc`]
+| The estate dependencies + the prioritized make-great work + standing items.
+
+| link:CONTRIBUTING.md[`CONTRIBUTING`] · `CODE_OF_CONDUCT`
+| How to contribute; licence rules (code AGPL-3.0-or-later, docs CC-BY-SA-4.0).
+|===
+
+[NOTE]
+Current reality, one line (the AI will give you the live version from `STATE.a2ml`):
+**pre-alpha, v0.2.0 closing — a formally-verified image core (11 compositing ops,
+persistent undo graph, layers, brush engine, proven ABI + four soundness proofs),
+with the first runnable Gossamer desktop shell next (v0.3.0).**
 
 ---
 
@@ -34,7 +115,9 @@ This is not a GIMP. It is not a Krita. It is not a Photoshop. It is the tool Pai
 
 == Status
 
-Starting. The architecture is defined, the ecosystem it sits in is battle-tested, and the first lines of real code are being written now.
+Pre-alpha. v0.1.0 Foundation (tile primitive, Idris2 ABI, Zig FFI, Rust Ephapax skeleton, CI/CD) closed. v0.2.0 Core Image Operations is closing: compositing primitives (11 ops — Porter-Duff `over` + masked blend + flatten + lerp/multiply/screen/in/out/atop/xor), persistent UndoGraph, basic Layer model, brush engine (BrushTip + Brush::stamp + Stroke), and pt_layer_* cross-language FFI all landed; ABI category fully proven (ABI-1..5 done) + TP-1/TP-3; cargo test 98/98 + 1 doctest, zig 29/29, 7/7 aspect tests, E2E + fuzz + coverage CI all green. Only remaining v0.2.0 work is the AffineScript → typed-wasm bridge, gated on `hyperpolymath/typed-wasm#127` + `#130` (paint-type#39 tracks it; draft `.twasm` schemas at `src/bridges/`).
+
+The first runnable application is v0.3.0 (Gossamer shell), still ahead.
 
 If you are a Paint.NET user who has ever wanted this to exist on Linux, or wanted to share a plugin without posting a forum thread, or wanted to paint with someone else in real time — this is the right moment to show up.
 
@@ -79,82 +162,36 @@ The scope contract is: capable enough for real work, simple enough to reach for 
 
 == Architecture
 
-paint.type is universally cross-platform from moment one. Every architectural decision is constrained by ADR-0002 (link:docs/decisions/0002-foundation-cross-platform.adoc[Foundation — Universal Cross-Platform, Unified Backend/Kernel Surface]).
-
-=== The four-language stack
+paint.type is built on the https://github.com/hyperpolymath[hyperpolymath] ecosystem:
 
 [cols="1,3"]
 |===
-| Layer | Choice
+| Layer | Technology
 
-| Application language
-| **AffineScript** (https://github.com/hyperpolymath/affinescript[hyperpolymath/affinescript]) — algebraic effects separate latency-critical brush traffic from throughput-oriented tile delivery; affine types keep buffer ownership honest.
+| Desktop shell
+| https://github.com/hyperpolymath/gossamer[Gossamer] — linearly-typed webview shell, provable resource safety, compile-time IPC type safety
 
-| Abstract operation surface + proofs
-| **Idris2** — defines the `Backend` interface, the capability descriptor, dispatch totality proofs, and cross-language layout proofs. Proofs live here and nowhere else.
+| UI frontend
+| Web (HTML/CSS/JS) hosted in Gossamer — layer panel, tool chrome, inspector panels, plugin UI
 
-| Kernel / FFI layer
-| **Zig** — every concrete backend is a Zig module that implements the Idris2-defined C ABI. CUDA, ROCm, Metal, Vulkan, WebGPU, NEON, AVX-512, RVV, FPGA toolchains, audio servers, async I/O, network — all cross into native code here, and only here.
+| Native image core
+| https://github.com/hyperpolymath/ephapax[Ephapax] — linear types with region-based allocation; tile ownership, compositing pipeline, brush engine, undo graph, codecs
 
-| Unified API surface
-| **Zig** — one `paint_api` server exposes the same operation surface over REST, GraphQL, gRPC, Server-Sent Events, and Bebop. Adding a wire protocol is one adapter, not one operation set.
+| Bridge language
+| https://github.com/hyperpolymath/affinescript[AffineScript] — algebraic effects for the IPC traffic classes; latency-critical brush commands separated from throughput-oriented tile delivery
 
-| Portable compilation target
-| **typed-wasm** (https://github.com/hyperpolymath/typed-wasm[hyperpolymath/typed-wasm]) — the AffineScript application compiles to a typed-wasm module; backends register as imports verified at the module boundary.
+| Cross-language boundary
+| https://github.com/hyperpolymath/typed-wasm[typed-wasm] — multi-module type safety at the AffineScript/Ephapax boundary; shared region schemas verified at compile time, no bitmap copies across the bridge
 
-| Canonical distribution artifact
-| **OCI multi-arch container** — the buildable, runnable, testable unit from day one. Native binaries are extracted from the container, not parallel build paths.
+| Collaboration
+| https://github.com/hyperpolymath/burble[Burble] — sub-10ms WebRTC voice, embeddable client, session presence model
+
+| Service discovery
+| https://github.com/hyperpolymath/groove-browser-harness[Groove] — automatic localhost service discovery; paint.type and Burble find each other without configuration
+
 |===
 
-=== The unified backend/kernel surface
-
-The pattern is taken from https://github.com/hyperpolymath/Axiom.jl[Axiom.jl]: **one abstract operation surface, many concrete backends, capability-driven dispatch, transparent fallback**. Kernel classes (DSP, FPGA, audio, math, GPU, physics, crypto, I/O, vector, tensor) are not directories — they are *capability flags* on a backend. A single backend (`AppleSiliconBackend`, say) reports the kernel classes it can serve and at what precision.
-
-The dispatcher picks the best backend per operation. The reference `CpuBackend` is always available and always correct; accelerated backends are loaded only where the underlying capability is present, and the dispatcher transparently falls back to the reference path if an accelerator does not implement a specific operation.
-
-=== Hardware support
-
-[cols="1,3"]
-|===
-| Capability | Backends (illustrative; this set grows, never shrinks)
-
-| Compositing / GPU
-| CUDA, ROCm, Metal, Vulkan, WebGPU, WebGL2, OpenGL 4.1, D3D12, Level Zero
-| Tensor / NPU
-| Apple ANE, Qualcomm Hexagon, Intel NPU, Rockchip NPU, NVIDIA TensorRT, AMD MIGraphX, Core ML, ONNX Runtime
-| Vector / SIMD
-| AVX2 / AVX-512, NEON / SVE / SME, RVV, VSX, Wasm SIMD128
-| DSP / Audio
-| ALSA / PipeWire / JACK, CoreAudio / AudioUnit, WASAPI, Oboe (Android)
-| FPGA
-| Xilinx OpenCL, Intel oneAPI FPGA, OpenFPGA
-| Physics
-| Bullet (CPU SIMD), PhysX, Jolt, WebGPU compute
-| Crypto cores
-| AES-NI, ArmCE, RVV-VK, Intel QAT, Apple SEP, TPM
-| Async I/O
-| io_uring, kqueue, IOCP, WASI, epoll
-| Network
-| QUIC, WebTransport, TCP, UDP, WebRTC (via Burble), mDNS / Bonjour
-| Display
-| Wayland, X11, DRM/KMS, CoreGraphics, DXGI, Android Surface, Metal Layer, WebGPU Canvas
-| Printer / plotter
-| CUPS, IPP Everywhere, HPGL, ESC/POS, PCL, PostScript, Windows Print
-| Input
-| libinput, evdev, Wacom / tablet pen, HID, MIDI, OSC
-|===
-
-Topology awareness — NUMA, P/E cores, VRAM, unified memory, PCIe / NVLink / Infinity Fabric / UMA, CXL persistent memory, network reachability cost — is part of the capability report and informs tile placement, batch sizing, and offload decisions.
-
-=== Cross-platform targets
-
-Operating systems::
-Linux (every distribution — glibc, musl, Bionic), macOS, Windows, Android, iOS / iPadOS, FreeBSD, OpenBSD, NetBSD, DragonFly BSD, MINIX 3, Illumos / SmartOS, Haiku (best-effort), browsers (via typed-wasm), bare-metal RISC-V via typed-wasm.
-
-Architectures::
-x86_64, aarch64, armv7, riscv64, riscv32, ppc64le, wasm32, wasm64. Optional feature tiers: AVX2 / AVX-512 / VAES; NEON / SVE / SME / SME2 / ArmCE; RVV / Zvbb / Zvkn; VSX; Wasm SIMD128 / threads / GC.
-
-*No decision in this repository is permitted to narrow the supported-platform set.* Adding hardware support is opt-in; removing platform support requires an ADR superseding ADR-0002.
+The canvas bridge is command-in, dirty-rect-out. The native core owns the pixel buffer. The webview renders chrome. Tile data does not cross the bridge as bitmap copies — the frontend holds a typed reference into the native core's tile region, verified at compile time by typed-wasm.
 
 ---
 
@@ -162,10 +199,7 @@ x86_64, aarch64, armv7, riscv64, riscv32, ppc64le, wasm32, wasm64. Optional feat
 
 paint.type is part of the https://github.com/hyperpolymath[hyperpolymath / palimpsest] ecosystem, a set of projects built around correctness-by-construction: Gossamer, Ephapax, AffineScript, typed-wasm, Burble, Groove, BoJ. Each project is independently useful. Together they make paint.type possible without rebuilding foundational infrastructure from scratch.
 
-Licensing across the boundary:
-
-* **paint.type itself** (this repository) — GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later). Network-deployed instances must offer corresponding source to their users.
-* **hyperpolymath ecosystem components** (Gossamer, Ephapax, AffineScript, typed-wasm, Burble, Groove, BoJ) — Mozilla Public License 2.0 (MPL-2.0). Linking and combination with this work is governed by MPL-2.0 §3.3 secondary-licence compatibility together with AGPL §13.
+License across the ecosystem: PMPL-1.0-or-later. See https://github.com/hyperpolymath/palimpsest-license[PMPL-1.0].
 
 ---
 
@@ -215,6 +249,87 @@ Licensing across the boundary:
 
 ---
 
+== Language + seam compliance
+
+paint-type adheres to a strict per-tier language policy. The mapping is load-bearing — every tier picks the language that gives the tier its safety property.
+
+[cols="1,1,2"]
+|===
+| Tier | Language | Why this language
+
+| Application + image core
+| Rust
+| Linear types via `!Copy + !Clone` `Tile`; no aliased mutable access; cargo-fuzz for FFI surface
+
+| FFI bridge
+| Zig (FFI directory only)
+| C ABI compatibility without C foot-guns; libpt is pure Zig, Rust links via `extern "C"`
+
+| ABI definitions + proofs
+| Idris2
+| Dependent types prove pointer non-nullability, layout correctness, ABI compliance
+
+| UI bridge schemas
+| AffineScript → typed-wasm
+| Algebraic effects separate latency-critical brush commands from throughput-oriented tile delivery; multi-module type safety across the IPC boundary
+
+| Build orchestration
+| `just` + bash
+| Recipe-based, no Python, no `make`
+
+| Container runtime
+| podman + Chainguard Wolfi
+| Rootless containers; ML-DSA-87 signed
+|===
+
+Forbidden in the source tree (enforced by `BUST.contractile` reintroduction guards):
+
+* Hand-authored JavaScript (must come from AffineScript codegen)
+* TypeScript / ReScript (use AffineScript)
+* Python (use Rust or shell)
+* C / C++ / `.h` / `.hpp` (use Zig)
+* Zig outside the FFI directories (use Rust)
+
+Package manager preference for any npm-style need: **Deno first, Bun second, pnpm third, Yarn fourth — npm only as a last resort.**
+
+---
+
+== Seams
+
+paint-type has four named seams. Each has a typed contract:
+
+[cols="1,3"]
+|===
+| Seam | Contract
+
+| Internal: `paint_core` ↔ `libpt`
+| Rust `extern "C"` declarations in `src/paint_core/src/lib.rs` mirror Zig `pub export fn` in `src/interface/ffi/src/main.zig`. ABI-compatibility proven in `src/interface/Abi/Foreign.idr`.
+
+| Internal: `host` ↔ `paint_core`
+| Pure Rust calls through `host_core::dispatch::dispatch`; shared `Document` behind `Arc<Mutex<_>>` for the Gossamer command thread.
+
+| External: Gossamer shell ↔ webview
+| JSON-encoded `Command` / `Response` via `window.__gossamer_invoke("dispatch", ...)`. CSP-locked to own origin + inline UI script.
+
+| External: paint-type ↔ Burble / Groove
+| Service discovery via `.well-known/groove/manifest.json`; collaboration via Burble WebRTC (CRDT tile mutations).
+|===
+
+The proximal seams (within paint-type) are size-checked, layout-proven, and panic-attack-scanned. The distal seams (to ecosystem peers) are protocol-versioned and version-guarded — see `DUST-ABI-0001` for the recovery path on libpt ABI mismatch.
+
+---
+
+== Quick links
+
+* https://github.com/JoshuaJewell/paint-type/wiki[Wiki Home] — single-page routing hub pointing at the in-repo source of truth
+* link:EXPLAINME.adoc[EXPLAINME.adoc] — repository structure guide
+* link:TOPOLOGY.adoc[TOPOLOGY.adoc] — component architecture
+* link:ROADMAP.adoc[ROADMAP.adoc] — milestone plan
+* link:PROOF-STATUS.adoc[PROOF-STATUS.adoc] / link:TEST-NEEDS.adoc[TEST-NEEDS.adoc] — proof + test coverage status
+* link:QUICKSTART-DEV.adoc[QUICKSTART-DEV] / link:QUICKSTART-USER.adoc[QUICKSTART-USER] / link:QUICKSTART-MAINTAINER.adoc[QUICKSTART-MAINTAINER]
+
+---
+
 [#contributing]
 == Contributing
 
@@ -230,11 +345,16 @@ Open an issue, start a discussion, or reach out directly.
 
 == License
 
-paint.type is licensed under the **GNU Affero General Public License, version 3 or any later version** (AGPL-3.0-or-later). See link:LICENSE[LICENSE].
+AGPL-3.0-or-later — see link:LICENSE[LICENSE]
 
-The AGPL was chosen deliberately. paint.type is built for collaborative editing — sessions run between peers, sometimes mediated by a server. AGPL §13 ensures that anyone interacting with a paint.type instance over a network has the right to the corresponding source. Forks that fix bugs, add features, or host paint.type as a service must remain open under the same licence.
+[NOTE]
+====
+This project's author advocates for PMPL-2.0-or-later (Palimpsest License v2) as a
+cultural/ethical licensing philosophy. However, **AGPL-3.0-or-later is the
+actual license** of this repository. PMPL is documented in link:LICENSE[LICENSE]
+for informational purposes only.
+====
 
-The hyperpolymath ecosystem components this project depends on (Gossamer, Ephapax, AffineScript, typed-wasm, Burble, Groove) are distributed under **MPL-2.0**. AGPL §13 and MPL-2.0 §3.3 together permit the combined work to be conveyed, provided the AGPL portion is offered as source.
 
 ---
 

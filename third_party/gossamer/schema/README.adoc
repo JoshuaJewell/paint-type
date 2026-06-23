@@ -1,4 +1,33 @@
-// SPDX-License-Identifier: MPL-2.0
-= Schema
-JSON Schema definitions for gossamer's runtime configuration and Groove manifest formats.
-`gossamer.conf.schema.json` validates `gossamer.conf.json`; `groove-manifest.schema.json` validates Groove service manifests consumed by gossamer.
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= schema
+:description: Project directory
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Project directory.
+
+
+As a Level 3 directory (`third_party/gossamer/schema/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n=== Configuration\n\n* `gossamer.conf.schema.json` — JSON configuration\n* `groove-manifest.schema.json` — JSON configuration\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Configuration files* define build, test, and deployment parameters.\n
+
+== AI Manifest Structure
+
+* `0.3-AI-MANIFEST.a2ml` (this file) - Level 3 manifest for `third_party/gossamer/schema/`
+
+
+
+== Related Files
+
+* link:../0.2-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

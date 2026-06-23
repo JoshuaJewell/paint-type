@@ -98,7 +98,7 @@ root_hosting_files = [
 
 ownership_files = [
   "MAINTAINER",
-  ".github/CODEOWNERS",
+  "CODEOWNERS",
 ]
 
 machine_readable_required = [

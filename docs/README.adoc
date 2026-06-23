@@ -1,14 +1,33 @@
-= Documentation Layout
+// SPDX-License-Identifier: CC-BY-SA-4.0
 
-Primary tracks:
+= docs
+:description: Project documentation
 
-* `theory/` for formal and conceptual material
-* `practice/` for operational and implementation material
-* `maintenance/` for baseline checklists and release hard-pass runbooks
-* `whitepapers/academic/` for research-facing whitepapers
-* `whitepapers/industry/` for industry/outreach whitepapers
+This directory is part of the paint.type project.
 
-Core docs:
+== Purpose
 
-* `maintenance/MAINTENANCE-CHECKLIST.md`
-* `practice/SOFTWARE-DEVELOPMENT-APPROACH.adoc`
+Project documentation.
+
+
+As a Level 1 directory (`docs/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n== Subdirectories\n\n[cols="1,2", options="header"]\n|===\n| Directory | Purpose\n| `practice/` | |\n| `standards/` | |\n| `legal/` | |\n| `attribution/` | |\n| `whitepapers/` | |\n| `theory/` | |\n| `reports/` | |\n| `decisions/` | |\n| `superpowers/` | |\n| `wikis/` | |\n| `templates/` | |\n| `developer/` | |\n| `architecture/` | |\n| `governance/` | |\n| `wiki/` | |\n|===\n\n=== Documentation\n\n* `STATE-VISUALIZER.adoc` — AsciiDoc documentation\n* `QUICKSTART.adoc` — AsciiDoc documentation\n* `RSR_OUTLINE.adoc` — AsciiDoc documentation\n* `tech-debt-2026-05-26.md` — Markdown documentation\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Documentation files* provide guidance.\n
+
+== AI Manifest Structure
+
+* `0.1-AI-MANIFEST.a2ml` (this file) - Level 1 manifest for `docs/`
+
+* Each subdirectory has its own `0.2-AI-MANIFEST.a2ml`
+
+== Related Files
+
+* link:../0-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

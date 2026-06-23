@@ -1,10 +1,25 @@
 ;; SPDX-License-Identifier: AGPL-3.0-or-later
 ;; Architecture decisions and development practices
+;; Last updated: 2026-06-01
 (meta
   (version "1.0.0")
-  (project "paint-type")
-  (architecture-decisions)
+  (project "paint.type"))
+  (architecture-decisions
+    ("ADR-0001 — Adopt Rhodium Standard Repository (RSR) template (`docs/decisions/0001-adopt-rsr-standard.adoc`)")
+    ("Idris2 for ABI definitions — dependent types prove pointer non-nullability, layout correctness, FFI safety")
+    ("Zig for FFI bridge — zero-cost C ABI, no hidden allocations, no GC pauses")
+    ("Rust with linear types for Ephapax — no aliased mutable tile access (Tile is !Copy + !Clone)")
+    ("Gossamer as desktop shell — linearly-typed webview, not Electron or native widgets")
+    ("AffineScript → typed-wasm for the bridge layer — generated from Idris2 ABI declarations (draft `.twasm` at `src/bridges/`, paint-type#39)")
+    ("RGBA16F tile format, 64x64 tiles — HDR-capable, GPU-friendly, no lossy conversion")
+    ("CRDT-compatible tile merging for collaboration — no last-write-wins")
+    ("Plugin code never touches Ephapax directly — always through the typed-wasm API surface"))
   (development-practices
     (code-review "required")
     (branch-protection "enabled")
-    (ci-cd "github-actions")))
+    (ci-cd "github-actions")
+    (rust-ci "GREEN on main since 2026-06-01")
+    (proof-ci "idris-ci.yml: idris2 --check on ABI + verification proofs")
+    (coverage "coverage.yml: cargo-llvm-cov LCOV (Rust) + kcov best-effort (Zig); reporting only, no gate")
+    (fuzz "fuzz-smoke.yml: 3 cargo-fuzz targets, 30 s smoke per target")
+    (e2e "e2e.yml: 9-stage pipeline orchestrator")))

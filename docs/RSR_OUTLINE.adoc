@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 = paint-type Repository Outline
 :toc:
 :sectnums:
@@ -9,7 +9,7 @@ paint-type is a cross-platform open-source image editor in the spirit of Paint.N
 This document provides a high-level outline of the repository structure for quick
 orientation.
 
-For detailed architecture, see link:../TOPOLOGY.md[TOPOLOGY.md].
+For detailed architecture, see link:../TOPOLOGY.adoc[TOPOLOGY.adoc].
 For the full directory guide, see link:../EXPLAINME.adoc[EXPLAINME.adoc].
 
 == Source Code (`src/`)
@@ -18,7 +18,7 @@ For the full directory guide, see link:../EXPLAINME.adoc[EXPLAINME.adoc].
 |===
 | Directory | Contents
 
-| `src/ephapax/`
+| `src/paint_core/`
 | Rust image core — RGBA16F tile engine, compositing, undo graph (linear types)
 
 | `src/interface/Abi/`
@@ -62,19 +62,19 @@ For the full directory guide, see link:../EXPLAINME.adoc[EXPLAINME.adoc].
 | `AUDIT.adoc`
 | Root audit gate — hard rules governing releases
 
-| `READINESS.md`
+| `READINESS.adoc`
 | CRG assessment — current Grade D
 
 | `TEMPLATE-STANDARDS-AUDIT.adoc`
 | Standards compliance audit
 
-| `PROOF-NEEDS.md`
+| `PROOF-NEEDS.adoc`
 | What formal proofs are required
 
-| `PROOF-STATUS.md`
+| `PROOF-STATUS.adoc`
 | Current proof completion (25% — ABI bridge done)
 
-| `TEST-NEEDS.md`
+| `TEST-NEEDS.adoc`
 | Test landscape and coverage gaps
 |===
 
@@ -111,7 +111,7 @@ For the full directory guide, see link:../EXPLAINME.adoc[EXPLAINME.adoc].
 
 == License
 
-SPDX-License-Identifier: AGPL-3.0-or-later
+SPDX-License-Identifier: CC-BY-SA-4.0
 
 See `LICENSE`, `docs/legal/EXHIBIT-A-ETHICAL-USE.txt`, and
 `docs/legal/EXHIBIT-B-QUANTUM-SAFE.txt` for full terms.
