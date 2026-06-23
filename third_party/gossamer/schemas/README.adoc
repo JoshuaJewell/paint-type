@@ -1,4 +1,33 @@
-// SPDX-License-Identifier: MPL-2.0
-= Schemas
-CUE-language schema definitions used to validate and type-check gossamer's Nickel configurations.
-`config.cue` is the canonical CUE schema; it cross-validates with `configs/config.ncl` to ensure both schema languages agree on the configuration surface.
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= schemas
+:description: Project directory
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Project directory.
+
+
+As a Level 3 directory (`third_party/gossamer/schemas/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n=== Other Files\n\n* `config.cue` — config configuration or data\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Other files* support directory operations.\n
+
+== AI Manifest Structure
+
+* `0.3-AI-MANIFEST.a2ml` (this file) - Level 3 manifest for `third_party/gossamer/schemas/`
+
+
+
+== Related Files
+
+* link:../0.2-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

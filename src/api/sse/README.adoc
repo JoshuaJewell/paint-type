@@ -1,0 +1,7 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Server-Sent Events adapter
+
+A simple one-way stream for clients that prefer EventSource over WebSocket.
+
+* Event types (`canvas.tile.updated`, `session.peer.joined`, `capability.changed`, …) are generated from `Abstract.idr`.
+* Resumable streams via `Last-Event-ID`.

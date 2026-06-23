@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #
 # Repository settings for probot/settings GitHub App.
 # https://github.com/probot/settings
@@ -112,11 +112,14 @@ branches:
         required_approving_review_count: 1
         dismiss_stale_reviews: true
         require_code_owner_reviews: true
+        require_last_push_approval: true
+        required_review_thread_resolution: true
       required_status_checks:
         strict: true
         contexts:
-          - "hypatia-scan"
-          - "codeql"
+          - "Cargo check + clippy + fmt"
+          - "Cargo test"
+          - "analyze (javascript-typescript, none)"
           - "openssf-compliance"
       enforce_admins: true
       required_signatures: true

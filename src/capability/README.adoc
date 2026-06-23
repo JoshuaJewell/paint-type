@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Runtime capability + topology detection
+
+Probes the host at startup and on hot-plug events. Produces a structured `capability_report` consumed by the dispatcher and exposed via the unified API surface.
+
+== What is detected
+
+* **CPU**: vendor, family, microarchitecture, hyperthreads, P/E core mix, cache sizes, supported ISA extensions (AVX2 / AVX-512F / VBMI / VBMI2 / VAES; NEON / SVE / SVE2 / SME / SME2; RVV with Zvbb / Zvkn; VSX).
+* **Memory**: total system RAM, NUMA topology, huge-page availability, CXL persistent-memory tiers.
+* **Accelerators**: GPU devices and VRAM (CUDA / ROCm / Metal / Vulkan / WebGPU); NPU / tensor cores (ANE / Hexagon / Intel NPU / Rockchip NPU); FPGA fabric; audio DSPs; physics co-processors; crypto cores.
+* **Peripherals**: display surfaces with colour-space / HDR / refresh-rate metadata; input devices including tablet pen pressure / tilt; printers (CUPS / IPP / driver discovery); plotters (USB-serial enumeration); MIDI / OSC endpoints.
+* **Network**: reachable transports (QUIC / WebTransport / TCP / UDP), discovered peers via Groove, reachability cost vector.
+
+== Hot-plug
+
+The probe subscribes to OS hot-plug events (udev / IOKit / WM_DEVICECHANGE / Wayland output / capability negotiation) and emits change events to the dispatcher and through the API as `capability.changed`.
+
+== Output shape
+
+`capability_report` is defined in `src/backends/Abstract.idr` as a structured Idris2 value with totality guarantees on field presence. The schema is exposed through every API adapter.

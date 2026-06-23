@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= benches
+:description: Test suites and validation
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Test suites and validation.
+
+
+As a Level 1 directory (`benches/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n=== Configuration\n\n* `template_bench.sh` — Shell script\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Configuration files* define build, test, and deployment parameters.\n
+
+== AI Manifest Structure
+
+* `0.1-AI-MANIFEST.a2ml` (this file) - Level 1 manifest for `benches/`
+
+
+
+== Related Files
+
+* link:../0-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

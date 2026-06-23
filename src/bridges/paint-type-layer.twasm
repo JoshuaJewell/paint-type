@@ -4,8 +4,8 @@
 // paint-type-layer.twasm — typed-wasm schema for paint-type's layer
 // metadata stack.
 //
-// STATUS (2026-06-01): DRAFT — same gate as paint-type-tile.twasm.
-// Cannot yet be compiled by `tw build`; tracked under paint-type#39 /
+// STATUS (2026-06-07): DRAFT — same status as paint-type-tile.twasm.
+// Compiles with `tw build` via hardcoded IR; tracked under paint-type#39 /
 // hyperpolymath/typed-wasm#127.
 //
 // Surface mirrored (see src/interface/ffi/src/main.zig in this repo):

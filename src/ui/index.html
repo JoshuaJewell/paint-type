@@ -14,6 +14,7 @@
   #status { font-size: 11px; color: #888; min-height: 14px; }
   .size-row { display: flex; align-items: center; gap: 8px; }
   #size-val { font-variant-numeric: tabular-nums; min-width: 42px; }
+  #hardness-val { font-variant-numeric: tabular-nums; min-width: 42px; }
   #brush-preview { width: 72px; height: 72px; display: grid; place-items: center; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; }
   #brush-dot { border-radius: 50%; }
 </style>
@@ -28,9 +29,16 @@
         <output id="size-val">16 px</output>
       </span>
     </label>
+    <label>Hardness
+      <span class="size-row">
+        <input id="hardness" type="range" min="0" max="100" value="0">
+        <output id="hardness-val">0%</output>
+      </span>
+    </label>
     <label>Preview
       <span id="brush-preview"><span id="brush-dot"></span></span>
     </label>
+    <button id="open-btn">Open PNG</button>
     <button id="save">Save PNG...</button>
     <div id="status">Starting...</div>
   </div>
@@ -44,6 +52,8 @@
   const colourEl = document.getElementById("colour");
   const sizeEl = document.getElementById("size");
   const sizeVal = document.getElementById("size-val");
+  const hardnessEl = document.getElementById("hardness");
+  const hardnessVal = document.getElementById("hardness-val");
   const dot = document.getElementById("brush-dot");
   const DOC_W = canvas.width, DOC_H = canvas.height;
 
@@ -63,15 +73,23 @@
     };
   }
 
-  // Show what the current brush actually looks like: a soft disc of the
-  // chosen diameter in the chosen colour, so size is legible before painting.
+  // Show what the current brush actually looks like: a disc of the chosen
+  // diameter and colour, with feathering that mirrors the hardness setting.
   function updatePreview() {
     const d = Number(sizeEl.value);
+    const h = Number(hardnessEl.value);
     sizeVal.textContent = d + " px";
+    hardnessVal.textContent = h + "%";
     dot.style.width = d + "px";
     dot.style.height = d + "px";
-    dot.style.background = "radial-gradient(circle, " + colourEl.value + " 0%, " +
-      colourEl.value + " 35%, transparent 70%)";
+    // Hard (>= 50): sharp two-stop disc; soft (< 50): Gaussian-style falloff.
+    const col = colourEl.value;
+    if (h >= 50) {
+      dot.style.background = "radial-gradient(circle closest-side, " + col + " 50%, transparent 50%)";
+    } else {
+      dot.style.background = "radial-gradient(circle, " + col + " 0%, " +
+        col + " 35%, transparent 70%)";
+    }
   }
 
   function blit(dirty) {
@@ -104,7 +122,7 @@
     await invoke({ cmd: "new_doc", w: DOC_W, h: DOC_H });
     const c = hexToRgba(colourEl.value);
     await invoke({ cmd: "set_colour", r: c.r, g: c.g, b: c.b, a: c.a });
-    await invoke({ cmd: "set_brush", diameter: Number(sizeEl.value) });
+    await invoke({ cmd: "set_brush", diameter: Number(sizeEl.value), hardness: Number(hardnessEl.value) / 100 });
     status.textContent = "Ready - drag on the canvas to paint.";
   }
 
@@ -115,7 +133,11 @@
   });
   sizeEl.addEventListener("input", () => {
     updatePreview();
-    invoke({ cmd: "set_brush", diameter: Number(sizeEl.value) }).catch(() => {});
+    invoke({ cmd: "set_brush", diameter: Number(sizeEl.value), hardness: Number(hardnessEl.value) / 100 }).catch(() => {});
+  });
+  hardnessEl.addEventListener("input", () => {
+    updatePreview();
+    invoke({ cmd: "set_brush", diameter: Number(sizeEl.value), hardness: Number(hardnessEl.value) / 100 }).catch(() => {});
   });
 
   // Coalesce pointer moves: keep only the latest position and run at most one
@@ -162,6 +184,27 @@
       drainMoves();
     }
     try { await invoke({ cmd: "pointer_up" }); } catch (e) { /* ignore */ }
+  });
+
+  document.getElementById("open-btn").addEventListener("click", async () => {
+    if (!bridgeReady()) { status.textContent = "Cannot open - bridge unavailable."; return; }
+    let path;
+    if (typeof window.__gossamer_dialog_open === "function") {
+      path = await window.__gossamer_dialog_open({ filter: "PNG files:*.png" });
+    } else {
+      path = window.prompt("PNG file path to open:");
+    }
+    if (!path) return;
+    status.textContent = "Opening...";
+    try {
+      const resp = JSON.parse(await window.__gossamer_invoke("dispatch", JSON.stringify({ cmd: "open_png", path })));
+      if (resp.dirty) {
+        blit(resp.dirty);
+      }
+      status.textContent = "Opened.";
+    } catch (e) {
+      status.textContent = "Open failed: " + e;
+    }
   });
 
   document.getElementById("save").addEventListener("click", async () => {

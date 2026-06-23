@@ -1,0 +1,166 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
+//
+// Copyright (c) 2026 Joshua Jewell (JoshuaJewell)
+// Copyright (c) 2026 Joshua Jewell (hyperpolymath)
+//
+= CI/CD Cleanup Summary for paint-type
+:description: Record of CI/CD workflow consolidations and removals
+
+== Overview
+
+This document summarizes the CI/CD cleanup performed on paint-type to remove
+redundancies and align with project standards.
+
+== Changes Made
+
+=== Removed Workflows
+
+| Workflow | Reason | Replacement |
+|----------|--------|-------------|
+| `codeql.yml` | Only configured for JS/TS, paint-type has minimal JS (1 file) | None - CodeQL removed |
+| `hypatia-scan.yml` | Duplicate Hypatia run | Consolidated into `static-analysis-gate.yml` |
+
+=== Updated Workflows
+
+| Workflow | Change | Reason |
+|----------|--------|--------|
+| `secret-scanner.yml` | Removed TruffleHog job, kept Gitleaks + Rust patterns | User preference: use Gitleaks only |
+| `quality.yml` | Removed TruffleHog step | User preference: use Gitleaks only |
+
+=== New Documentation
+
+| File | Purpose |
+|------|---------|
+| `CONTAINER-GUIDE.adoc` | Explains relationship between `.devcontainer/Containerfile` and root `Containerfile` |
+| `.devcontainer/README.adoc` | Updated with development vs production clarification |
+| `.devcontainer/Containerfile` | Added note about relationship with root Containerfile |
+| `Containerfile` (root) | Added note about relationship with .devcontainer |
+
+== Rationale
+
+=== CodeQL Removal
+
+**Issue:** codeql.yml was configured to scan for `javascript-typescript` only, but:
+* paint-type has only 1 JavaScript file (`src/ui/app.js`)
+* paint-type has 21 Rust files that were not being scanned
+* User preference is to not use CodeQL when there's minimal JS
+
+**Impact:**
+* Faster CI runs (one less workflow)
+* Less resource usage
+* Cleaner workflow list
+
+**Note:** Other workflows (`scorecard.yml`, `scorecard-enforcer.yml`) use the
+`codeql-action/upload-sarif` action for SARIF upload only, not for CodeQL analysis.
+These are kept as they serve a different purpose.
+
+=== Hypatia Consolidation
+
+**Issue:** Two workflows running Hypatia:
+* `hypatia-scan.yml` - Standalone Hypatia scan with PR comments
+* `static-analysis-gate.yml` - Hypatia + panic-attack + patch-bridge with unified reporting
+
+**Solution:** Removed `hypatia-scan.yml` and kept `static-analysis-gate.yml` which:
+* Runs multiple security tools in one workflow
+* Combines findings into unified report
+* Deposits findings to gitbot-fleet
+* Is more comprehensive
+
+**Trade-off:** `static-analysis-gate.yml` doesn't post PR comments for individual
+Hypatia findings. This functionality could be added if needed.
+
+=== Secret Scanning Standardization
+
+**Issue:** Three tools scanning for secrets:
+* TruffleHog in `secret-scanner.yml`
+* Gitleaks in `secret-scanner.yml`
+* TruffleHog in `quality.yml`
+
+**Solution:** 
+* Standardized on Gitleaks (user preference)
+* Kept Rust-specific pattern scanning in `secret-scanner.yml`
+* Removed all TruffleHog runs
+
+**Impact:**
+* Consistent secret scanning approach
+* Reduced redundancy
+* Clearer security posture
+
+== Remaining Workflows
+
+[source]
+----
+boj-build.yml              # Build workflow
+coverage.yml              # Code coverage
+dogfood-gate.yml          # Dogfood testing
+e2e.yml                  # End-to-end tests
+fuzz-smoke.yml           # Fuzz testing smoke tests
+Guix-nix-policy.yml      # Guix/Nix policy enforcement
+host.yml                 # Host-related checks
+idris-ci.yml             # Idris2 CI
+instant-sync.yml         # Instant sync checks
+mirror.yml               # Mirror workflow
+npm-bun-blocker.yml      # Block npm/bun usage
+openssf-compliance.yml   # OpenSSF compliance checks
+quality.yml              # Code quality (updated)
+release.yml              # Release workflow
+rhodibot.yml            # Rhodibot checks
+rsr-antipattern.yml      # RSR antipattern detection
+rust.yml                 # Rust builds
+dogfood-gate.yml         # Dogfood gate (already listed)
+scorecard-enforcer.yml   # Scorecard enforcement
+scorecard.yml            # Scorecard checks
+secret-scanner.yml       # Secret scanning (updated)
+security-policy.yml      # Security policy checks
+static-analysis-gate.yml # Static analysis (comprehensive)
+ts-blocker.yml          # TypeScript blocker
+verify-manifests.yml     # Manifest verification
+wellknown-enforcement.yml # Well-known enforcement
+workflow-linter.yml      # Workflow linting
+----
+
+== Verification
+
+To verify the changes:
+
+[source,bash]
+----
+# Check no CodeQL analysis workflows remain (only SARIF uploads)
+grep -r "codeql-action/init" .github/workflows/ || echo "No CodeQL analysis found"
+
+# Check no TruffleHog remains
+grep -r "trufflehog" .github/workflows/ || echo "No TruffleHog found"
+
+# Check only one Hypatia run remains
+grep -l "hypatia" .github/workflows/*.yml
+# Should return only: static-analysis-gate.yml
+
+# Check Gitleaks is present
+grep -l "gitleaks" .github/workflows/*.yml
+# Should return: secret-scanner.yml
+----
+
+== Future Considerations
+
+1. **Add PR Comments to static-analysis-gate.yml:** If individual scanner PR
+   comments are valuable, add them to the consolidated workflow
+
+2. **Reconfigure CodeQL for Rust:** If Rust scanning with CodeQL is desired,
+   create a new workflow configured for `cpp` (which includes Rust)
+
+3. **Workflow Organization:** Consider grouping related workflows into
+   composite actions or reusable workflows for better maintainability
+
+== Related Issues
+
+* Issue: CI/CD redundancy cleanup
+* Issue: Container configuration standardization
+* Issue: Security scanning standardization
+
+== References
+
+* link:CONTAINER-GUIDE.adoc[Container Architecture Guide]
+* link:.devcontainer/CONTAINER-GUIDE.adoc[Dev Container Documentation]
+* https://github.com/hyperpolymath/hypatia[Hypatia Scanner]
+* https://github.com/hyperpolymath/panic-attack[Panic-Attack Tool]

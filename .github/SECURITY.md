@@ -1,5 +1,23 @@
 # Security Policy
 
+<!-- 
+============================================================================
+TEMPLATE INSTRUCTIONS (delete this block before publishing)
+============================================================================
+Replace all {{PLACEHOLDER}} values with your information:
+  paint-type     - Your project name
+  JoshuaJewell            - GitHub username or org (e.g., hyperpolymath)
+  paint-type             - Repository name
+  paint-type@pm.me   - Security contact email
+  (PGP key not yet published)  - Your PGP key fingerprint (40 chars, no spaces)
+  https://github.com/JoshuaJewell.gpg      - URL to your public PGP key
+  https://github.com/JoshuaJewell/paint-type          - Your website/domain
+  2026     - Current year for copyright
+
+Optional: Remove sections that don't apply (e.g., PGP if you don't use it)
+============================================================================
+-->
+
 We take security seriously. We appreciate your efforts to responsibly disclose vulnerabilities and will make every effort to acknowledge your contributions.
 
 ## Table of Contents
@@ -367,7 +385,7 @@ When using paint-type, we recommend:
 |---------|---------|
 | **Security issues** | [Report via GitHub](https://github.com/JoshuaJewell/paint-type/security/advisories/new) or paint-type@pm.me |
 | **General questions** | [GitHub Discussions](https://github.com/JoshuaJewell/paint-type/discussions) |
-| **Other enquiries** | See [README](README.md) for contact information |
+| **Other enquiries** | See [README](../README.adoc) for contact information |
 
 ---
 

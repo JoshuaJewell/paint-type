@@ -1,14 +1,31 @@
-= BoJ Server Integration
-:icons: font
+// SPDX-License-Identifier: CC-BY-SA-4.0
 
-This unit provides a "starting hand" for integrating with the **BoJ-Server** (Box of Justice) ecosystem — a high-rigor, verified server infrastructure.
+= boj-server
+:description: Project directory
 
-== Integration Options
+This directory is part of the paint.type project.
 
-* **Core:** Use BoJ-Server as the primary verified backend for this project.
-* **Bridge:** Utilize the BoJ-Server IPC bridge for cross-boundary communication.
+== Purpose
 
-== Related Repository
+Project directory.
 
-For the full specification and source, visit:
-https://github.com/hyperpolymath/boj-server
+
+As a Level 2 directory (`features/boj-server/`), it supports the overall
+project structure.
+
+
+== Purpose of Each Component
+
+
+
+== AI Manifest Structure
+
+* `0.2-AI-MANIFEST.a2ml` (this file) - Level 2 manifest for `features/boj-server/`
+
+
+
+== Related Files
+
+* link:../0.1-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

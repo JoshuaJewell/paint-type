@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Headless end-to-end: new_doc -> stroke -> save_png, no window.
 use host_core::dispatch::dispatch;
 use host_core::document::Document;
@@ -19,7 +19,7 @@ fn headless_new_doc_stroke_save() {
         Response::Ack
     );
     dispatch(&mut doc, Command::SetColour { r: 0.0, g: 0.4, b: 1.0, a: 1.0 });
-    dispatch(&mut doc, Command::SetBrush { diameter: 24 });
+    dispatch(&mut doc, Command::SetBrush { diameter: 24, hardness: 0.0 });
     dispatch(&mut doc, Command::PointerDown { x: 30.0, y: 30.0 });
     dispatch(&mut doc, Command::PointerMove { x: 90.0, y: 90.0 });
     dispatch(&mut doc, Command::PointerUp);

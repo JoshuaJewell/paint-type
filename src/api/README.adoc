@@ -1,0 +1,27 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Unified API surface
+
+One Zig server, many wire-protocol adapters. The abstract operation surface defined in `src/backends/Abstract.idr` is exposed over every protocol below from a single schema — there is no per-protocol operation duplication.
+
+== Adapters
+
+* link:rest/[`rest/`] — REST + JSON
+* link:graphql/[`graphql/`] — GraphQL (HTTP + WebSocket subscriptions)
+* link:grpc/[`grpc/`] — gRPC / gRPC-Web with protobuf schemas generated from Idris2
+* link:sse/[`sse/`] — Server-Sent Events for stream-oriented operations
+* link:bebop/[`bebop/`] — Bebop binary wire format for low-overhead client integrations
+
+== Shared core
+
+link:common/[`common/`] holds:
+
+* Schema generated from `Abstract.idr` (one source of truth)
+* The Zig HTTP server (built on the io backend selected by the dispatcher)
+* Authentication, authorisation, capability scoping, rate-limiting
+* Observability hooks (OpenTelemetry export, structured logs)
+
+== Rules
+
+* Every protocol adapter is thin: parse / route / dispatch / serialise. It contains zero business logic.
+* Adding a protocol means adding an adapter directory. It does not extend the operation surface.
+* Adapters do not call backends. They call the dispatcher, which calls backends.

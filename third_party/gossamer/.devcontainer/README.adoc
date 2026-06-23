@@ -1,27 +1,34 @@
-// SPDX-License-Identifier: MPL-2.0
-= Dev Container Usage
-:author: Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+// SPDX-License-Identifier: CC-BY-SA-4.0
 
-== Overview
+= .devcontainer
+:description: Project directory
 
-This dev container uses `cgr.dev/chainguard/wolfi-base` with git, curl, bash, and just pre-installed. Dev container features add git, just, and nickel automatically.
+This directory is part of the paint.type project.
 
-== VS Code (Local)
+== Purpose
 
-. Install the *Dev Containers* extension (`ms-vscode-remote.remote-containers`).
-. Set `dev.containers.dockerPath` to `podman` in VS Code settings.
-. Open the repo folder, then choose **Reopen in Container** from the command palette.
+Project directory.
 
-== GitHub Codespaces
 
-. From the repository on GitHub, click **Code > Codespaces > New codespace**.
-. The container builds automatically from this configuration.
+As a Level 3 directory (`third_party/gossamer/.devcontainer/`), it supports the overall
+project structure.
 
-== Gitpod
+== Contents by Functional Grouping\n\n=== Configuration\n\n* `devcontainer.json` — JSON configuration\n\n=== Other Files\n\n* `Containerfile` — Container image definition\n\n
+== Purpose of Each Component
 
-. Prefix the repo URL with `https://gitpod.io/#` to launch a workspace.
-. Gitpod reads `devcontainer.json` and builds the environment.
+Each file in this directory serves a specific purpose.
 
-== Customization
+*Configuration files* define build, test, and deployment parameters.\n
+*Other files* support directory operations.\n
 
-Run `just deps` to verify the environment after first launch. Gossamer requires Zig, WebKitGTK dev headers, and the Ephapax compiler.
+== AI Manifest Structure
+
+* `0.3-AI-MANIFEST.a2ml` (this file) - Level 3 manifest for `third_party/gossamer/.devcontainer/`
+
+
+
+== Related Files
+
+* link:../0.2-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

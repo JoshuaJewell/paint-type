@@ -1,0 +1,12 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= FPGA backends
+
+Reconfigurable-fabric backends. paint.type uses FPGA blocks for streaming filter pipelines and on-the-fly codec acceleration where present.
+
+| Backend | Toolchain / API
+|---|---
+| `XilinxOpenClBackend` | Xilinx Vitis / Versal OpenCL
+| `IntelOneApiFpgaBackend` | Intel oneAPI FPGA (DPC++ → Stratix / Agilex)
+| `OpenFpgaBackend` | OpenFPGA / Yosys + nextpnr generated bitstreams
+
+FPGA bitstreams ship as part of the multi-arch container's extension layer, signed alongside the application module.

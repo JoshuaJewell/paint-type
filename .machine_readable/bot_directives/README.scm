@@ -1,4 +1,4 @@
-;; SPDX-License-Identifier: PMPL-1.0-or-later
+;; SPDX-License-Identifier: AGPL-3.0-or-later
 ;; .machine_readable/bot_directives — per-bot rules and constraints
 ;; Media-Type: application/vnd.bot-directives+scm
 

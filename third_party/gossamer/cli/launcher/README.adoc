@@ -1,229 +1,33 @@
-= Gossamer Launcher (MVP)
-:toc:
+// SPDX-License-Identifier: CC-BY-SA-4.0
 
-The launcher binary embeds wasmtime and runs a precompiled `cli.wasm`
-produced by the Ephapax toolchain. This is Phase 14a.5a: minimum viable
-host that bridges only the 5 baseline `env::*` imports. The ~80
-`gossamer_*` libgossamer bridges land in 14a.5b; full build integration
-(compile `cli.wasm` from `cli/src/Main.eph`, install alongside the
-binary, runtime discovery) lands in 14a.5c.
+= launcher
+:description: Project directory
 
-== Prerequisites
+This directory is part of the paint.type project.
 
-* Zig 0.15+ (project standard).
-* `libwasmtime` C API v44.0.1+ — install from the official release
-  bundle:
-+
-[source,sh]
-----
-curl -L https://github.com/bytecodealliance/wasmtime/releases/download/v44.0.1/wasmtime-v44.0.1-x86_64-linux-c-api.tar.xz | tar -xJ
-sudo cp -r wasmtime-v44.0.1-x86_64-linux-c-api/include/* /usr/local/include/
-sudo cp -r wasmtime-v44.0.1-x86_64-linux-c-api/lib/*     /usr/local/lib/
-sudo ldconfig
-----
-+
-Verify:
-+
-[source,sh]
-----
-test -f /usr/local/include/wasmtime.h && \
-test -f /usr/local/lib/libwasmtime.so && \
-echo "libwasmtime ready"
-----
+== Purpose
 
-* `wabt` (for compiling the test WAT to wasm):
-+
-[source,sh]
-----
-sudo dnf install wabt       # Fedora
-sudo apt-get install wabt   # Debian / Ubuntu
-----
+Project directory.
 
-== Build
 
-[source,sh]
-----
-cd cli/launcher
-zig build
-----
+As a Level 4 directory (`third_party/gossamer/cli/launcher/`), it supports the overall
+project structure.
 
-The binary lands at `cli/launcher/zig-out/bin/gossamer-launcher`.
+== Contents by Functional Grouping\n\n== Subdirectories\n\n[cols="1,2", options="header"]\n|===\n| Directory | Purpose\n| `src/` | |\n| `docs/` | |\n|===\n\n=== Source Files\n\n* `build.zig` — Zig build file\n\n
+== Purpose of Each Component
 
-== Smoke test
+Each file in this directory serves a specific purpose.
 
-[source,sh]
-----
-cd cli/launcher
-wat2wasm src/hello.wat -o hello.wasm
-./zig-out/bin/gossamer-launcher hello.wasm one two three
-----
+*Source files* implement core functionality.\n
 
-Expected output:
+== AI Manifest Structure
 
-----
-3
-onetwothree
-----
+* `0.4-AI-MANIFEST.a2ml` (this file) - Level 4 manifest for `third_party/gossamer/cli/launcher/`
 
-The leading `3` is `print_i32(argv_count())`; the three concatenated
-words come from looping over argv and calling `print_string` once per
-argument (no newline separation — the hello-world doesn't bother).
+* Each subdirectory has its own `0.5-AI-MANIFEST.a2ml`
 
-== What the launcher provides
+== Related Files
 
-[cols="1m,2,2"]
-|===
-| Import | Signature | Notes
-
-| env::print_i32
-| `(i32) -> ()`
-| Prints the integer + newline to stderr.
-
-| env::print_string
-| `(i32 ptr, i32 len) -> ()`
-| Resolves `ptr/len` against the guest's exported `memory` and prints the
-  UTF-8 bytes (no trailing newline).
-
-| env::argv_count
-| `() -> i32`
-| Number of arguments visible to the guest (argv after the launcher binary
-  and wasm path are stripped).
-
-| env::argv_arg_len
-| `(i32 idx) -> i32`
-| Byte length of `argv[idx]`, or `-1` if `idx` is out of range.
-
-| env::argv_arg_get
-| `(i32 idx, i32 buf_ptr, i32 buf_len) -> i32`
-| Copies `argv[idx]` into guest memory at `buf_ptr`. Returns bytes
-  written, or `-1` if `idx` is out of range, `buf_len` is insufficient,
-  or the buffer overflows the guest's memory.
-|===
-
-== Phase 14a.5b — libgossamer bridges (this PR)
-
-`bridges.zig` adds 29 `env::gossamer_*` host imports that trampoline guest
-wasm calls into libgossamer's native C ABI. Plus 1 `env::cap_token(kind)`
-for the guest to read pre-granted capability tokens.
-
-[cols="1m,2"]
-|===
-| Family | Symbols bridged
-
-| String-out (size-write into buffer)
-| `gossamer_version_to`, `gossamer_build_info_to`, `gossamer_last_error_to`
-
-| Webview lifecycle
-| `gossamer_create_ex`, `gossamer_navigate`, `gossamer_load_html`,
-  `gossamer_channel_open`, `gossamer_set_csp`, `gossamer_set_title`,
-  `gossamer_registry_add`, `gossamer_run`
-
-| Groove
-| `gossamer_groove_discover`, `gossamer_groove_status`
-
-| Watcher
-| `gossamer_watcher_start`, `gossamer_watcher_stop`
-
-| Shell
-| `gossamer_shell_spawn`, `gossamer_shell_kill`
-
-| Filesystem
-| `gossamer_fs_read_text`, `gossamer_fs_write_text`, `gossamer_fs_exists`,
-  `gossamer_fs_mkdir_p`, `gossamer_fs_copy_file`
-
-| Conf
-| `gossamer_conf_load`, `gossamer_conf_get_string`,
-  `gossamer_conf_get_int`, `gossamer_conf_get_bool`, `gossamer_conf_has`,
-  `gossamer_conf_free`
-
-| Capability tokens
-| `cap_token`
-|===
-
-The launcher eager-grants tokens for ResourceKind 0 (FileSystem), 1 (Network)
-and 2 (Shell) at startup via `bridges.grantCaps`. The guest reads them via
-`env::cap_token(kind)` rather than calling `gossamer_cap_grant` itself.
-Notification/Tray/Clipboard caps are deferred.
-
-The 27 IPC bridge handlers (`window_minimize`, `group_create`, `transmute`,
-etc. — `gossamer_channel_bind` callbacks today in `cli/src/main.zig`) do NOT
-bridge through wasm. They live native-side and the guest just opens the
-channel. A separate follow-up moves them into libgossamer's
-`gossamer_channel_open` so the legacy native CLI can deprecate cleanly.
-
-Additional smoke test for 14a.5b:
-
-[source,sh]
-----
-wasm-tools parse src/hello-bridges.wat -o hello-bridges.wasm
-./zig-out/bin/gossamer-launcher hello-bridges.wasm
-----
-
-Expected: libgossamer's version string (e.g. `0.3.0`) printed via the
-guest's `print_string`.
-
-== Phase 14a.5c — build integration + cli.wasm discovery (this PR)
-
-`cli/launcher/build.zig` now invokes `ephapax compile` on the
-placeholder `cli/src/Main.eph`, producing `zig-out/share/gossamer/cli.wasm`
-as part of the standard install step.
-
-The launcher discovers `cli.wasm` at runtime via a priority order:
-
-[cols="1,2"]
-|===
-| Priority | Path
-
-| 1 (override)
-| `$GOSSAMER_WASM` env var
-
-| 2 (install-prefix-relative)
-| `<exe_dir>/../share/gossamer/cli.wasm`
-
-| 3 (system fallback)
-| `/usr/local/share/gossamer/cli.wasm`
-
-| 4 (system fallback)
-| `/usr/share/gossamer/cli.wasm`
-|===
-
-Explicit `gossamer-launcher /path/to/foo.wasm` still works as before
-(MVP smoke-test workflow); argv\[1] that ends in `.wasm` is treated as
-the override.
-
-Build workflow:
-
-[source,sh]
-----
-# Use a dev-build of ephapax instead of one on PATH:
-export EPHAPAX=$HOME/dev/repos/ephapax/target/debug/ephapax
-
-cd cli/launcher
-zig build install --prefix /usr/local         # writes:
-                                              #   /usr/local/bin/gossamer-launcher
-                                              #   /usr/local/share/gossamer/cli.wasm
-
-gossamer-launcher                             # discovers and runs cli.wasm
-gossamer-launcher dev                         # passes `dev` to the guest
-zig build run -- dev                          # same, via build step
-----
-
-The placeholder `cli/src/Main.eph` is a stub that calls `argv_count()`
-and prints the integer via `env::print_i32`. Real CLI logic — the dev /
-build / bundle / run / init / info subcommands — lands in #15 once v2
-grammar covers the patterns the existing `cli/src/main.zig` needs.
-
-== What's NOT in MVP
-
-* Replacing `gossamer` (the native binary built from `cli/src/main.zig`)
-  with the launcher — happens in #15 once the IPC handler migration
-  inside libgossamer lands. Until then the launcher installs as
-  `gossamer-launcher` alongside the existing `gossamer`.
-* Moving the 27 IPC handlers out of cli/src/main.zig into libgossamer —
-  separate refactor.
-
-== Tracking
-
-* Umbrella issue: gossamer CLI port to typed-wasm Ephapax (forthcoming).
-* Prep merged so far: PRs #24 (file_watcher relocate), #26 (shell+fs FFI),
-  #27 (conf JSON loader); ephapax #86 (Argv stdlib).
+* link:../0.3-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

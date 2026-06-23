@@ -3,12 +3,10 @@
 //
 // paint-type-tile.twasm — typed-wasm schema for paint-type's RGBA16F tile.
 //
-// STATUS (2026-06-01): DRAFT. Cannot yet be compiled by `tw build` —
-// codegen v0 in `hyperpolymath/typed-wasm` only accepts the example-01
-// schema via a structural string-match (see crates/typed-wasm-codegen/
-// src/bin/tw.rs in upstream typed-wasm). General `.twasm` front-end →
-// IR lowering is tracked in hyperpolymath/typed-wasm#127; paint-type
-// side gate is paint-type#39.
+// STATUS (2026-06-07): DRAFT. Compiles with `tw build` via hardcoded IR
+// in typed-wasm codegen v0 (added 2026-06-07). General `.twasm` front-end →
+// IR lowering (parsing) is tracked in hyperpolymath/typed-wasm#127; paint-type
+// side gate is paint-type#39. Round-trip soundness tracked in typed-wasm#130.
 //
 // This file documents the bridge contract today so it is reviewable
 // alongside the Rust + Zig FFI it shadows. When #127 lands, it becomes

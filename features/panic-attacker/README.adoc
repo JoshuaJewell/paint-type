@@ -1,25 +1,31 @@
-= Panic Attacker Feature
-:icons: font
+// SPDX-License-Identifier: CC-BY-SA-4.0
 
-This unit integrates the **Panic-Attacker** high-rigor stress testing tool into the project lifecycle.
+= panic-attacker
+:description: Project directory
 
-== Value Proposition
+This directory is part of the paint.type project.
 
-Panic-Attacker goes beyond unit testing by applying:
-* **Static Analysis (Assail):** Detecting logic-based bug signatures.
-* **Multi-Axis Dynamic Attacks (Assault):** Stressing CPU, Memory, Disk, and Network boundaries.
+== Purpose
 
-== Usage in this Template
+Project directory.
 
-This template includes a pre-configured maintenance trigger:
 
-[source,bash]
-----
-just maint-assault
-----
+As a Level 2 directory (`features/panic-attacker/`), it supports the overall
+project structure.
 
-This runs a medium-intensity assault on the project binary and emits a report to `docs/reports/security/`.
 
-== Related Repository
+== Purpose of Each Component
 
-https://github.com/hyperpolymath/panic-attacker
+
+
+== AI Manifest Structure
+
+* `0.2-AI-MANIFEST.a2ml` (this file) - Level 2 manifest for `features/panic-attacker/`
+
+
+
+== Related Files
+
+* link:../0.1-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

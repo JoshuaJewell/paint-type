@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # RSR Template Validation Script
@@ -298,7 +298,7 @@ log_info "Phase 8: Documentation requirements"
 echo ""
 
 check_file_exists "docs/developer/ABI-FFI-README.adoc" "ABI/FFI documentation"
-check_file_exists "TOPOLOGY.md" "Architecture topology" || check_file_exists "docs/architecture/TOPOLOGY.md" "Architecture topology (in docs)"
+check_file_exists "TOPOLOGY.adoc" "Architecture topology" || check_file_exists "docs/architecture/TOPOLOGY.adoc" "Architecture topology (in docs)"
 check_file_exists "CONTRIBUTING.md" "Contribution guide"
 
 # Governance can be at root or in docs/governance/

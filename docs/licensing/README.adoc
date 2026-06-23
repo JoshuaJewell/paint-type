@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Licensing Documentation
+:description: License information and author's licensing philosophy
+
+This directory contains licensing-related documentation for paint.type.
+
+== Current Repository License
+
+This repository is licensed under **AGPL-3.0-or-later** (GNU Affero General
+Public License v3.0 or later).
+
+* Full license: link:../../LICENSE[LICENSE]
+* SPDX identifier: `AGPL-3.0-or-later`
+* Documentation SPDX: `CC-BY-SA-4.0`
+
+== Files in This Directory
+
+`PMPL-CAMPAIGN.adoc`:: Author's licensing philosophy regarding PMPL (Palimpsest
+License) — **This is NOT the repository license, but rather background on
+the author's advocacy work.**
+
+== License Badges
+
+For this repository, use:
+
+[source,asciidoc]
+----
+image:https://img.shields.io/badge/license-AGPL--3.0--or--later-red[License: AGPL-3.0-or-later]
+----
+
+For documentation, use:
+
+[source,asciidoc]
+----
+image:https://img.shields.io/badge/license-CC--BY--SA--4.0-blue[License: CC-BY-SA-4.0]
+----

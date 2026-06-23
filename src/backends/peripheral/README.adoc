@@ -1,0 +1,11 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Peripheral backends
+
+Backends that bridge the operation surface to physical devices.
+
+* link:display/[`display/`] — present a frame to a display surface
+* link:input/[`input/`] — receive pointer / tablet pen / HID / MIDI / OSC input
+* link:printer/[`printer/`] — dispatch a print job
+* link:plotter/[`plotter/`] — drive a pen / vinyl / laser plotter (vector output)
+
+Each backend reports the capability it bridges (e.g. `display.colorspace = display-p3`, `input.pressure = 8192-levels`, `printer.duplex = true`) so the application can adapt rendering and tool behaviour.

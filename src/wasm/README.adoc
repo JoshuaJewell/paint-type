@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: MPL-2.0
+= typed-wasm build glue
+
+The AffineScript application compiles to a typed-wasm module. This directory holds the build glue, the module manifest, and the import-resolution policy.
+
+== Output
+
+`paint_type.app.wasm` — the application module. Exports a small set of entry points and imports the operation surface declared by `src/backends/Abstract.idr`.
+
+== Imports
+
+Imports are typed and verified at the typed-wasm module boundary. The dispatcher provides concrete implementations of every imported operation by routing through registered backends; missing operations fail fast at module-load time, not at first call.
+
+== Build outputs by target
+
+[cols="1,2"]
+|===
+| Target | Module flavour
+
+| Browsers | wasm32, SIMD128, threads (where SAB available), GC where supported
+| Native hosts (typed-wasm runtime) | wasm32 or wasm64, full feature set
+| Edge runtimes (Cloudflare Workers, Deno, Bun, Node) | wasm32, no threads
+| Embedded / bare-metal RISC-V | wasm32, minimal feature set
+|===
+
+Each variant is a separate artefact in the multi-arch container.

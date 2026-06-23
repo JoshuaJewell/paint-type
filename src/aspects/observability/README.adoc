@@ -1,1 +1,31 @@
-= Observability Aspect
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= observability
+:description: Project directory
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Project directory.
+
+
+As a Level 3 directory (`src/aspects/observability/`), it supports the overall
+project structure.
+
+
+== Purpose of Each Component
+
+
+
+== AI Manifest Structure
+
+* `0.3-AI-MANIFEST.a2ml` (this file) - Level 3 manifest for `src/aspects/observability/`
+
+
+
+== Related Files
+
+* link:../0.2-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

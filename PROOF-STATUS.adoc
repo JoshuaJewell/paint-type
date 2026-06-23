@@ -1,0 +1,108 @@
+# Proof Status — paint-type
+// SPDX-License-Identifier: CC-BY-SA-4.0
+<!-- Tracks proof completion. Requirements defined in PROOF-NEEDS.adoc -->
+
+## Summary
+
+| Category | Total | Done | In Progress | Blocked | Remaining |
+|----------|-------|------|-------------|---------|-----------|
+| ABI/FFI (ABI) | 5 | 5 | 0 | 0 | 0 |
+| Typing (TP) | 3 | 3 | 0 | 0 | 0 |
+| Invariant (INV) | 3 | 3 | 0 | 0 | 0 |
+| Security (SEC) | 2 | 0 | 0 | 0 | 2 |
+| Concurrency (CONC) | 3 | 0 | 0 | 0 | 3 |
+| Algorithm (ALG) | 0 | 0 | 0 | 0 | 0 |
+| Domain (DOM) | 0 | 0 | 0 | 0 | 0 |
+| **Total** | **16** | **11** | **0** | **0** | **5** |
+
+**Overall**: 69% proven (11/16). **ABI, Typing, and Invariant categories fully closed.** The four unblocked obligations (TP-2, INV-1, INV-2, INV-3) were discharged 2026-06-14 across Idris2/Lean4/Agda and each independently adversarially re-verified (prover re-run from scratch + vacuity probes; no `believe_me`/`sorry`/`postulate`/`TERMINATING`). The **5 remaining are all design-blocked**, not deferred-by-choice: SEC-1/2 need the v0.4.0 plugin design, CONC-1/2/3 need the v0.5.0 Burble session protocol. `idris2 --check` runs in CI per `.github/workflows/idris-ci.yml`; **CI enforcement of the new Lean4/Agda proofs + `TilePool.idr` is not yet wired** (proofs verify locally — see Verification Commands).
+
+## Proofs Done
+
+| ID | Proof | Prover | File | Date | Verified By |
+|----|-------|--------|------|------|-------------|
+| ABI-1 | Non-null pointer proofs | Idris2 | `src/interface/Abi/Types.idr` | 2026-05-11 | idris2 --check |
+| ABI-2 | Memory layout correctness | Idris2 | `src/interface/Abi/Layout.idr` | 2026-05-11 | idris2 --check |
+| ABI-3 | Platform type size proofs (per platform) | Idris2 | `verification/proofs/idris2/ABI/Platform.idr` | 2026-06-01 | idris2 --check + CI |
+| ABI-4 | FFI function return type proofs | Idris2 | `src/interface/Abi/Foreign.idr` | 2026-05-11 | idris2 --check |
+| ABI-5 | C ABI compliance + array packing | Idris2 | `verification/proofs/idris2/ABI/Compliance.idr` | 2026-06-01 | idris2 --check + CI |
+| TP-1 | Tile primitive type well-formedness | Idris2 | `src/interface/Abi/Types.idr` | 2026-05-11 | idris2 --check |
+| TP-3 | RGBA16F pixel format bounds + classifier | Idris2 | `verification/proofs/idris2/Pixel.idr` | 2026-06-01 | idris2 --check + CI |
+| TP-2 | Public API type safety (exported pt_ surface) | Lean4 | `verification/proofs/lean4/ApiTypes.lean` | 2026-06-14 | lean (local; CI wiring pending) |
+| INV-1 | Tile pool invariant (no double-free, no use-after-free) | Idris2 | `verification/proofs/idris2/TilePool.idr` | 2026-06-14 | idris2 --check (local; CI wiring pending) |
+| INV-2 | Undo graph monotonicity | Lean4 | `verification/proofs/lean4/UndoGraph.lean` | 2026-06-14 | lean (local; CI wiring pending) |
+| INV-3 | Compositing blend function totality | Agda | `verification/proofs/agda/Compositing.agda` | 2026-06-14 | agda --no-libraries (local; CI wiring pending) |
+
+## Proofs In Progress
+
+| ID | Proof | Prover | Assignee | Started | Blocker |
+|----|-------|--------|----------|---------|---------|
+| — | — | — | — | — | — |
+
+## Proofs Blocked
+
+| ID | Proof | Blocked By | Notes |
+|----|-------|------------|-------|
+| CONC-1 | CRDT tile merge commutativity | Burble not started | Depends on v0.5.0 Burble design being finalised |
+| CONC-2 | CRDT tile merge associativity | Burble not started | Same blocker as CONC-1 |
+| CONC-3 | Session liveness | Burble not started | TLA+ model needs Burble session protocol spec |
+| SEC-1 | Plugin WASM sandbox isolation | Plugin system not started | Depends on v0.4.0 plugin design |
+| SEC-2 | Plugin API surface confinement | Plugin system not started | Same blocker as SEC-1 |
+
+## Proofs Remaining (Unblocked)
+
+_None — all four unblocked obligations (TP-2, INV-1, INV-2, INV-3) were discharged 2026-06-14._
+
+The only outstanding proofs are the **design-blocked** SEC-1/2 (v0.4.0 plugin sandbox) and CONC-1/2/3 (v0.5.0 Burble collaboration); see "Proofs Blocked" above. They cannot be written until those subsystems are designed.
+
+**Operational follow-up (not a proof gap):** wire the new proofs into CI. `idris-ci.yml` currently checks only the ABI Idris2 modules — add `TilePool.idr`, plus a Lean4 job (`lean ApiTypes.lean UndoGraph.lean`) and an Agda job. The Agda job must pass `--no-libraries` (or set a correct `AGDA_DIR`) to dodge the estate-wide broken global `~/.agda/libraries` path-drift; the proof itself has zero library dependencies.
+
+## Echo-types audit log
+
+Per estate proof discipline (memory: `feedback_proofs_must_check_and_cross_doc_echo_types`), every paint-type proof must first audit `hyperpolymath/echo-types` for prior art before being developed in-repo.
+
+| Proof | Audit Date | Echo-types Verdict | Classification |
+|-------|------------|--------------------|---------------|
+| ABI-3 | 2026-06-01 | NONE — no platform-size material upstream | L1/L4-only (not echo-relevant) |
+| ABI-5 | 2026-06-01 | NONE — no C-ABI-compliance material upstream | L1/L4-only (not echo-relevant) |
+| TP-3  | 2026-06-01 | NONE — no IEEE 754 / RGBA / float material upstream | L1/L4-only (not echo-relevant) |
+
+## Verification Commands
+
+```bash
+# Check Idris2 proofs (ABI bridge in src/interface, verified modules in verification/)
+cd src/interface && idris2 --check Abi/Types.idr Abi/Layout.idr Abi/Foreign.idr
+cd ../../verification/proofs/idris2 && idris2 --check ABI/Platform.idr ABI/Compliance.idr Pixel.idr TilePool.idr
+
+# Check Lean4 proofs (TP-2 public API type safety, INV-2 undo monotonicity) — pure core Lean4
+lean verification/proofs/lean4/ApiTypes.lean verification/proofs/lean4/UndoGraph.lean
+
+# Check Agda proof (INV-3 compositing totality). --no-libraries avoids the broken
+# global ~/.agda/libraries path; the file has zero library dependencies.
+agda --no-libraries verification/proofs/agda/Compositing.agda
+
+# Run Zig FFI tests
+cd src/interface/ffi && zig build test
+
+# Run Rust Ephapax tests
+cd src/paint_core && cargo test
+
+# Run aspect tests (SPDX, dangerous-pattern, ABI/FFI contract, RGBA16F constants, …)
+bash tests/aspect_tests.sh
+
+# Scan for dangerous patterns
+panic-attack assail --proofs-only
+
+# Run all proof checks (when infrastructure is wired)
+just proof-check-all
+```
+
+## Changelog
+
+| Date | Change | By |
+|------|--------|-----|
+| 2026-05-11 | Initial proof status for paint-type — ABI bridge proofs marked done | Joshua Jewell |
+| 2026-06-01 | ABI-3 + TP-3 landed (PR #10); CI proof-check wired (PR #8); 38% proven | hyperpolymath |
+| 2026-06-01 | ABI-5 landed (PR #19); ABI category fully closed; 44% proven | hyperpolymath |
+| 2026-06-01 | INV-3 surface grew by 7 ops (PR #27: lerp/multiply/screen/in/out/atop/xor) + brush engine (PR #29). No new proofs — Rust ground-truth for the Agda mechanisation expanded. | hyperpolymath |
+| 2026-06-14 | All 4 unblocked obligations discharged + adversarially verified: TP-2 (Lean4 `ApiTypes.lean`), INV-1 (Idris2 `TilePool.idr` — double-free/use-after-free not typeable), INV-2 (Lean4 `UndoGraph.lean`), INV-3 (Agda `Compositing.agda`). 7/16 → 11/16 (69%). Remaining 5 are design-blocked (SEC/CONC). CI wiring of the Lean4/Agda jobs pending. | hyperpolymath |
