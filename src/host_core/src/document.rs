@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // Document -- canvas dimensions, the layer stack, the active layer, the
 // current brush, and stroke state. Stamping is tile-aware: a dab is

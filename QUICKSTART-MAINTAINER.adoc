@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 = paint-type — Quick Start for Platform Maintainers
 :toc:
 :toclevels: 2
@@ -90,7 +90,7 @@ just build-release
 
 == Security Notes
 
-* License: PMPL-1.0-or-later (Palimpsest License)
+* License: AGPL-3.0-or-later (Palimpsest License)
 * All GitHub Actions SHA-pinned
 * `panic-attacker` scan runs on every PR
 * OpenSSF Scorecard: see badge in README

@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Tensor / NPU backends
+
+Backends that map operations to dedicated tensor / neural-processing silicon.
+
+| Backend | Hardware
+|---|---
+| `AppleAneBackend` | Apple Neural Engine (Core ML route)
+| `QualcommHexagonBackend` | Qualcomm Hexagon DSP + HTP (QNN)
+| `IntelNpuBackend` | Intel Meteor Lake+ NPU (OpenVINO)
+| `RockchipNpuBackend` | Rockchip RKNN
+| `NvidiaTensorRtBackend` | TensorRT-optimised CUDA path
+| `AmdMigraphxBackend` | MIGraphX
+| `CoreMlBackend` | Core ML (generic Apple route)
+| `OnnxRuntimeBackend` | ONNX Runtime as a portable abstraction
+
+These backends mainly serve operations that benefit from tensor-shape acceleration (convolution-shaped filters, large transforms, batch compositing).

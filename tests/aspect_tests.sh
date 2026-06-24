@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # RSR Standard Aspect Test Template
@@ -219,7 +219,7 @@ fi
 # ═══════════════════════════════════════════════════════════════════════
 # Aspect 7: File I/O round-trip — DEFERRED to v0.3.0
 # ═══════════════════════════════════════════════════════════════════════
-# TEST-NEEDS.md P1 lists a file-I/O round-trip aspect (create tile, save,
+# TEST-NEEDS.adoc P1 lists a file-I/O round-trip aspect (create tile, save,
 # reload, verify bytes identical). v0.1.0 has no file I/O surface yet —
 # this aspect activates at v0.3.0 Desktop Shell milestone when the native
 # RGBA16F format ships.

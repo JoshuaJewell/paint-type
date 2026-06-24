@@ -1,1 +1,31 @@
-= Other Theory
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= other
+:description: Project directory
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Project directory.
+
+
+As a Level 3 directory (`docs/theory/other/`), it supports the overall
+project structure.
+
+
+== Purpose of Each Component
+
+
+
+== AI Manifest Structure
+
+* `0.3-AI-MANIFEST.a2ml` (this file) - Level 3 manifest for `docs/theory/other/`
+
+
+
+== Related Files
+
+* link:../0.2-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

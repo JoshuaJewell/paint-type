@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # E2E Test: Template Instantiation
@@ -16,7 +16,7 @@ set -euo pipefail
 
 # Test configuration
 TEMPLATE_ROOT="${1:-.}"
-TEST_DIR="${TMPDIR:-/tmp}/rsr-template-test-$$"
+TEST_DIR="$(mktemp -d "${TMPDIR:-/tmp}/rsr-template-test-XXXXXX")"
 TEST_REPO_NAME="test-instantiated-repo"
 TEST_OWNER="test-owner"
 TEST_FORGE="github"

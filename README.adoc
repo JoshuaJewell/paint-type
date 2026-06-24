@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
 = paint.type
 :toc: left
 :toc-title: Contents
@@ -8,13 +9,91 @@
 
 The open, cross-platform image editor Paint.NET users are actually asking for.
 
-image:https://img.shields.io/badge/license-PMPL--1.0--or--later-blue[License: PMPL-1.0-or-later]
+image:https://img.shields.io/badge/license-AGPL--3.0--or--later-red[License: AGPL-3.0-or-later]
+image:https://img.shields.io/badge/CRG-D-orange?style=flat-square[CRG D,link=https://github.com/hyperpolymath/standards/tree/main/component-readiness-grades]
 image:https://img.shields.io/badge/status-pre--alpha%20(v0.2.0%20closing)-yellow[Status: pre-alpha — v0.2.0 closing]
 image:https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey[Platforms]
 image:https://github.com/JoshuaJewell/paint-type/actions/workflows/rust.yml/badge.svg[Rust CI,link=https://github.com/JoshuaJewell/paint-type/actions/workflows/rust.yml]
 image:https://github.com/JoshuaJewell/paint-type/actions/workflows/idris-ci.yml/badge.svg[Idris2 CI,link=https://github.com/JoshuaJewell/paint-type/actions/workflows/idris-ci.yml]
 image:https://github.com/JoshuaJewell/paint-type/actions/workflows/e2e.yml/badge.svg[E2E,link=https://github.com/JoshuaJewell/paint-type/actions/workflows/e2e.yml]
 image:https://github.com/JoshuaJewell/paint-type/actions/workflows/coverage.yml/badge.svg[Coverage,link=https://github.com/JoshuaJewell/paint-type/actions/workflows/coverage.yml]
+image:https://img.shields.io/badge/docs-CC--BY--SA--4.0-blue[Docs: CC-BY-SA-4.0,link=https://creativecommons.org/licenses/by-sa/4.0/]
+image:https://img.shields.io/badge/Idris-Inside-5E5086?logo=idris&logoColor=white[Idris Inside,link=https://www.idris-lang.org]
+image:https://img.shields.io/badge/RSR-Bronze-cd7f32[RSR Standard,link=https://github.com/hyperpolymath/standards]
+image:https://api.securityscorecards.dev/projects/github.com/JoshuaJewell/paint-type/badge[OpenSSF Scorecard,link=https://securityscorecards.dev/viewer/?uri=github.com/JoshuaJewell/paint-type]
+
+TIP: For quick project orientation, see the link:https://github.com/JoshuaJewell/paint-type/wiki[Project Wiki].
+
+[TIP]
+====
+**Working with an AI? Point it here.** Tell any capable LLM: +
+[.text-center]
+`Read github.com/JoshuaJewell/paint-type, warm up, and tell me where paint.type is at — I want to try / develop / contribute.` +
+It reads link:0-AI-MANIFEST.a2ml[`0-AI-MANIFEST.a2ml`] (the read-first router), loads the right warm-up, and reports the real status, limits, and next unblocked task. <<ai-start,Details below>>.
+====
+
+---
+
+[[ai-start]]
+== Start with an AI (recommended)
+
+paint.type is built to be **AI-legible**. A single read-first manifest routes any
+LLM to a fast, machine-readable picture of where the project is, what works, what
+doesn't, and how to help — so you (or your AI) don't have to read this whole README.
+
+=== Just say it
+
+Point your AI at the repo and state your intent:
+
+[source,text]
+----
+Read github.com/JoshuaJewell/paint-type, warm up via 0-AI-MANIFEST.a2ml,
+and tell me the current status, limitations, and how I can help.
+I want to:  try it  |  develop it  |  contribute a plugin  |  just understand it
+----
+
+Once it has the repo, shorter forms work:
+
+* "Warm up on paint.type and give me the current status."
+* "I want to develop paint.type — what's the next unblocked task?"
+* "What can I contribute right now, and what's off-limits?"
+
+=== What the AI reads (the a2ml-fast on-ramp)
+
+You never hard-code a path: read-first manifest in, everything else routed out. It
+is machine-readable (a2ml / contractiles / 6a2), so an AI orients in seconds.
+
+[cols="1,2",options="header"]
+|===
+| Entry point | What it gives the AI
+
+| link:0-AI-MANIFEST.a2ml[`0-AI-MANIFEST.a2ml`]
+| **Read first.** Routes to everything below + "what's already done — do not redo".
+
+| `llm-warmup-{user,dev}.adoc` (maintainer warm-up coming)
+| The right warm-up for *you* — user, developer, or platform maintainer.
+
+| `.machine_readable/6a2/STATE.a2ml` (+ ECOSYSTEM / META / PLAYBOOK / AGENTIC / NEUROSYM)
+| Live status, integrations, architecture decisions, the playbook — not the prose below.
+
+| `.machine_readable/contractiles/` (Intent · Must · Trust · Adjust, + Dust · Bust)
+| Rules of engagement: what to keep, what's banned, what's deprecated, how to fail safely.
+
+| link:PROOF-STATUS.adoc[`PROOF-STATUS.adoc`] · link:READINESS.adoc[`READINESS.adoc`]
+| What's formally proven (currently 11/16) and the component-readiness grade.
+
+| link:DEPENDENCY-SCHEDULER.adoc[`DEPENDENCY-SCHEDULER.adoc`]
+| The estate dependencies + the prioritized make-great work + standing items.
+
+| link:CONTRIBUTING.md[`CONTRIBUTING`] · `CODE_OF_CONDUCT`
+| How to contribute; licence rules (code AGPL-3.0-or-later, docs CC-BY-SA-4.0).
+|===
+
+[NOTE]
+Current reality, one line (the AI will give you the live version from `STATE.a2ml`):
+**pre-alpha, v0.2.0 closing — a formally-verified image core (11 compositing ops,
+persistent undo graph, layers, brush engine, proven ABI + four soundness proofs),
+with the first runnable Gossamer desktop shell next (v0.3.0).**
 
 ---
 
@@ -244,9 +323,9 @@ The proximal seams (within paint-type) are size-checked, layout-proven, and pani
 
 * https://github.com/JoshuaJewell/paint-type/wiki[Wiki Home] — single-page routing hub pointing at the in-repo source of truth
 * link:EXPLAINME.adoc[EXPLAINME.adoc] — repository structure guide
-* link:TOPOLOGY.md[TOPOLOGY.md] — component architecture
+* link:TOPOLOGY.adoc[TOPOLOGY.adoc] — component architecture
 * link:ROADMAP.adoc[ROADMAP.adoc] — milestone plan
-* link:PROOF-STATUS.md[PROOF-STATUS.md] / link:TEST-NEEDS.md[TEST-NEEDS.md] — proof + test coverage status
+* link:PROOF-STATUS.adoc[PROOF-STATUS.adoc] / link:TEST-NEEDS.adoc[TEST-NEEDS.adoc] — proof + test coverage status
 * link:QUICKSTART-DEV.adoc[QUICKSTART-DEV] / link:QUICKSTART-USER.adoc[QUICKSTART-USER] / link:QUICKSTART-MAINTAINER.adoc[QUICKSTART-MAINTAINER]
 
 ---
@@ -266,14 +345,22 @@ Open an issue, start a discussion, or reach out directly.
 
 == License
 
-PMPL-1.0-or-later — see link:LICENSE[LICENSE]
+AGPL-3.0-or-later — see link:LICENSE[LICENSE]
 
-MPL-2.0 fallback available for components where store distribution requires it.
+[NOTE]
+====
+This project's author advocates for PMPL-2.0-or-later (Palimpsest License v2) as a
+cultural/ethical licensing philosophy. However, **AGPL-3.0-or-later is the
+actual license** of this repository. PMPL is documented in link:LICENSE[LICENSE]
+for informational purposes only.
+====
+
 
 ---
 
 == Author
 
 Joshua Jewell — https://github.com/JoshuaJewell[JoshuaJewell]
+Jonathan D.A. Jewell - https://github.com/hyperpolymath[hyperpolymath]
 
 Built within the https://github.com/hyperpolymath[hyperpolymath] ecosystem.

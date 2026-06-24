@@ -1,0 +1,170 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= ADR-0003: Storage abstraction — VerisimDB as canonical multimodel store
+:toc:
+:toclevels: 3
+
+Date:: 2026-05-13
+Status:: Accepted
+Authors:: Joshua Jewell
+Relates-to:: ADR-0002 (Foundation)
+
+== Context
+
+ADR-0002 commits paint.type to a unified-backend pattern for *compute* (kernels: DSP, FPGA, audio, math, GPU, physics, crypto, I/O, vector, tensor). That pattern doesn't speak to *persistence* — where canvas state, history, layer metadata, brush profiles, collaborative-session presence, and provenance actually live across time and crashes.
+
+The implementation under `src/backends/cpu/` today uses ephemeral in-memory `HashMap` / `ArrayList` structures. That's fine as the reference; it's not fine as the production answer. paint.type needs:
+
+* **Persistence** — autosave, crash recovery, sessions that survive a restart.
+* **Versioning** — undo / redo across sessions, branch-preserving (the MVP-10 contract).
+* **Provenance** — *who painted this stroke, on what device, in which session* — a non-optional precondition for collaborative editing (v0.5.0) and for credit attribution in any plugin ecosystem.
+* **Cross-modal consistency** — when a layer is renamed in the UI, every index referencing that layer (search, plugin manifest, history graph, collaboration peers) must reflect the rename atomically.
+* **Verifiable queries** — the same correctness regime that ADR-0002 establishes for compute via Idris2 totality proofs needs an equivalent at the data layer.
+
+== Decision
+
+paint.type gains a second orthogonal pluggable abstraction alongside compute backends: a **storage axis**. The runtime selects a storage implementation the same way it selects a kernel backend — capability descriptor, transparent fallback, hot-plug aware.
+
+=== The two registered storage implementations
+
+[cols="1,3"]
+|===
+| `InMemoryStorage`
+| Reference implementation. Always present. Mandatory. The oracle for storage-correctness tests. What `src/backends/cpu/main.zig` already provides (HashMap of canvases, ArrayList of layers, persistent-tree history graph). Ephemeral — process exit drops everything.
+
+| `VeriSimDbStorage`
+| Production persistence. Speaks to a https://github.com/hyperpolymath/verisimdb[VerisimDB] instance over HTTP/8080 or gRPC/50051. When reachable, every canvas mutation propagates as an octad write; when unreachable, falls back to `InMemoryStorage` and re-syncs on reconnect.
+|===
+
+This mirrors the compute pattern: one always-present reference, one or more accelerated/external implementations, transparent fallback.
+
+=== Why VerisimDB
+
+VerisimDB is the hyperpolymath ecosystem's *VERIdical SIMulation DataBase* — an 8-modality octad-storage system with cross-modal drift detection, hash-chain provenance, dependent-type query language (VQL-DT), and a federation mode that lets multiple peers share state without losing local control. Every one of those properties maps onto a paint.type requirement that we would otherwise have to build from scratch.
+
+Concretely, the eight VerisimDB modalities map onto paint.type's data needs:
+
+[cols="1,2,2"]
+|===
+| VerisimDB modality | What it stores | paint.type use
+
+| **Tensor**
+| Multi-dimensional numeric arrays
+| RGBA16F tile pixel data. A canvas is a tensor of tiles; each tile is a tensor of pixels. Drift detection here catches accidental tile-corruption from a buggy accelerator.
+
+| **Graph**
+| RDF triples + property-graph edges
+| Layer tree (parent / sibling / mask edges), undo graph (parent / child edges, branches as siblings), brush-stroke chains (segment edges).
+
+| **Temporal**
+| Versioned time-series
+| Undo / redo history. The MVP-10 in-memory implementation is a per-canvas tree; VerisimDB makes it persistent across sessions and queryable ("show me every state where layer 2 had blend=Multiply").
+
+| **Provenance**
+| Hash-chain lineage
+| *Who painted this stroke, on what device, in which session, with what tool state.* Hash-chain integrity guarantees a malicious peer cannot fabricate strokes attributed to someone else.
+
+| **Document**
+| Full-text searchable content
+| Layer names, brush-profile descriptions, text-tool content, plugin manifest readme. "Find every brush profile that mentions 'watercolour'."
+
+| **Semantic**
+| Type annotations + CBOR proof blobs
+| paint.type's Idris2-typed operation surface (`src/backends/Abstract.idr`) serialised as CBOR for cross-process consumption. The dependent types of VQL-DT extend the same totality-proof regime ADR-0002 establishes.
+
+| **Spatial**
+| Geospatial coordinates + R-tree index
+| Canvas-coordinate index. Selection regions, brush stamp positions, layer bounding boxes. R-tree gives O(log n) "what is at this pixel?" queries, replacing linear tile scans for hit-testing.
+
+| **Vector**
+| HNSW embedding index
+| Brush-stroke embeddings for similarity search. "Suggest brushes similar to the one I just used"; "find every layer where a similar stroke appears." Free input to a future ML-assisted-paint feature, with provenance for what the model saw.
+|===
+
+=== Why a single multimodel store rather than eight separate engines
+
+We could build a relational schema for layers, a separate tile store, a separate FTS index for names, and stitch them together. We will *not*, because:
+
+1. **Cross-modal drift is the failure mode that matters.** A layer rename that updates the document index but not the layer name in the graph produces a silent inconsistency that propagates to every plugin / collaborator / search. VerisimDB's whole point is catching this category before it ships.
+2. **VQL-DT proofs interoperate with our Idris2 proofs.** VerisimDB queries return a `ProvedResult` with a proof certificate. paint.type's operation surface returns total functions verified by Idris2. Both regimes compose: a query like "give me the final state of canvas C after history node N, with proof that N is reachable from the root" gets a certified answer.
+3. **One persistent endpoint, many wire protocols.** VerisimDB already exposes HTTP, gRPC, and a VQL query interface — the same protocols paint.type's unified Zig API surface exposes. We can route through VerisimDB without an additional adapter layer.
+
+=== Octad schema for a paint.type canvas
+
+A canvas in paint.type is exactly one VerisimDB octad. The octad's eight modalities are populated as follows (each row is canonical; concrete VQL schema lands in `src/affinescript/octad-schema.aff` when the storage backend is fully wired):
+
+[cols="1,3"]
+|===
+| **Tensor**
+| `{ tiles: Map<TileKey, RGBA16F[64][64]> }` per layer. Tile keys are `(layer_id, grid_x, grid_y)`.
+
+| **Graph**
+| Nodes: layers, history nodes, brush strokes. Edges: `layer.contains(stroke)`, `history.parent(other_history_node)`, `selection.masks(layer)`.
+
+| **Temporal**
+| Time-series of canvas snapshots indexed by history-node ID. Branching history is a DAG, not a chain.
+
+| **Provenance**
+| Hash chain: for each stroke / canvas mutation, `(actor_id, session_id, timestamp, prev_hash, op_payload) -> next_hash`.
+
+| **Document**
+| Tantivy index over: canvas title, every layer name, brush-profile descriptions, embedded text-tool content.
+
+| **Semantic**
+| CBOR-serialised paint.type operation surface (from `Abstract.idr`) + per-op invariants ("canvas dimensions are positive", "selection mask is a subset of canvas bounds", …).
+
+| **Spatial**
+| R-tree over (x, y, layer_id, content_kind). Selection lookups, hit-testing, viewport culling.
+
+| **Vector**
+| HNSW index of stroke embeddings (256-dim float). Embeddings are computed from `(brush_state, point_sequence, colour)` by a future brush-embedding kernel.
+|===
+
+=== Failure model
+
+* **VerisimDB reachable**: every write goes through. Reads can come from either local in-memory cache or VerisimDB; the cache is a *write-through* with VerisimDB's drift detection as the consistency oracle.
+* **VerisimDB unreachable at startup**: `InMemoryStorage` is the only registered storage; the runtime logs a `storage.degraded` diagnostic and continues. The user sees identical functionality minus persistence.
+* **VerisimDB becomes unreachable mid-session**: writes queue in the in-memory journal. On reconnect, the journal flushes through `VeriSimDbStorage`; conflicts (if any) surface via VerisimDB's drift-detection / repair pipeline rather than silently overwriting.
+* **VerisimDB becomes reachable mid-session for the first time**: the in-memory canvases are uploaded as a backfill. Every subsequent write goes dual-path until VerisimDB confirms catch-up.
+
+This is the same self-healing posture ADR-0002 establishes for compute backends: degrade transparently, recover transparently, diagnose loudly.
+
+== Constraint
+
+No code path in `src/affinescript/` or `src/api/` may bypass the storage abstraction and talk directly to either `InMemoryStorage` or `VeriSimDbStorage`. Every persistence-or-versioning operation flows through the storage-axis dispatcher exposed by `src/backends/storage/`.
+
+The Idris2 abstract operation surface (`src/backends/Abstract.idr`) gains a `StorageImpl` record alongside `BackendImpl`, declaring the operations every storage implementation must provide (or decline). The C ABI generated from Idris2 is the only contract between AffineScript and Zig storage modules.
+
+== Consequences
+
+Positive::
+* Undo / autosave / crash recovery / collaboration provenance / similar-stroke search / cross-modal consistency / verifiable queries are all *one decision*, not nine.
+* Adding a third storage backend (S3, SQLite, FoundationDB, an OPFS-backed browser store, …) is the same shape as adding a third compute backend: one Zig module, one capability descriptor, one fallback declaration.
+* Testing is unchanged: numerical-equivalence harness still runs against `InMemoryStorage`; `VeriSimDbStorage` is verified against the same oracle.
+* Federation comes for free at v0.5.0 via VerisimDB's federation-coordinator mode.
+
+Negative / costs::
+* paint.type now has *two* "always present, always correct" reference implementations to maintain instead of one (`CpuReferenceBackend` for compute, `InMemoryStorage` for storage). That's a real cost to keep in the test matrix.
+* The container build must orchestrate VerisimDB as a sidecar when the user opts in. The `Containerfile` gets a multi-service stage; not unreasonable, but not zero.
+* Authentication + capability scoping at the storage axis is new surface area for security review.
+
+Neutral::
+* The "production" path involves another running process. For users who want offline-only single-file save semantics (the classic MS Paint experience), `InMemoryStorage` + `pt_io_save` to a single `.ptype` file remains a complete answer.
+
+== Implementation outline
+
+This ADR informs:
+
+* `src/backends/Abstract.idr` — declares `StorageImpl` alongside `BackendImpl`; defines the octad schema for canvases as Idris2 types.
+* `src/backends/storage/` — new directory.
+** `dispatcher.zig` — storage registry, fallback, hot-plug events.
+** `in_memory.zig` — the always-present reference. Moves the canvas-state holding currently in `src/backends/cpu/main.zig` here, keeping `cpu/main.zig` purely about compute.
+** `verisimdb.zig` — Zig HTTP / gRPC client for the VerisimDB API. Implements `StorageImpl` against VerisimDB octad endpoints.
+* `src/affinescript/octad-schema.aff` — AffineScript-side description of the schema; generated from `Abstract.idr` at build time.
+* `Containerfile` — gains an optional VerisimDB sidecar stage when built with `--build-arg PERSIST=verisimdb`.
+
+== References
+
+* https://github.com/hyperpolymath/verisimdb[hyperpolymath/verisimdb] — VeriSimDB, the multimodel store.
+* link:0002-foundation-cross-platform.adoc[ADR-0002] — the compute-backend pattern this storage axis parallels.
+* hyperpolymath/affinescript — application language; will gain `storage` algebraic-effect typeclass to make storage calls trackable.
+* hyperpolymath/Axiom.jl — the unified-backend pattern that ADR-0002 derives from; the storage axis applies the same shape to persistence.

@@ -1,0 +1,7 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= GraphQL adapter
+
+GraphQL over HTTP (queries + mutations) and WebSocket (subscriptions). SDL is generated from `Abstract.idr`.
+
+* Subscriptions map onto the dispatcher's event stream (capability-change, hot-plug, session-event).
+* Persisted-query support to keep wire size predictable.

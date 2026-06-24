@@ -1,4 +1,35 @@
-// SPDX-License-Identifier: MPL-2.0
-= Scripts
-Developer and build utility scripts for gossamer.
-Includes desktop integration installation (`install-desktop.sh`), Markdown-to-HTML conversion (`md-to-html.awk`), a Zig-based static site build runner (`ssg-build-runner.zig`), a template substitution helper (`template-sub.awk`), and a headless-display test wrapper (`test-with-display.sh`).
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= scripts
+:description: Project directory
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Project directory.
+
+
+As a Level 3 directory (`third_party/gossamer/scripts/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n=== Configuration\n\n* `install-desktop.sh` — Shell script\n* `test-with-display.sh` — Shell script\n\n=== Source Files\n\n* `ssg-build-runner.zig` — ssg-build-runner configuration or data\n\n=== Other Files\n\n* `md-to-html.awk` — md-to-html configuration or data\n* `template-sub.awk` — template-sub configuration or data\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Configuration files* define build, test, and deployment parameters.\n
+*Source files* implement core functionality.\n
+*Other files* support directory operations.\n
+
+== AI Manifest Structure
+
+* `0.3-AI-MANIFEST.a2ml` (this file) - Level 3 manifest for `third_party/gossamer/scripts/`
+
+
+
+== Related Files
+
+* link:../0.2-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

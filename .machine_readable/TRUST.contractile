@@ -1,8 +1,8 @@
-; SPDX-License-Identifier: PMPL-1.0-or-later
-; TRUST.contractile — Trust boundaries for paint-type
+; SPDX-License-Identifier: AGPL-3.0-or-later
+; TRUST.contractile — Trust boundaries for rsr-template-repo
 ; Defines what LLM/SLM agents are trusted to do without asking.
 ;
-; Part of the contractile family: MUST, TRUST, DUST, INTENT, ADJUST, BUST
+; Part of the contractile family: MUST, TRUST, DUST, INTENT, ADJUST
 
 ; ── Definitions ──────────────────────────────────────────────────
 ;

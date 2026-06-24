@@ -1,1 +1,31 @@
-= src Pillar
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= src
+:description: Source code and implementation
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Source code and implementation.
+
+
+As a Level 1 directory (`src/`), it supports the overall
+project structure.
+
+== Subdirectories\n\n[cols="1,2", options="header"]\n|===\n| Directory | Purpose\n| `bridges/` | |\n| `contracts/` | |\n| `host_core/` | |\n| `host/` | |\n| `core/` | |\n| `ui/` | |\n| `errors/` | |\n| `paint_core/` | |\n| `aspects/` | |\n| `interface/` | |\n| `definitions/` | |\n|===\n\n
+== Purpose of Each Component
+
+
+
+== AI Manifest Structure
+
+* `0.1-AI-MANIFEST.a2ml` (this file) - Level 1 manifest for `src/`
+
+* Each subdirectory has its own `0.2-AI-MANIFEST.a2ml`
+
+== Related Files
+
+* link:../0-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

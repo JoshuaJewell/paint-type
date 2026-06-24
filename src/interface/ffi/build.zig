@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // Build configuration for libpt (paint.type native FFI).
 //
@@ -48,29 +48,17 @@ pub fn build(b: *std.Build) void {
     // Static library: libpt.a (for the Rust crate)
     //--------------------------------------------------------------------------
 
-    // `stack_check = false` is load-bearing for Rust integration: Zig's
-    // default stack-probe inserts `__zig_probe_stack` references for
-    // functions with >4KB frames. Rust's lld cannot resolve that symbol
-    // when statically linking libpt.a from cargo, producing
-    //   rust-lld: error: undefined symbol: __zig_probe_stack
-    // The shared/test/unit builds keep defaults; only the static archive
-    // consumed by Rust needs the probe disabled.
     const static_module = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
         .link_libc = true,
-        .stack_check = false,
     });
     const static = b.addLibrary(.{
         .name = "pt",
         .linkage = .static,
         .root_module = static_module,
     });
-    // Bundle compiler_rt into the static archive so symbols Zig expects its
-    // own runtime to supply (such as __zig_probe_stack on Zig 0.15.2+) are
-    // present when the Rust crate links libpt.a with a non-Zig linker.
-    static.bundle_compiler_rt = true;
     b.installArtifact(static);
 
     //--------------------------------------------------------------------------
@@ -116,7 +104,31 @@ pub fn build(b: *std.Build) void {
     // `zig build test` step
     //--------------------------------------------------------------------------
 
-    const test_step = b.step("test", "Run unit and integration tests for libpt");
+    const test_step = b.step("test", "Run unit and integration tests");
     test_step.dependOn(&run_unit_tests.step);
     test_step.dependOn(&run_integration_tests.step);
-}
+
+    //--------------------------------------------------------------------------
+    // Benchmarks (in test/bench.zig)
+    //--------------------------------------------------------------------------
+
+    // Like every other artifact above, the benchmark executable takes its
+    // sources via an explicit module. The older `.root_source_file` field on
+    // `addExecutable` was removed in Zig 0.15.2 (it survived as a deprecated
+    // shim on 0.15.1, which is why CI stayed green while local 0.15.2 builds
+    // broke here). The `b.createModule` form works on both.
+    const bench_module = b.createModule(.{
+        .root_source_file = b.path("test/bench.zig"),
+        .target = target,
+        .optimize = .ReleaseFast,
+        .link_libc = true,
+    });
+    const bench_exe = b.addExecutable(.{
+        .name = "pt_bench",
+        .root_module = bench_module,
+    });
+    const run_bench = b.addRunArtifact(bench_exe);
+
+    const bench_step = b.step("bench", "Run performance benchmarks");
+    bench_step.dependOn(&run_bench.step);
+    }

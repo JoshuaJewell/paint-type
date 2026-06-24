@@ -1,1 +1,34 @@
-= Governance Pillar (TSDM)
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= governance
+:description: Project directory
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Project directory.
+
+
+As a Level 4 directory (`third_party/gossamer/docs/governance/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n== Subdirectories\n\n[cols="1,2", options="header"]\n|===\n| Directory | Purpose\n| `audit/` | |\n| `maintenance/` | |\n| `planning/` | |\n|===\n\n=== Documentation\n\n* `SOFTWARE-DEVELOPMENT-APPROACH.adoc` — AsciiDoc documentation\n* `MAINTENANCE-CHECKLIST.adoc` — AsciiDoc documentation\n* `CRG-CRITERIA.adoc` — AsciiDoc documentation\n* `CRG-AUDIT-2026-04-18.adoc` — AsciiDoc documentation\n* `TSDM.adoc` — AsciiDoc documentation\n\n=== Other Files\n\n* `CRG-CRITERIA.a2ml` — A2ML machine-readable metadata\n* `SOFTWARE-DEVELOPMENT-APPROACH.a2ml` — A2ML machine-readable metadata\n* `0.1-AI-MANIFEST.a2ml` — A2ML machine-readable metadata\n* `MAINTENANCE-CHECKLIST.a2ml` — A2ML machine-readable metadata\n* `TSDM.a2ml` — A2ML machine-readable metadata\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Documentation files* provide guidance.\n
+*Other files* support directory operations.\n
+
+== AI Manifest Structure
+
+* `0.4-AI-MANIFEST.a2ml` (this file) - Level 4 manifest for `third_party/gossamer/docs/governance/`
+
+* Each subdirectory has its own `0.5-AI-MANIFEST.a2ml`
+
+== Related Files
+
+* link:../0.3-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

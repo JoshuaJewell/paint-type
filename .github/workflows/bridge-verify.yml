@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# bridge-verify.yml — Smoke-test the AffineScript -> typed-wasm bridge (paint-type#39).
+# Installs the typed-wasm `tw` + `tw-verify` CLIs pinned to the PR #165 parser
+# seam, compiles the committed .twasm schemas, asserts the verifier accepts the
+# emitted wasm, and asserts the emit has not drifted from the committed
+# artifacts. Path-filtered to keep the Actions budget tight.
+name: Bridge Verify
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/bridges/**'
+      - '.github/workflows/bridge-verify.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/bridges/**'
+      - '.github/workflows/bridge-verify.yml'
+  workflow_dispatch:
+# tw + tw-verify compile from source (~minutes cold); cancel superseded runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+env:
+  # typed-wasm PR #165 — the .twasm source-parser seam that unblocks #39.
+  TYPED_WASM_REV: ba3c7d985bab952b4e390de455844f123cc7086f
+jobs:
+  bridge-verify:
+    name: tw build + tw-verify on bridge schemas
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
+      - name: Install tw + tw-verify (pinned to PR #165)
+        run: |
+          cargo install --locked --bin tw \
+            --git https://github.com/hyperpolymath/typed-wasm \
+            --rev "$TYPED_WASM_REV" typed-wasm-codegen
+          cargo install --locked --bin tw-verify --features unstable-l2 \
+            --git https://github.com/hyperpolymath/typed-wasm \
+            --rev "$TYPED_WASM_REV" typed-wasm-verify
+      - name: Compile .twasm schemas -> .wasm
+        run: |
+          tw build src/bridges/paint-type-tile.twasm  -o "$RUNNER_TEMP/tile.wasm"
+          tw build src/bridges/paint-type-layer.twasm -o "$RUNNER_TEMP/layer.wasm"
+      - name: Assert verifier accepts emitted wasm
+        run: |
+          tw-verify "$RUNNER_TEMP/tile.wasm"
+          tw-verify "$RUNNER_TEMP/layer.wasm"
+      - name: Assert emit matches committed artifacts (no drift)
+        run: |
+          cmp "$RUNNER_TEMP/tile.wasm"  src/bridges/paint-type-tile.wasm
+          cmp "$RUNNER_TEMP/layer.wasm" src/bridges/paint-type-layer.wasm

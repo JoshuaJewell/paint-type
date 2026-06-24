@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 = paint-type ABI/FFI Documentation
 :toc: left
 :source-highlighter: rouge
@@ -311,6 +311,6 @@ PMPL/MPL-2.0 fallback rationale.
 
 * https://idris2.readthedocs.io[Idris2 Documentation]
 * https://ziglang.org/documentation/master/[Zig Documentation]
-* `PROOF-STATUS.md` for the current proof-completion table
-* `PROOF-NEEDS.md` for the full ABI/typing/invariant/security proof catalogue
-* `TEST-NEEDS.md` for the test surface
+* `PROOF-STATUS.adoc` for the current proof-completion table
+* `PROOF-NEEDS.adoc` for the full ABI/typing/invariant/security proof catalogue
+* `TEST-NEEDS.adoc` for the test surface

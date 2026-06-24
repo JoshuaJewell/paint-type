@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+= specs
+:description: Project directory
+
+This directory is part of the paint.type project.
+
+== Purpose
+
+Project directory.
+
+
+As a Level 3 directory (`docs/superpowers/specs/`), it supports the overall
+project structure.
+
+== Contents by Functional Grouping\n\n=== Documentation\n\n* `2026-05-31-pareto-surface-reduction-design.md` — Markdown documentation\n* `2026-06-02-mvp-desktop-shell-design.md` — Markdown documentation\n\n
+== Purpose of Each Component
+
+Each file in this directory serves a specific purpose.
+
+*Documentation files* provide guidance.\n
+
+== AI Manifest Structure
+
+* `0.3-AI-MANIFEST.a2ml` (this file) - Level 3 manifest for `docs/superpowers/specs/`
+
+
+
+== Related Files
+
+* link:../0.2-AI-MANIFEST.a2ml[Parent AI Manifest]
+* link:../README.adoc[Parent Directory README]
+* link:../../.machine_readable/[Machine Readable Metadata]

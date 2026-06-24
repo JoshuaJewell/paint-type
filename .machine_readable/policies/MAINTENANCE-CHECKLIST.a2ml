@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Cross-repo maintenance baseline (machine-readable canonical)
 
 [metadata]
@@ -98,7 +98,7 @@ root_hosting_files = [
 
 ownership_files = [
   "MAINTAINER",
-  ".github/CODEOWNERS",
+  "CODEOWNERS",
 ]
 
 machine_readable_required = [

@@ -1,4 +1,4 @@
--- SPDX-License-Identifier: PMPL-1.0-or-later
+-- SPDX-License-Identifier: AGPL-3.0-or-later
 ||| Foreign Function Interface Bridge for libpt
 |||
 ||| Raw FFI primitives and total safe wrappers for the paint.type tile

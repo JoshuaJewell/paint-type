@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: CC-BY-SA-4.0
 // Copyright (c) 2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me>
 = Agent Instructions
 :toc: preamble

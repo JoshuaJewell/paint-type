@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (c) 2026 Joshua Jewell (JoshuaJewell) <paint-type@pm.me>
 #
 # META.a2ml — Project meta-level information
@@ -11,7 +11,7 @@ last-updated = "2026-05-11"
 [project-info]
 type = "application"  # library | binary | monorepo | service | website
 languages = ["rust", "zig", "idris2", "affinescript"]
-license = "PMPL-1.0-or-later"
+license = "AGPL-3.0-or-later"
 author = "Joshua Jewell (JoshuaJewell)"
 
 [architecture-decisions]
@@ -39,7 +39,7 @@ axis-2 = "corrective > adaptive > perfective"
 axis-3 = "systems > compliance > effects"
 
 [scoping]
-sources = "README, ROADMAP.adoc, READINESS.md, TEST-NEEDS.md, PROOF-NEEDS.md, TOPOLOGY.md"
+sources = "README, ROADMAP.adoc, READINESS.adoc, TEST-NEEDS.adoc, PROOF-NEEDS.adoc, TOPOLOGY.adoc"
 marker-scan = "TODO/FIXME/XXX/HACK/STUB/PARTIAL"
 idris-unsound-scan = "believe_me/assert_total"
 

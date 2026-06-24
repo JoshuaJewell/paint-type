@@ -12,7 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### v0.2.0 — Core Image Operations (closing; 2026-06-01)
 
-In-repo work complete; only the AffineScript → typed-wasm bridge remains,
+In-repo work complete. AffineScript → typed-wasm bridge: draft `.twasm`
+schemas at `src/bridges/paint-type-{tile,layer}.twasm` now compile with `tw build`
+(hardcoded IR added to typed-wasm codegen v0); full front-end → IR lowering still
 gated on `hyperpolymath/typed-wasm#127` + `#130` (tracked in paint-type#39).
 
 #### Added
@@ -30,8 +32,8 @@ gated on `hyperpolymath/typed-wasm#127` + `#130` (tracked in paint-type#39).
 - `pt_layer_*` cross-language FFI surface for layer metadata (PR #28,
   closes #25). 23 total Zig exports (pt_tile_* + pt_layer_* + slot helpers).
 - Draft `.twasm` schemas at `src/bridges/paint-type-{tile,layer}.twasm`
-  (PR #40, refs #39). Cannot yet be compiled by `tw build` — codegen v0
-  in `hyperpolymath/typed-wasm` only handles example-01.
+  (PR #40, refs #39). Now compiles with `tw build` via hardcoded IR in
+  typed-wasm codegen; full general parsing gated on typed-wasm#127 + #130.
 - ABI-3 (per-platform sizes) + ABI-5 (C ABI compliance) + TP-3 (RGBA16F
   bit-pattern classifier) Idris2 proofs. ABI category fully closed (PRs #10/#19).
 - E2E pipeline test: `tests/e2e.sh` (9 stages) + `src/ephapax/tests/

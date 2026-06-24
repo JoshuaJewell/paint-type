@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+= Vector / SIMD CPU backends
+
+SIMD-tiered CPU backends. Same operation surface as `CpuReferenceBackend`; same correctness contract; faster.
+
+| Backend | Target ISA
+|---|---
+| `CpuAvx2Backend` | x86_64 AVX2
+| `CpuAvx512Backend` | x86_64 AVX-512 (with AVX-512F / VBMI / VAES / VBMI2 tiers)
+| `CpuNeonBackend` | aarch64 NEON
+| `CpuSveBackend` | aarch64 SVE / SVE2
+| `CpuSmeBackend` | aarch64 SME / SME2 (Apple M4+, Arm v9.3-A+)
+| `CpuRvvBackend` | RISC-V V (with Zvbb / Zvbc / Zvkn vector-crypto tiers)
+| `CpuVsxBackend` | PowerPC VSX
+| `CpuWasmSimd128Backend` | wasm32/wasm64 with SIMD128
+| `CpuWasmRelaxedSimdBackend` | wasm32/wasm64 with relaxed-SIMD

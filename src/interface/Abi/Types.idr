@@ -1,4 +1,4 @@
--- SPDX-License-Identifier: PMPL-1.0-or-later
+-- SPDX-License-Identifier: AGPL-3.0-or-later
 ||| paint.type ABI Type Definitions
 |||
 ||| This module defines the Application Binary Interface (ABI) for libpt,
