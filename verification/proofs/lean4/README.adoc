@@ -1,33 +1,62 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 
-= lean4
-:description: Project directory
+= Lean 4 proofs — `verification/proofs/lean4/`
 
-This directory is part of the paint.type project.
+Machine-checked Lean 4 proofs for paint.type's soundness obligations. Both
+files are pure core Lean 4 (no Mathlib, no Std), each type-checking with a bare
+`lean <file>` invocation. CI re-checks them via `.github/workflows/proofs.yml`
+(the `lean4` job), pinned to *Lean 4.13.0*.
 
-== Purpose
+[IMPORTANT]
+====
+*Toolchain pin matters.* `UndoGraph.lean` uses `List.get?`, which was removed
+from core Lean after ~4.13 (replaced by `l[i]?` / `getElem?`). Both proofs
+check under the pinned *4.13.0*; under a newer Lean (e.g. 4.31.0) `ApiTypes.lean`
+still checks but `UndoGraph.lean` does not. Do not bump the pin without porting
+`UndoGraph.lean`'s list indexing.
+====
 
-Project directory.
+== `ApiTypes.lean` — TP-2: public `pt_` API type safety
 
+Models the exported FFI surface (ground truth: `src/interface/ffi/src/main.zig`
+— the `pt_*` exports, the `Result` enum `{ok=0, error=1, invalid_param=2,
+busy=3}`, opaque `u64` handles, and the null / bad-magic / out-of-bounds
+validation discipline) and the `host_core` Command/Response protocol, and proves
+the type-safety properties:
 
-As a Level 3 directory (`verification/proofs/lean4/`), it supports the overall
-project structure.
+* `step_code_valid` / `step_code_in_enum` — every API step returns a `PtCode`
+  that is a valid member of the `Result` enum (no out-of-range code).
+* `write_ok_implies_live` / `read_ok_implies_live` — an `ok` typed access
+  implies the handle was live (the null / bad-magic guard).
+* `write_ok_implies_in_bounds` — an `ok` write implies in-bounds coordinates.
+* `write_after_free_not_ok` — writing through a freed handle is never `ok`
+  (use-after-free is rejected, not serviced).
+* `handle_total` — the Command→Response handler is total.
+* `handle_shape_correct` / `respShape_lt_four` — protocol response shapes.
 
-== Contents by Functional Grouping\n\n=== Other Files\n\n* `ApiTypes.lean` — ApiTypes configuration or data\n\n
-== Purpose of Each Component
+== `UndoGraph.lean` — INV-2: undo-graph monotonicity
 
-Each file in this directory serves a specific purpose.
+Proves monotonicity / no-discard properties of the revision graph backing
+`paint_core`'s undo history.
 
-*Other files* support directory operations.\n
+== Verification record
 
-== AI Manifest Structure
+Re-run locally with the prover installed (elan + Lean 4.13.0, the CI pin):
 
-* `0.3-AI-MANIFEST.a2ml` (this file) - Level 3 manifest for `verification/proofs/lean4/`
+[cols="1,3",options="header"]
+|===
+| Check | Result
+| `lean ApiTypes.lean` (Lean 4.13.0) | PASS — exit 0
+| `lean UndoGraph.lean` (Lean 4.13.0) | PASS — exit 0
+| `sorry` / `admit` / `axiom` in either file | NONE
+| Adversarial: weaken `respShape_lt_four`'s bound (`< 4` → `< 2`) | Correctly REJECTED (`decide` proves it false) — non-vacuous
+| Fidelity: `Result` enum, handle discipline match `src/interface/ffi/src/main.zig` | Confirmed
+|===
 
-
-
-== Related Files
-
-* link:../0.2-AI-MANIFEST.a2ml[Parent AI Manifest]
-* link:../README.adoc[Parent Directory README]
-* link:../../.machine_readable/[Machine Readable Metadata]
+NOTE: the use-after-free property (`write_after_free_not_ok`) is proved here at
+the model level. It is deliberately *not* re-probed by a runtime test, because
+`pt_tile_free` releases the backing allocation — a real post-free access would
+be undefined behaviour (libpt's double-free check is a best-effort poisoned-magic
+heuristic). The safely-testable discipline (null-handle rejection, bounds
+checks, double-free detection) is covered by the libpt unit tests in
+`src/interface/ffi/src/main.zig`.
