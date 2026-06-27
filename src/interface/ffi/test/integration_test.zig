@@ -30,6 +30,19 @@ extern fn pt_is_initialized(tile_ptr: u64) u32;
 extern fn pt_version() [*:0]const u8;
 extern fn pt_last_error() ?[*:0]const u8;
 
+extern fn pt_layer_stack_new() u64;
+extern fn pt_layer_stack_free(stack_ptr: u64) void;
+extern fn pt_layer_push(stack_ptr: u64, name_ptr: u64, name_len: u32) u32;
+extern fn pt_layer_delete(stack_ptr: u64, id: u32) u32;
+extern fn pt_layer_reorder_to(stack_ptr: u64, id: u32, new_position: u32) u32;
+extern fn pt_layer_count(stack_ptr: u64) u32;
+extern fn pt_layer_get_id_at(stack_ptr: u64, position: u32) u32;
+extern fn pt_layer_get_name(stack_ptr: u64, id: u32, out_buf: u64, buf_size: u32, out_len: u64) u32;
+extern fn pt_layer_set_opacity(stack_ptr: u64, id: u32, opacity_bits: u32) u32;
+extern fn pt_layer_get_opacity(stack_ptr: u64, id: u32) u32;
+extern fn pt_layer_set_visible(stack_ptr: u64, id: u32, visible: u32) u32;
+extern fn pt_layer_get_visible(stack_ptr: u64, id: u32) u32;
+
 //==============================================================================
 // Constants (must match libpt)
 //==============================================================================
@@ -207,4 +220,121 @@ test "many alloc-free cycles do not leak (smoke)" {
         try std.testing.expectEqual(RESULT_OK, pt_tile_fill(tile, r_in, r_in, r_in, r_in));
         pt_tile_free(tile);
     }
+}
+
+test "layer: lifecycle alloc and free" {
+    const stack = pt_layer_stack_new();
+    try std.testing.expect(stack != 0);
+    pt_layer_stack_free(stack);
+}
+
+test "layer: free null stack is safe" {
+    pt_layer_stack_free(0);
+}
+
+test "layer: push layer returns id" {
+    const stack = pt_layer_stack_new();
+    try std.testing.expect(stack != 0);
+    defer pt_layer_stack_free(stack);
+
+    const id = pt_layer_push(stack, 0, 0);
+    try std.testing.expect(id != 0);
+    try std.testing.expectEqual(@as(u32, 1), pt_layer_count(stack));
+}
+
+test "layer: push layer with name" {
+    const stack = pt_layer_stack_new();
+    try std.testing.expect(stack != 0);
+    defer pt_layer_stack_free(stack);
+
+    const name = "Background";
+    const id = pt_layer_push(stack, @intFromPtr(name.ptr), name.len);
+    try std.testing.expect(id != 0);
+
+    var buf: [32]u8 = [_]u8{0} ** 32;
+    var out_len: u32 = 0;
+    const rc = pt_layer_get_name(stack, id, @intFromPtr(&buf), buf.len, @intFromPtr(&out_len));
+    try std.testing.expectEqual(RESULT_OK, rc);
+    try std.testing.expectEqual(@as(u32, 10), out_len);
+    try std.testing.expectEqualStrings("Background", buf[0..out_len]);
+}
+
+test "layer: delete layer" {
+    const stack = pt_layer_stack_new();
+    try std.testing.expect(stack != 0);
+    defer pt_layer_stack_free(stack);
+
+    const id = pt_layer_push(stack, 0, 0);
+    try std.testing.expectEqual(@as(u32, 1), pt_layer_count(stack));
+    const rc = pt_layer_delete(stack, id);
+    try std.testing.expectEqual(RESULT_OK, rc);
+    try std.testing.expectEqual(@as(u32, 0), pt_layer_count(stack));
+}
+
+test "layer: reorder layer" {
+    const stack = pt_layer_stack_new();
+    try std.testing.expect(stack != 0);
+    defer pt_layer_stack_free(stack);
+
+    const id1 = pt_layer_push(stack, 0, 0);
+    const id2 = pt_layer_push(stack, 0, 0);
+
+    try std.testing.expectEqual(id1, pt_layer_get_id_at(stack, 0));
+    try std.testing.expectEqual(id2, pt_layer_get_id_at(stack, 1));
+
+    const rc = pt_layer_reorder_to(stack, id2, 0);
+    try std.testing.expectEqual(RESULT_OK, rc);
+    try std.testing.expectEqual(id2, pt_layer_get_id_at(stack, 0));
+    try std.testing.expectEqual(id1, pt_layer_get_id_at(stack, 1));
+}
+
+test "layer: opacity get and set" {
+    const stack = pt_layer_stack_new();
+    try std.testing.expect(stack != 0);
+    defer pt_layer_stack_free(stack);
+
+    const id = pt_layer_push(stack, 0, 0);
+    const op_bits: u32 = @bitCast(@as(f32, 0.5));
+    const rc = pt_layer_set_opacity(stack, id, op_bits);
+    try std.testing.expectEqual(RESULT_OK, rc);
+    try std.testing.expectEqual(op_bits, pt_layer_get_opacity(stack, id));
+}
+
+test "layer: opacity clamp overshoot" {
+    const stack = pt_layer_stack_new();
+    try std.testing.expect(stack != 0);
+    defer pt_layer_stack_free(stack);
+
+    const id = pt_layer_push(stack, 0, 0);
+    const high_bits: u32 = @bitCast(@as(f32, 1.5));
+    const rc = pt_layer_set_opacity(stack, id, high_bits);
+    try std.testing.expectEqual(RESULT_OK, rc);
+    const one_bits: u32 = @bitCast(@as(f32, 1.0));
+    try std.testing.expectEqual(one_bits, pt_layer_get_opacity(stack, id));
+}
+
+test "layer: visibility get and set" {
+    const stack = pt_layer_stack_new();
+    try std.testing.expect(stack != 0);
+    defer pt_layer_stack_free(stack);
+
+    const id = pt_layer_push(stack, 0, 0);
+    try std.testing.expectEqual(@as(u32, 1), pt_layer_get_visible(stack, id));
+    const rc = pt_layer_set_visible(stack, id, 0);
+    try std.testing.expectEqual(RESULT_OK, rc);
+    try std.testing.expectEqual(@as(u32, 0), pt_layer_get_visible(stack, id));
+}
+
+test "layer: invalid id returns error" {
+    const stack = pt_layer_stack_new();
+    try std.testing.expect(stack != 0);
+    defer pt_layer_stack_free(stack);
+
+    try std.testing.expectEqual(@as(u32, 1), pt_layer_delete(stack, 9999));
+    try std.testing.expectEqual(@as(u32, 1), pt_layer_set_visible(stack, 9999, 0));
+}
+
+test "layer: null stack returns error" {
+    try std.testing.expectEqual(@as(u32, 0), pt_layer_push(0, 0, 0));
+    try std.testing.expectEqual(@as(u32, 1), pt_layer_delete(0, 1));
 }

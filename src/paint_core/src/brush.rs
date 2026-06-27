@@ -272,7 +272,7 @@ impl Brush {
                 let mask_alpha = f16_bits_to_f32(mask_value);
                 let scale = 1.0_f32 - mask_alpha;
                 let idx = ((py as usize) * TILE_SIZE as usize + (px as usize)) * 4;
-                buf[idx]     = f32_to_f16_bits(f16_bits_to_f32(buf[idx])     * scale);
+                buf[idx] = f32_to_f16_bits(f16_bits_to_f32(buf[idx]) * scale);
                 buf[idx + 1] = f32_to_f16_bits(f16_bits_to_f32(buf[idx + 1]) * scale);
                 buf[idx + 2] = f32_to_f16_bits(f16_bits_to_f32(buf[idx + 2]) * scale);
                 buf[idx + 3] = f32_to_f16_bits(f16_bits_to_f32(buf[idx + 3]) * scale);

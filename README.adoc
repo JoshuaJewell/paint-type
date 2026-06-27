@@ -9,6 +9,8 @@
 
 The open, cross-platform image editor Paint.NET users are actually asking for.
 
+image::brand/social-preview.svg[paint-type Hero Banner,align="center"]
+
 image:https://img.shields.io/badge/license-AGPL--3.0--or--later-red[License: AGPL-3.0-or-later]
 image:https://img.shields.io/badge/CRG-D-orange?style=flat-square[CRG D,link=https://github.com/hyperpolymath/standards/tree/main/component-readiness-grades]
 image:https://img.shields.io/badge/status-pre--alpha%20(v0.2.0%20closing)-yellow[Status: pre-alpha — v0.2.0 closing]
@@ -23,6 +25,26 @@ image:https://img.shields.io/badge/RSR-Bronze-cd7f32[RSR Standard,link=https://g
 image:https://api.securityscorecards.dev/projects/github.com/JoshuaJewell/paint-type/badge[OpenSSF Scorecard,link=https://securityscorecards.dev/viewer/?uri=github.com/JoshuaJewell/paint-type]
 
 TIP: For quick project orientation, see the link:https://github.com/JoshuaJewell/paint-type/wiki[Project Wiki].
+
+---
+
+== Marr's Three Levels of Analysis
+
+paint-type adheres to David Marr's tripartite framework to ensure complete vertical alignment from intention to execution:
+
+* **1. Computational Level**: What is the ultimate objective? To deliver an open, uncompromised, high-performance image editor that honours the simplicity contract of Paint.NET while enabling real-time collaboration and seamless plugin integration.
+* **2. Algorithmic & Representational Level**: How is this achieved? Through linear types, non-aliased tile ownership (`!Copy + !Clone`), region-based compositing pipelines in Ephapax, and algebraic effect separation via AffineScript.
+* **3. Implementational Level**: How is this physically realized? A native Rust core engine (`paint_core`), clean C ABI compatibility via Zig (`libpt` / `dispatcher.zig`), and formal dependent-type verification in Idris 2 and Lean 4.
+
+---
+
+== The Sandler Submarine
+
+Operating within the hyperpolymath estate, paint-type employs the **Sandler Submarine** discipline:
+
+* **Run Silent, Run Deep**: We operate below the surface waves of industry hype and premature marketing. We prioritize deep architectural soundness, formal verification, and robust exception paths over surface features.
+* **Emotional Equanimity**: We maintain absolute composure when facing complex integration challenges, avoiding reactive fixes in favour of systematic root-cause remediation.
+* **Surfacing on Qualification**: We emerge into user-facing visibility only when claims are backed by executable evidence, RSR compliance, and verified component readiness.
 
 [TIP]
 ====

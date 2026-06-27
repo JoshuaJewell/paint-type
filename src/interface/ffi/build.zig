@@ -59,6 +59,7 @@ pub fn build(b: *std.Build) void {
         .linkage = .static,
         .root_module = static_module,
     });
+    static.bundle_compiler_rt = true;
     b.installArtifact(static);
 
     //--------------------------------------------------------------------------

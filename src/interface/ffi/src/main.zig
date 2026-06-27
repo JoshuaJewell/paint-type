@@ -376,6 +376,232 @@ export fn pt_free_u16_slot(slot_ptr: u64) void {
 }
 
 //==============================================================================
+// PtLayerStack
+//==============================================================================
+
+pub const PT_LAYER_ID_NONE: u32 = 0;
+pub const MAX_LAYERS: usize = 256;
+
+pub const PtLayer = struct {
+    id: u32,
+    name: [64]u8,
+    name_len: u32,
+    opacity: f32,
+    visible: u32,
+};
+
+pub const PtLayerStack = struct {
+    layers: [MAX_LAYERS]PtLayer,
+    count: u32,
+    next_id: u32,
+};
+
+export fn pt_layer_stack_new() u64 {
+    const allocator = std.heap.c_allocator;
+    const stack = allocator.create(PtLayerStack) catch {
+        setError("pt_layer_stack_new: out of memory");
+        return 0;
+    };
+    stack.* = .{
+        .layers = [_]PtLayer{.{ .id = 0, .name = [_]u8{0} ** 64, .name_len = 0, .opacity = 1.0, .visible = 1 }} ** MAX_LAYERS,
+        .count = 0,
+        .next_id = 1,
+    };
+    clearError();
+    return @intFromPtr(stack);
+}
+
+export fn pt_layer_stack_free(stack_ptr: u64) void {
+    if (stack_ptr == 0) return;
+    const allocator = std.heap.c_allocator;
+    const stack: *PtLayerStack = @ptrFromInt(stack_ptr);
+    allocator.destroy(stack);
+    clearError();
+}
+
+export fn pt_layer_push(stack_ptr: u64, name_ptr: u64, name_len: u32) u32 {
+    if (stack_ptr == 0) return PT_LAYER_ID_NONE;
+    const stack: *PtLayerStack = @ptrFromInt(stack_ptr);
+    if (stack.count >= MAX_LAYERS) return PT_LAYER_ID_NONE;
+    if (name_len > 64) return PT_LAYER_ID_NONE;
+
+    const id = stack.next_id;
+    stack.next_id += 1;
+
+    var layer = PtLayer{
+        .id = id,
+        .name = [_]u8{0} ** 64,
+        .name_len = name_len,
+        .opacity = 1.0,
+        .visible = 1,
+    };
+
+    if (name_ptr != 0 and name_len > 0) {
+        const src: [*]const u8 = @ptrFromInt(name_ptr);
+        @memcpy(layer.name[0..name_len], src[0..name_len]);
+    }
+
+    stack.layers[stack.count] = layer;
+    stack.count += 1;
+    return id;
+}
+
+export fn pt_layer_delete(stack_ptr: u64, id: u32) u32 {
+    if (stack_ptr == 0 or id == PT_LAYER_ID_NONE) return 1;
+    const stack: *PtLayerStack = @ptrFromInt(stack_ptr);
+    var i: u32 = 0;
+    while (i < stack.count) : (i += 1) {
+        if (stack.layers[i].id == id) {
+            var j: u32 = i;
+            while (j + 1 < stack.count) : (j += 1) {
+                stack.layers[j] = stack.layers[j + 1];
+            }
+            stack.count -= 1;
+            return 0;
+        }
+    }
+    return 1;
+}
+
+export fn pt_layer_reorder_to(stack_ptr: u64, id: u32, new_position: u32) u32 {
+    if (stack_ptr == 0 or id == PT_LAYER_ID_NONE) return 1;
+    const stack: *PtLayerStack = @ptrFromInt(stack_ptr);
+    if (new_position >= stack.count) return 1;
+
+    var i: u32 = 0;
+    while (i < stack.count) : (i += 1) {
+        if (stack.layers[i].id == id) {
+            const target = stack.layers[i];
+            if (i < new_position) {
+                var j: u32 = i;
+                while (j < new_position) : (j += 1) {
+                    stack.layers[j] = stack.layers[j + 1];
+                }
+            } else if (i > new_position) {
+                var j: u32 = i;
+                while (j > new_position) : (j -= 1) {
+                    stack.layers[j] = stack.layers[j - 1];
+                }
+            }
+            stack.layers[new_position] = target;
+            return 0;
+        }
+    }
+    return 1;
+}
+
+export fn pt_layer_count(stack_ptr: u64) u32 {
+    if (stack_ptr == 0) return 0;
+    const stack: *const PtLayerStack = @ptrFromInt(stack_ptr);
+    return stack.count;
+}
+
+export fn pt_layer_get_id_at(stack_ptr: u64, position: u32) u32 {
+    if (stack_ptr == 0) return PT_LAYER_ID_NONE;
+    const stack: *const PtLayerStack = @ptrFromInt(stack_ptr);
+    if (position >= stack.count) return PT_LAYER_ID_NONE;
+    return stack.layers[position].id;
+}
+
+export fn pt_layer_get_name(stack_ptr: u64, id: u32, out_buf: u64, buf_size: u32, out_len: u64) u32 {
+    if (stack_ptr == 0 or id == PT_LAYER_ID_NONE or out_buf == 0 or out_len == 0) return 1;
+    const stack: *const PtLayerStack = @ptrFromInt(stack_ptr);
+
+    var i: u32 = 0;
+    while (i < stack.count) : (i += 1) {
+        if (stack.layers[i].id == id) {
+            const l = &stack.layers[i];
+            if (buf_size < l.name_len) return 1;
+            const dst: [*]u8 = @ptrFromInt(out_buf);
+            @memcpy(dst[0..l.name_len], l.name[0..l.name_len]);
+            const len_ptr: *u32 = @ptrFromInt(out_len);
+            len_ptr.* = l.name_len;
+            return 0;
+        }
+    }
+    return 1;
+}
+
+export fn pt_layer_set_opacity(stack_ptr: u64, id: u32, opacity_bits: u32) u32 {
+    if (stack_ptr == 0 or id == PT_LAYER_ID_NONE) return 1;
+    const stack: *PtLayerStack = @ptrFromInt(stack_ptr);
+
+    var f: f32 = @bitCast(opacity_bits);
+    if (std.math.isNan(f)) {
+        f = 1.0;
+    } else if (f < 0.0) {
+        f = 0.0;
+    } else if (f > 1.0) {
+        f = 1.0;
+    }
+
+    var i: u32 = 0;
+    while (i < stack.count) : (i += 1) {
+        if (stack.layers[i].id == id) {
+            stack.layers[i].opacity = f;
+            return 0;
+        }
+    }
+    return 1;
+}
+
+export fn pt_layer_get_opacity(stack_ptr: u64, id: u32) u32 {
+    if (stack_ptr == 0 or id == PT_LAYER_ID_NONE) return @bitCast(@as(f32, 1.0));
+    const stack: *const PtLayerStack = @ptrFromInt(stack_ptr);
+
+    var i: u32 = 0;
+    while (i < stack.count) : (i += 1) {
+        if (stack.layers[i].id == id) {
+            return @bitCast(stack.layers[i].opacity);
+        }
+    }
+    return @bitCast(@as(f32, 1.0));
+}
+
+export fn pt_layer_set_visible(stack_ptr: u64, id: u32, visible: u32) u32 {
+    if (stack_ptr == 0 or id == PT_LAYER_ID_NONE) return 1;
+    const stack: *PtLayerStack = @ptrFromInt(stack_ptr);
+
+    var i: u32 = 0;
+    while (i < stack.count) : (i += 1) {
+        if (stack.layers[i].id == id) {
+            stack.layers[i].visible = visible;
+            return 0;
+        }
+    }
+    return 1;
+}
+
+export fn pt_layer_get_visible(stack_ptr: u64, id: u32) u32 {
+    if (stack_ptr == 0 or id == PT_LAYER_ID_NONE) return 0;
+    const stack: *const PtLayerStack = @ptrFromInt(stack_ptr);
+
+    var i: u32 = 0;
+    while (i < stack.count) : (i += 1) {
+        if (stack.layers[i].id == id) {
+            return stack.layers[i].visible;
+        }
+    }
+    return 0;
+}
+
+test "layer stack alloc and free" {
+    const stack = pt_layer_stack_new();
+    try std.testing.expect(stack != 0);
+    pt_layer_stack_free(stack);
+}
+
+test "layer stack push and count" {
+    const stack = pt_layer_stack_new();
+    try std.testing.expect(stack != 0);
+    defer pt_layer_stack_free(stack);
+
+    const id = pt_layer_push(stack, 0, 0);
+    try std.testing.expect(id != PT_LAYER_ID_NONE);
+    try std.testing.expectEqual(@as(u32, 1), pt_layer_count(stack));
+}
+
+//==============================================================================
 // Library Status
 //==============================================================================
 
