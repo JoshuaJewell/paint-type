@@ -376,6 +376,284 @@ export fn pt_free_u16_slot(slot_ptr: u64) void {
 }
 
 //==============================================================================
+// PtLayerStack — cross-language layer-metadata stack
+//==============================================================================
+//
+// The canonical implementation of the `pt_layer_*` C ABI consumed by the Rust
+// `paint_core` crate (see its `unsafe extern "C"` block). A PtLayerStack is an
+// ordered list of layer records; index 0 is the *bottom* of the stack and the
+// last element is the *top*. `pt_layer_push` appends a new layer at the top and
+// issues a fresh, non-zero, monotonically-increasing id. Ids are stable across
+// reordering and never reused, so a caller can hold an id and address the same
+// layer regardless of its position.
+//
+// Pointers cross the boundary as u64 (cast via @ptrFromInt), matching the tile
+// ABI above. Opacity crosses as the IEEE-754 binary32 bit-pattern of an f32.
+// All entry points are null- and liveness-checked; a stale or null handle is a
+// reported error (Result.error / PT_LAYER_ID_NONE), never a crash.
+
+/// Sentinel "no such layer" id. Real ids start at 1, so 0 is always invalid.
+const PT_LAYER_ID_NONE: u32 = 0;
+
+/// Magic for a live PtLayerStack. ASCII "PLST".
+const PT_LSTACK_MAGIC: u32 = 0x504C5354;
+/// Magic stamped into a freed stack header to catch double-free.
+const PT_LSTACK_DEAD: u32 = 0x44454144; // "DEAD"
+
+const Layer = struct {
+    id: u32,
+    /// Owned UTF-8 name (c_allocator). Zero-length names carry an empty,
+    /// non-heap slice and are never freed.
+    name: []u8,
+    /// Clamped to [0, 1]; NaN inputs are normalised to 1.0.
+    opacity: f32,
+    visible: bool,
+};
+
+const PtLayerStack = struct {
+    magic: u32,
+    next_id: u32,
+    layers: std.ArrayListUnmanaged(Layer),
+
+    fn isLive(self: *const PtLayerStack) bool {
+        return self.magic == PT_LSTACK_MAGIC;
+    }
+
+    fn indexOf(self: *const PtLayerStack, id: u32) ?usize {
+        for (self.layers.items, 0..) |layer, i| {
+            if (layer.id == id) return i;
+        }
+        return null;
+    }
+};
+
+/// Resolve a u64 handle to a live stack, or null if null/stale.
+fn liveStack(stack_ptr: u64) ?*PtLayerStack {
+    if (stack_ptr == 0) return null;
+    const stack: *PtLayerStack = @ptrFromInt(stack_ptr);
+    if (!stack.isLive()) return null;
+    return stack;
+}
+
+/// Normalise an f32 opacity bit-pattern: NaN → 1.0, then clamp to [0, 1].
+fn sanitizeOpacity(opacity_bits: u32) f32 {
+    const v: f32 = @bitCast(opacity_bits);
+    if (std.math.isNan(v)) return 1.0;
+    if (v < 0.0) return 0.0;
+    if (v > 1.0) return 1.0;
+    return v;
+}
+
+/// Allocate a fresh, empty stack. Returns the handle, or 0 on OOM.
+export fn pt_layer_stack_new() u64 {
+    const allocator = std.heap.c_allocator;
+    const stack = allocator.create(PtLayerStack) catch {
+        setError("pt_layer_stack_new: out of memory");
+        return 0;
+    };
+    stack.* = .{ .magic = PT_LSTACK_MAGIC, .next_id = 1, .layers = .empty };
+    clearError();
+    return @intFromPtr(stack);
+}
+
+/// Free a stack and every owned layer name. Safe to call with 0.
+export fn pt_layer_stack_free(stack_ptr: u64) void {
+    if (stack_ptr == 0) return;
+    const stack: *PtLayerStack = @ptrFromInt(stack_ptr);
+    if (!stack.isLive()) {
+        setError("pt_layer_stack_free: invalid or already-freed stack");
+        return;
+    }
+    const allocator = std.heap.c_allocator;
+    for (stack.layers.items) |layer| {
+        if (layer.name.len > 0) allocator.free(layer.name);
+    }
+    stack.layers.deinit(allocator);
+    stack.magic = PT_LSTACK_DEAD;
+    allocator.destroy(stack);
+    clearError();
+}
+
+/// Push a new layer at the top. Returns its fresh non-zero id, or
+/// PT_LAYER_ID_NONE on invalid stack, bad arguments, id exhaustion, or OOM.
+export fn pt_layer_push(stack_ptr: u64, name_ptr: u64, name_len: u32) u32 {
+    const stack = liveStack(stack_ptr) orelse {
+        setError("pt_layer_push: invalid stack");
+        return PT_LAYER_ID_NONE;
+    };
+    if (stack.next_id == std.math.maxInt(u32)) {
+        setError("pt_layer_push: layer id space exhausted");
+        return PT_LAYER_ID_NONE;
+    }
+    const allocator = std.heap.c_allocator;
+
+    var name_copy: []u8 = &[_]u8{};
+    if (name_len > 0) {
+        if (name_ptr == 0) {
+            setError("pt_layer_push: null name pointer with non-zero length");
+            return PT_LAYER_ID_NONE;
+        }
+        const src: [*]const u8 = @ptrFromInt(name_ptr);
+        name_copy = allocator.alloc(u8, name_len) catch {
+            setError("pt_layer_push: out of memory (name)");
+            return PT_LAYER_ID_NONE;
+        };
+        @memcpy(name_copy, src[0..name_len]);
+    }
+
+    const id = stack.next_id;
+    stack.layers.append(allocator, .{
+        .id = id,
+        .name = name_copy,
+        .opacity = 1.0,
+        .visible = true,
+    }) catch {
+        if (name_copy.len > 0) allocator.free(name_copy);
+        setError("pt_layer_push: out of memory (append)");
+        return PT_LAYER_ID_NONE;
+    };
+    stack.next_id += 1;
+    clearError();
+    return id;
+}
+
+/// Delete the layer with `id`. Returns Result.ok, or Result.error if the
+/// stack is invalid or the id is unknown.
+export fn pt_layer_delete(stack_ptr: u64, id: u32) u32 {
+    const stack = liveStack(stack_ptr) orelse return @intFromEnum(Result.@"error");
+    const idx = stack.indexOf(id) orelse {
+        setError("pt_layer_delete: unknown id");
+        return @intFromEnum(Result.@"error");
+    };
+    const allocator = std.heap.c_allocator;
+    const removed = stack.layers.orderedRemove(idx);
+    if (removed.name.len > 0) allocator.free(removed.name);
+    clearError();
+    return @intFromEnum(Result.ok);
+}
+
+/// Move the layer with `id` to 0-based `new_position`, preserving the relative
+/// order of the others. Returns Result.ok, or Result.error on invalid stack,
+/// unknown id, or out-of-range position.
+export fn pt_layer_reorder_to(stack_ptr: u64, id: u32, new_position: u32) u32 {
+    const stack = liveStack(stack_ptr) orelse return @intFromEnum(Result.@"error");
+    const idx = stack.indexOf(id) orelse {
+        setError("pt_layer_reorder_to: unknown id");
+        return @intFromEnum(Result.@"error");
+    };
+    if (new_position >= stack.layers.items.len) {
+        setError("pt_layer_reorder_to: position out of bounds");
+        return @intFromEnum(Result.@"error");
+    }
+    const allocator = std.heap.c_allocator;
+    const layer = stack.layers.orderedRemove(idx);
+    stack.layers.insert(allocator, new_position, layer) catch {
+        // Re-append rather than drop the layer on OOM.
+        stack.layers.append(allocator, layer) catch {
+            if (layer.name.len > 0) allocator.free(layer.name);
+        };
+        setError("pt_layer_reorder_to: out of memory");
+        return @intFromEnum(Result.@"error");
+    };
+    clearError();
+    return @intFromEnum(Result.ok);
+}
+
+/// Number of layers in the stack (0 for an invalid handle).
+export fn pt_layer_count(stack_ptr: u64) u32 {
+    const stack = liveStack(stack_ptr) orelse return 0;
+    return @intCast(stack.layers.items.len);
+}
+
+/// Id of the layer at 0-based `position`, or PT_LAYER_ID_NONE if out of range.
+export fn pt_layer_get_id_at(stack_ptr: u64, position: u32) u32 {
+    const stack = liveStack(stack_ptr) orelse return PT_LAYER_ID_NONE;
+    if (position >= stack.layers.items.len) return PT_LAYER_ID_NONE;
+    return stack.layers.items[position].id;
+}
+
+/// Copy the UTF-8 name of layer `id` into the caller buffer and write the true
+/// byte length through `out_len` (a *u32). The length is written even when the
+/// buffer is too small, so a caller can resize and retry. Returns Result.ok,
+/// or Result.error on invalid stack, unknown id, or insufficient buffer.
+export fn pt_layer_get_name(
+    stack_ptr: u64,
+    id: u32,
+    out_buf: u64,
+    buf_size: u32,
+    out_len: u64,
+) u32 {
+    const stack = liveStack(stack_ptr) orelse return @intFromEnum(Result.@"error");
+    const idx = stack.indexOf(id) orelse {
+        setError("pt_layer_get_name: unknown id");
+        return @intFromEnum(Result.@"error");
+    };
+    const layer = stack.layers.items[idx];
+    const n: u32 = @intCast(layer.name.len);
+
+    if (out_len != 0) {
+        const len_ptr: *u32 = @ptrFromInt(out_len);
+        len_ptr.* = n;
+    }
+    if (n > buf_size) {
+        setError("pt_layer_get_name: output buffer too small");
+        return @intFromEnum(Result.@"error");
+    }
+    if (n > 0) {
+        if (out_buf == 0) {
+            setError("pt_layer_get_name: null output buffer");
+            return @intFromEnum(Result.@"error");
+        }
+        const dst: [*]u8 = @ptrFromInt(out_buf);
+        @memcpy(dst[0..n], layer.name);
+    }
+    clearError();
+    return @intFromEnum(Result.ok);
+}
+
+/// Set the opacity of layer `id` from an f32 bit-pattern (NaN → 1.0, clamped to
+/// [0, 1]). Returns Result.ok, or Result.error on invalid stack / unknown id.
+export fn pt_layer_set_opacity(stack_ptr: u64, id: u32, opacity_bits: u32) u32 {
+    const stack = liveStack(stack_ptr) orelse return @intFromEnum(Result.@"error");
+    const idx = stack.indexOf(id) orelse {
+        setError("pt_layer_set_opacity: unknown id");
+        return @intFromEnum(Result.@"error");
+    };
+    stack.layers.items[idx].opacity = sanitizeOpacity(opacity_bits);
+    clearError();
+    return @intFromEnum(Result.ok);
+}
+
+/// Get the opacity of layer `id` as an f32 bit-pattern. Returns the bits of
+/// 1.0 for an invalid stack or unknown id.
+export fn pt_layer_get_opacity(stack_ptr: u64, id: u32) u32 {
+    const one_bits: u32 = @bitCast(@as(f32, 1.0));
+    const stack = liveStack(stack_ptr) orelse return one_bits;
+    const idx = stack.indexOf(id) orelse return one_bits;
+    return @bitCast(stack.layers.items[idx].opacity);
+}
+
+/// Set the visibility of layer `id` (non-zero → visible). Returns Result.ok,
+/// or Result.error on invalid stack / unknown id.
+export fn pt_layer_set_visible(stack_ptr: u64, id: u32, visible: u32) u32 {
+    const stack = liveStack(stack_ptr) orelse return @intFromEnum(Result.@"error");
+    const idx = stack.indexOf(id) orelse {
+        setError("pt_layer_set_visible: unknown id");
+        return @intFromEnum(Result.@"error");
+    };
+    stack.layers.items[idx].visible = (visible != 0);
+    clearError();
+    return @intFromEnum(Result.ok);
+}
+
+/// Get the visibility of layer `id` (1 → visible, 0 → hidden / unknown id).
+export fn pt_layer_get_visible(stack_ptr: u64, id: u32) u32 {
+    const stack = liveStack(stack_ptr) orelse return 0;
+    const idx = stack.indexOf(id) orelse return 0;
+    return if (stack.layers.items[idx].visible) 1 else 0;
+}
+
+//==============================================================================
 // Library Status
 //==============================================================================
 
@@ -537,4 +815,154 @@ test "u16 slot helpers round-trip" {
     const slot_ptr: *u16 = @ptrFromInt(slot);
     slot_ptr.* = 0xBEEF;
     try std.testing.expectEqual(@as(u16, 0xBEEF), pt_read_u16_slot(slot));
+}
+
+//------------------------------------------------------------------------------
+// PtLayerStack tests
+//------------------------------------------------------------------------------
+
+/// Read the name of layer `id` into a fixed buffer and return it as a slice of
+/// `buf`, asserting the call succeeded.
+fn expectName(stack: u64, id: u32, buf: []u8) ![]const u8 {
+    var out_len: u32 = 0;
+    const rc = pt_layer_get_name(stack, id, @intFromPtr(buf.ptr), @intCast(buf.len), @intFromPtr(&out_len));
+    try std.testing.expectEqual(@intFromEnum(Result.ok), rc);
+    try std.testing.expect(out_len <= buf.len);
+    return buf[0..out_len];
+}
+
+test "layer stack: new, push, count, get_id_at ordering" {
+    const stack = pt_layer_stack_new();
+    try std.testing.expect(stack != 0);
+    defer pt_layer_stack_free(stack);
+
+    try std.testing.expectEqual(@as(u32, 0), pt_layer_count(stack));
+
+    const bg = "Background";
+    const fg = "Stroke";
+    const bg_id = pt_layer_push(stack, @intFromPtr(bg.ptr), bg.len);
+    const fg_id = pt_layer_push(stack, @intFromPtr(fg.ptr), fg.len);
+    try std.testing.expect(bg_id != PT_LAYER_ID_NONE);
+    try std.testing.expect(fg_id != PT_LAYER_ID_NONE);
+    try std.testing.expect(bg_id != fg_id);
+
+    try std.testing.expectEqual(@as(u32, 2), pt_layer_count(stack));
+    // index 0 = bottom (first pushed), last = top.
+    try std.testing.expectEqual(bg_id, pt_layer_get_id_at(stack, 0));
+    try std.testing.expectEqual(fg_id, pt_layer_get_id_at(stack, 1));
+    try std.testing.expectEqual(PT_LAYER_ID_NONE, pt_layer_get_id_at(stack, 2));
+}
+
+test "layer stack: get_name round-trips, empty name, buffer too small" {
+    const stack = pt_layer_stack_new();
+    defer pt_layer_stack_free(stack);
+
+    const name = "Layer Ω"; // multi-byte UTF-8 to prove byte-length handling
+    const id = pt_layer_push(stack, @intFromPtr(name.ptr), name.len);
+    var buf: [32]u8 = undefined;
+    try std.testing.expectEqualStrings(name, try expectName(stack, id, &buf));
+
+    // Empty name: push with null/zero, name length is 0.
+    const empty_id = pt_layer_push(stack, 0, 0);
+    try std.testing.expect(empty_id != PT_LAYER_ID_NONE);
+    try std.testing.expectEqualStrings("", try expectName(stack, empty_id, &buf));
+
+    // Buffer too small still reports the required length and returns error.
+    var tiny: [3]u8 = undefined;
+    var need: u32 = 0;
+    const rc = pt_layer_get_name(stack, id, @intFromPtr(&tiny), tiny.len, @intFromPtr(&need));
+    try std.testing.expectEqual(@intFromEnum(Result.@"error"), rc);
+    try std.testing.expectEqual(@as(u32, name.len), need);
+}
+
+test "layer stack: reorder preserves ids and moves position" {
+    const stack = pt_layer_stack_new();
+    defer pt_layer_stack_free(stack);
+
+    const a = "A";
+    const b = "B";
+    const c = "C";
+    const a_id = pt_layer_push(stack, @intFromPtr(a.ptr), a.len);
+    const b_id = pt_layer_push(stack, @intFromPtr(b.ptr), b.len);
+    const c_id = pt_layer_push(stack, @intFromPtr(c.ptr), c.len);
+    // [A, B, C]; move C (top) to bottom.
+    try std.testing.expectEqual(@intFromEnum(Result.ok), pt_layer_reorder_to(stack, c_id, 0));
+    try std.testing.expectEqual(c_id, pt_layer_get_id_at(stack, 0));
+    try std.testing.expectEqual(a_id, pt_layer_get_id_at(stack, 1));
+    try std.testing.expectEqual(b_id, pt_layer_get_id_at(stack, 2));
+
+    // Out-of-range position is rejected; ordering unchanged.
+    try std.testing.expectEqual(@intFromEnum(Result.@"error"), pt_layer_reorder_to(stack, a_id, 3));
+    try std.testing.expectEqual(c_id, pt_layer_get_id_at(stack, 0));
+}
+
+test "layer stack: delete removes by id and shifts" {
+    const stack = pt_layer_stack_new();
+    defer pt_layer_stack_free(stack);
+
+    const a = "A";
+    const b = "B";
+    const a_id = pt_layer_push(stack, @intFromPtr(a.ptr), a.len);
+    const b_id = pt_layer_push(stack, @intFromPtr(b.ptr), b.len);
+    try std.testing.expectEqual(@intFromEnum(Result.ok), pt_layer_delete(stack, a_id));
+    try std.testing.expectEqual(@as(u32, 1), pt_layer_count(stack));
+    try std.testing.expectEqual(b_id, pt_layer_get_id_at(stack, 0));
+    // Deleting an unknown id errors.
+    try std.testing.expectEqual(@intFromEnum(Result.@"error"), pt_layer_delete(stack, a_id));
+}
+
+test "layer stack: opacity clamps and NaN normalises" {
+    const stack = pt_layer_stack_new();
+    defer pt_layer_stack_free(stack);
+    const n = "L";
+    const id = pt_layer_push(stack, @intFromPtr(n.ptr), n.len);
+
+    // Default opacity is 1.0.
+    try std.testing.expectEqual(@as(f32, 1.0), @as(f32, @bitCast(pt_layer_get_opacity(stack, id))));
+
+    // 1.5 → 1.0 (overshoot), -0.25 → 0.0 (undershoot), NaN → 1.0, 0.5 stays.
+    _ = pt_layer_set_opacity(stack, id, @bitCast(@as(f32, 1.5)));
+    try std.testing.expectEqual(@as(f32, 1.0), @as(f32, @bitCast(pt_layer_get_opacity(stack, id))));
+    _ = pt_layer_set_opacity(stack, id, @bitCast(@as(f32, -0.25)));
+    try std.testing.expectEqual(@as(f32, 0.0), @as(f32, @bitCast(pt_layer_get_opacity(stack, id))));
+    _ = pt_layer_set_opacity(stack, id, @bitCast(@as(f32, std.math.nan(f32))));
+    try std.testing.expectEqual(@as(f32, 1.0), @as(f32, @bitCast(pt_layer_get_opacity(stack, id))));
+    _ = pt_layer_set_opacity(stack, id, @bitCast(@as(f32, 0.5)));
+    try std.testing.expectEqual(@as(f32, 0.5), @as(f32, @bitCast(pt_layer_get_opacity(stack, id))));
+
+    // Unknown id → bits of 1.0 on get, error on set.
+    try std.testing.expectEqual(@as(f32, 1.0), @as(f32, @bitCast(pt_layer_get_opacity(stack, 9999))));
+    try std.testing.expectEqual(@intFromEnum(Result.@"error"), pt_layer_set_opacity(stack, 9999, 0));
+}
+
+test "layer stack: visibility toggles, default visible" {
+    const stack = pt_layer_stack_new();
+    defer pt_layer_stack_free(stack);
+    const n = "L";
+    const id = pt_layer_push(stack, @intFromPtr(n.ptr), n.len);
+
+    try std.testing.expectEqual(@as(u32, 1), pt_layer_get_visible(stack, id));
+    try std.testing.expectEqual(@intFromEnum(Result.ok), pt_layer_set_visible(stack, id, 0));
+    try std.testing.expectEqual(@as(u32, 0), pt_layer_get_visible(stack, id));
+    try std.testing.expectEqual(@intFromEnum(Result.ok), pt_layer_set_visible(stack, id, 7));
+    try std.testing.expectEqual(@as(u32, 1), pt_layer_get_visible(stack, id));
+
+    // Unknown id → 0 on get, error on set.
+    try std.testing.expectEqual(@as(u32, 0), pt_layer_get_visible(stack, 9999));
+    try std.testing.expectEqual(@intFromEnum(Result.@"error"), pt_layer_set_visible(stack, 9999, 1));
+}
+
+test "layer stack: null / stale handle safety" {
+    // Null handle: frees are no-ops, queries return safe defaults.
+    pt_layer_stack_free(0);
+    try std.testing.expectEqual(@as(u32, 0), pt_layer_count(0));
+    try std.testing.expectEqual(PT_LAYER_ID_NONE, pt_layer_push(0, 0, 0));
+    try std.testing.expectEqual(PT_LAYER_ID_NONE, pt_layer_get_id_at(0, 0));
+    try std.testing.expectEqual(@intFromEnum(Result.@"error"), pt_layer_delete(0, 1));
+    try std.testing.expectEqual(@intFromEnum(Result.@"error"), pt_layer_reorder_to(0, 1, 0));
+    try std.testing.expectEqual(@intFromEnum(Result.@"error"), pt_layer_set_opacity(0, 1, 0));
+    try std.testing.expectEqual(@intFromEnum(Result.@"error"), pt_layer_set_visible(0, 1, 1));
+    // Getters on a null handle return safe defaults: opacity 1.0, hidden.
+    try std.testing.expectEqual(@as(f32, 1.0), @as(f32, @bitCast(pt_layer_get_opacity(0, 1))));
+    try std.testing.expectEqual(@as(u32, 0), pt_layer_get_visible(0, 1));
 }
