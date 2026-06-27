@@ -225,6 +225,51 @@ fi
 # RGBA16F format ships.
 
 # ═══════════════════════════════════════════════════════════════════════
+# Aspect 8: Tool primitives implemented + round-trip tested (v0.3.0)
+# ═══════════════════════════════════════════════════════════════════════
+# The v0.3.0 tool set is brush / eraser / selection / fill. This aspect is a
+# structural guard: (a) none of the tools has regressed to a not_implemented
+# stub, and (b) each tool has a named gesture -> tile-mutation round-trip test.
+# The round-trips themselves run in `zig build test` (eraser/fill/selection)
+# and `cargo test` (brush e2e); this aspect ties their existence to the gate.
+bold "Aspect 8: Tool primitives implemented + round-trip tested"
+
+CPU_BACKEND="src/backends/cpu/main.zig"
+TOOL_FAIL=0
+
+if [ -f "$CPU_BACKEND" ]; then
+    # (a) No tool function is still the `fn cpu_x(_arg: ...)` ignored-param stub.
+    for fn in cpu_tool_stroke_eraser cpu_tool_fill \
+              cpu_selection_rect cpu_selection_lasso cpu_selection_invert \
+              cpu_selection_cut cpu_selection_copy cpu_selection_paste; do
+        if grep -qE "fn ${fn}\(_[a-z]" "$CPU_BACKEND"; then
+            fail "$fn is still a not_implemented stub"
+            TOOL_FAIL=$((TOOL_FAIL + 1))
+        fi
+    done
+
+    # (b) Each tool has a gesture -> tile-mutation round-trip test by name.
+    for tool in brush eraser fill selection; do
+        case "$tool" in
+            brush)     pat='end_to_end_tile_layer_brush_undo_pipeline' ;;
+            eraser)    pat='eraser lowers destination alpha' ;;
+            fill)      pat='fill flood fills a uniform layer' ;;
+            selection) pat='selection rect -> cut -> paste round-trips' ;;
+        esac
+        if ! grep -rqF "$pat" "$CPU_BACKEND" src/paint_core/tests/ 2>/dev/null; then
+            fail "$tool tool has no round-trip test matching: $pat"
+            TOOL_FAIL=$((TOOL_FAIL + 1))
+        fi
+    done
+
+    if [ "$TOOL_FAIL" -eq 0 ]; then
+        pass "brush/eraser/selection/fill implemented and round-trip tested"
+    fi
+else
+    warn "$CPU_BACKEND not present — skipping tool-primitive aspect"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════
 # Summary
 # ═══════════════════════════════════════════════════════════════════════
 echo ""

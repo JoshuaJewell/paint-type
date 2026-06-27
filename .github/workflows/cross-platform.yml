@@ -1,0 +1,81 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# cross-platform.yml — v0.3.0 cross-OS build + integration matrix.
+#
+# Builds and tests the full native vertical (Zig dispatcher + CPU-reference
+# backend, the libpt FFI static library, and the Rust paint_core crate that
+# links it) on Linux, macOS, and Windows, per the v0.3.0 "Desktop Shell"
+# acceptance criterion ("CI matrix covers ubuntu-latest, macos-latest,
+# windows-latest for build + integration tests").
+#
+# Notes:
+#   * All `uses:` are pinned to a full commit SHA — the estate Actions policy
+#     rejects tag refs at run-creation (startup_failure).
+#   * paint_core's build.rs resolves libpt relative to the crate and will run
+#     `zig build` itself if the static library is absent, so a plain
+#     `cargo test` in src/paint_core links the freshly-built libpt on every OS.
+#   * The Linux leg is the one verified locally; the macOS/Windows legs are
+#     expected to need per-platform shaking-out (linking, path quirks) — that
+#     is tracked as the v0.3.0 "green the macOS/Windows legs" follow-up. The
+#     matrix runs fail-fast: false so one red leg does not mask the others.
+name: Cross-platform build
+on:
+  pull_request:
+    branches: ['**']
+  push:
+    branches: [main, master]
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-test:
+    name: build + test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Install Zig 0.15.1
+        uses: mlugg/setup-zig@8d6198c65fb0feaa111df26e6b467fea8345e46f # v1
+        with:
+          version: 0.15.1
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache cargo registry and build
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
+        with:
+          workspaces: src/paint_core
+
+      - name: Dispatcher + CPU-reference build and unit tests
+        shell: bash
+        run: |
+          zig build
+          zig build test
+
+      - name: Build libpt (Zig FFI static library)
+        shell: bash
+        run: |
+          cd src/interface/ffi
+          zig build
+
+      - name: paint_core integration tests (links libpt)
+        shell: bash
+        working-directory: src/paint_core
+        run: cargo test --all-targets
+
+      - name: Aspect tests (cross-cutting invariants)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: bash tests/aspect_tests.sh
