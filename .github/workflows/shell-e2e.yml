@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# shell-e2e.yml — v0.3.0 Desktop Shell end-to-end (Linux/WebKitGTK).
+#
+# Builds the webview shell (src/shell/) and launches it headlessly under Xvfb,
+# asserting "open app -> empty canvas visible -> quit clean" (issue #13
+# acceptance). Linux-only by nature: it needs the GTK3 + WebKitGTK toolkit and
+# an X server. All `uses:` SHA-pinned per the estate Actions policy.
+name: Desktop shell e2e
+on:
+  pull_request:
+    branches: ['**']
+  push:
+    branches: [main, master]
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  shell-e2e:
+    name: shell launch (WebKitGTK + Xvfb)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Install GTK3 + WebKitGTK + Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-3-dev libwebkit2gtk-4.1-dev xvfb
+
+      - name: Install Zig 0.15.1
+        uses: mlugg/setup-zig@8d6198c65fb0feaa111df26e6b467fea8345e46f # v1
+        with:
+          version: 0.15.1
+
+      - name: E2E — open app, empty canvas, quit clean
+        run: bash tests/e2e.sh
+
+      - name: Write summary
+        if: always()
+        run: |
+          {
+            echo "## Desktop shell e2e"
+            echo ""
+            echo "- builds src/shell/ (GTK3 + WebKitGTK 4.1)"
+            echo "- launches headlessly under Xvfb in smoke mode"
+            echo "- asserts canvas-ready (window + empty canvas) and quit-clean"
+          } >> "$GITHUB_STEP_SUMMARY"

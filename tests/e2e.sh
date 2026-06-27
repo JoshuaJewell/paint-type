@@ -85,46 +85,43 @@ bold "Preflight checks"
 echo ""
 
 # ═══════════════════════════════════════════════════════════════════════
-# TODO: Add your E2E test sections below. Examples:
+# Section 1: Desktop shell (WebKitGTK) — open app, empty canvas, quit clean
 # ═══════════════════════════════════════════════════════════════════════
+# Builds the v0.3.0 webview shell (src/shell/, a GTK3 + WebKitGTK host on the
+# same stack as gossamer/webview_gtk) and launches it headlessly under Xvfb in
+# smoke mode. The shell creates the window + web view, loads the empty-canvas
+# page, then auto-quits — emitting two markers the harness asserts. Skips
+# cleanly where the webview toolkit or a headless display is unavailable (e.g.
+# the macOS/Windows matrix legs), so it never produces a false failure.
+bold "Section 1: Desktop shell — launch, empty canvas, quit clean"
 
-# ─── Example: CLI tool E2E ───────────────────────────────────────────
-# bold "Section 1: CLI happy path"
-# OUTPUT=$($BINARY --help 2>&1)
-# check "help flag works" "Usage:" "$OUTPUT"
-#
-# OUTPUT=$($BINARY process input.txt --output /tmp/e2e-output.json 2>&1)
-# check "process command succeeds" "complete" "$OUTPUT"
-#
-# OUTPUT=$(cat /tmp/e2e-output.json)
-# check "output is valid JSON" '"status"' "$OUTPUT"
+SHELL_DIR="$PROJECT_DIR/src/shell"
 
-# ─── Example: Server E2E ────────────────────────────────────────────
-# bold "Section 2: Server lifecycle"
-# $BINARY serve --port 9999 &
-# SERVER_PID=$!
-# trap "kill $SERVER_PID 2>/dev/null" EXIT
-# sleep 2
-#
-# STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9999/health)
-# check_status "health endpoint" "200" "$STATUS"
-#
-# BODY=$(curl -s http://localhost:9999/health)
-# check "health response" '"status":"ok"' "$BODY"
-#
-# kill $SERVER_PID 2>/dev/null
-
-# ─── Example: VeriSimDB integration ─────────────────────────────────
-# bold "Section 3: VeriSimDB persistence"
-# VERISIM_URL="${VERISIM_API_URL:-http://localhost:9090}"
-# if ! curl -sf "$VERISIM_URL/health" >/dev/null 2>&1; then
-#     skip_test "VeriSimDB integration" "gateway not available"
-# else
-#     STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$VERISIM_URL/api/v1/hexads" \
-#         -H "Content-Type: application/json" \
-#         -d '{"tool":"paint-type","modality":"document","content":"e2e test"}')
-#     check_status "hexad POST" "201" "$STATUS"
-# fi
+if ! command -v zig >/dev/null 2>&1; then
+    skip_test "desktop shell launch" "zig not found"
+elif ! pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
+    skip_test "desktop shell launch" "webkit2gtk-4.1 not installed (webview toolkit absent)"
+elif ! command -v xvfb-run >/dev/null 2>&1; then
+    skip_test "desktop shell launch" "xvfb-run not found (no headless display)"
+else
+    if ( cd "$SHELL_DIR" && zig build ) >/tmp/pt-shell-build.log 2>&1; then
+        green "  PASS: shell builds (GTK3 + WebKitGTK)"
+        PASS=$((PASS + 1))
+        SHELL_BIN="$SHELL_DIR/zig-out/bin/paint-type-shell"
+        SHELL_OUT=$(timeout 40 xvfb-run -a -s "-screen 0 1280x1024x24" \
+            env PT_SHELL_SMOKE=1 \
+                WEBKIT_DISABLE_COMPOSITING_MODE=1 \
+                WEBKIT_DISABLE_DMABUF_RENDERER=1 \
+                LIBGL_ALWAYS_SOFTWARE=1 \
+                GDK_BACKEND=x11 \
+            "$SHELL_BIN" 2>&1) || true
+        check "shell opens window + empty canvas" "PT_SHELL: canvas-ready" "$SHELL_OUT"
+        check "shell quits cleanly" "PT_SHELL: quit-clean" "$SHELL_OUT"
+    else
+        fail "shell build failed (see /tmp/pt-shell-build.log)"
+        tail -5 /tmp/pt-shell-build.log || true
+    fi
+fi
 
 # ═══════════════════════════════════════════════════════════════════════
 # Summary

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: MPL-2.0 -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>paint.type</title>
+    <style>
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: #2b2b2b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: system-ui, sans-serif;
+        color: #cccccc;
+      }
+      #surface {
+        background: #ffffff;
+        box-shadow: 0 0 0 1px #000, 0 8px 24px rgba(0, 0, 0, 0.5);
+      }
+      .tag {
+        position: fixed;
+        top: 8px;
+        left: 8px;
+        font-size: 12px;
+        color: #888888;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="tag">paint.type — empty canvas</div>
+    <canvas id="surface" width="800" height="600"></canvas>
+    <script>
+      const cv = document.getElementById("surface");
+      const ctx = cv.getContext("2d");
+      // An empty (opaque white) paint surface.
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, cv.width, cv.height);
+    </script>
+  </body>
+</html>
