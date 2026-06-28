@@ -195,14 +195,6 @@ The canvas bridge is command-in, dirty-rect-out. The native core owns the pixel 
 
 ---
 
-== Ecosystem position
-
-paint.type is part of the https://github.com/hyperpolymath[hyperpolymath / palimpsest] ecosystem, a set of projects built around correctness-by-construction: Gossamer, Ephapax, AffineScript, typed-wasm, Burble, Groove, BoJ. Each project is independently useful. Together they make paint.type possible without rebuilding foundational infrastructure from scratch.
-
-License across the ecosystem: PMPL-1.0-or-later. See https://github.com/hyperpolymath/palimpsest-license[PMPL-1.0].
-
----
-
 == Comparison
 
 [cols="2,1,1,1,1"]
@@ -346,15 +338,6 @@ Open an issue, start a discussion, or reach out directly.
 == License
 
 AGPL-3.0-or-later — see link:LICENSE[LICENSE]
-
-[NOTE]
-====
-This project's author advocates for PMPL-2.0-or-later (Palimpsest License v2) as a
-cultural/ethical licensing philosophy. However, **AGPL-3.0-or-later is the
-actual license** of this repository. PMPL is documented in link:LICENSE[LICENSE]
-for informational purposes only.
-====
-
 
 ---
 
