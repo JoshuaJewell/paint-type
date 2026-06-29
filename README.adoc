@@ -9,6 +9,8 @@
 
 The open, cross-platform image editor Paint.NET users are actually asking for.
 
+image::brand/social-preview.svg[paint-type Hero Banner,align="center"]
+
 image:https://img.shields.io/badge/license-AGPL--3.0--or--later-red[License: AGPL-3.0-or-later]
 image:https://img.shields.io/badge/CRG-D-orange?style=flat-square[CRG D,link=https://github.com/hyperpolymath/standards/tree/main/component-readiness-grades]
 image:https://img.shields.io/badge/status-pre--alpha%20(v0.2.0%20closing)-yellow[Status: pre-alpha — v0.2.0 closing]

@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640">
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="box-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="text-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <radialGradient id="bg-glow" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#3f0a18" />
+      <stop offset="70%" stop-color="#0d1117" />
+      <stop offset="100%" stop-color="#080c10" />
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="640" fill="#0d1117"/>
+  <rect width="1280" height="640" fill="url(#bg-glow)"/>
+
+  <!-- Formal Type Structure (Geometric, precise) -->
+  <g fill="none" stroke="#e11d48" stroke-width="1.5" opacity="0.2" filter="url(#box-glow)">
+    <rect x="520" y="120" width="240" height="240" rx="24"/>
+    <line x1="640" y1="80" x2="640" y2="400"/>
+    <line x1="480" y1="240" x2="800" y2="240"/>
+    <circle cx="640" cy="240" r="80"/>
+  </g>
+
+  <!-- Solid structural frame -->
+  <rect x="540" y="140" width="200" height="200" rx="16" fill="none" stroke="#f43f5e" stroke-width="3" opacity="0.85" filter="url(#box-glow)"/>
+
+  <!-- Fluid Brush Stroke (Dynamic, expressive) -->
+  <path d="
+    M 460,320
+    C 510,330 530,190 590,160
+    C 650,130 680,250 730,240
+    C 780,230 790,160 820,130
+  " fill="none" stroke="#f43f5e" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+
+  <path d="
+    M 468,336
+    C 516,346 540,206 596,176
+    C 648,148 674,264 724,256
+    C 768,248 784,184 810,154
+  " fill="none" stroke="#f43f5e" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" filter="url(#glow)"/>
+
+  <!-- "paint-type" text -->
+  <text x="640" y="460" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="96" font-weight="300" fill="#e6edf3" letter-spacing="2" filter="url(#text-glow)">paint-type</text>
+
+  <!-- Accent dot -->
+  <circle cx="640" cy="510" r="4" fill="#f43f5e" opacity="0.8"/>
+  <line x1="540" y1="510" x2="630" y2="510" stroke="#f43f5e" stroke-width="1" opacity="0.3"/>
+  <line x1="650" y1="510" x2="740" y2="510" stroke="#f43f5e" stroke-width="1" opacity="0.3"/>
+</svg>

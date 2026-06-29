@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Fuzzing requires nightly Rust: the sanitizer-coverage / -Zsanitizer=address
+# instrumentation cargo-fuzz injects is nightly-only. Pinning the channel here
+# (in the fuzz/ subtree, NOT the parent crate) lets `cargo fuzz …` select
+# nightly without forcing the parent crate's `cargo test` off stable 1.94.1.
+[toolchain]
+channel = "nightly"
+components = ["rust-src", "llvm-tools"]

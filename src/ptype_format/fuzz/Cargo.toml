@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Fuzz harness for ptype_format (INV-1). Detaches from any ancestor workspace
+# via the empty [workspace] table — this is its own root, built only by
+# `cargo +nightly fuzz`, never by the parent crate's `cargo test`.
+[package]
+name = "ptype_format-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+license = "AGPL-3.0-or-later"
+
+[package.metadata]
+cargo-fuzz = true
+
+[workspace]
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.ptype_format]
+path = ".."
+
+# INV-1a — the totality property: decode() must return a typed DecodeError on
+# ANY byte slice, never panic / abort / OOM. A crash here is a real soundness
+# hole in the "decode never panics on bad data" contract.
+[[bin]]
+name = "decode_total"
+path = "fuzz_targets/decode_total.rs"
+test = false
+doc = false
+bench = false
+
+# INV-1b — encode∘decode stability: any canvas decode() accepts must re-encode
+# to bytes that decode back to an equal canvas, and re-encoding must be
+# byte-identical (issue #13 byte-equality criterion, exercised on fuzzer-found
+# inputs rather than only hand-written ones).
+[[bin]]
+name = "roundtrip"
+path = "fuzz_targets/roundtrip.rs"
+test = false
+doc = false
+bench = false

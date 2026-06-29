@@ -1,0 +1,149 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= The `.ptype` native format — draft v1
+:toc: macro
+:icons: font
+:source-highlighter: rouge
+
+[IMPORTANT]
+====
+*Draft.* This is the minimal versioned specification required by paint-type
+issue #13 (v0.3.0 — Desktop Shell) before native-format *save* can land. The
+full, frozen specification is a *v1.0.0* obligation. Anything marked
+_reserved_ here may change before v1.0.0. The normative reference
+implementation is `src/ptype_format/` (Rust); its `golden_header_prefix` test
+pins the header bytes documented below.
+====
+
+toc::[]
+
+== Purpose
+
+`.ptype` is paint-type's *native, lossless* container for an in-flight edit:
+the full layered canvas exactly as the compute core holds it in memory, with no
+colour conversion, quantisation, or flattening. PNG export is the
+*interchange* path (8-bit, flattened, lossy w.r.t. the editing model); `.ptype`
+is the *project* path (16-bit float, layered, lossless).
+
+== Model serialised
+
+The format is a verbatim serialisation of paint-type's canvas model
+(`src/backends/cpu/main.zig`):
+
+* *Canvas* — `width`, `height`, `format`, a `[4]f32` background, and an
+  ordered stack of layers.
+* *Layer* — UTF-8 `name`, `visible` flag, `f64` `opacity`, a `blend` mode, and
+  a *sparse* set of tiles keyed by tile-grid coordinate.
+* *Tile* — a fixed `64 × 64`, 4-channel block: `64 * 64 * 4 = 16384` scalars.
+
+[[rgba16f]]
+=== RGBA16F scalars are stored as raw `u16`
+
+Every pixel scalar is an IEEE-754 *half-float*, and paint-type keeps it as the
+raw `u16` bit-pattern of that half — never as a decoded `f32`
+(`src/backends/cpu/main.zig`, `src/interface/ffi/src/main.zig`,
+`src/ephapax/src/lib.rs`). `.ptype` writes those `u16`s unchanged.
+
+This is the *lossless-by-construction* property: because no scalar is ever
+interpreted as a float on the encode or decode path, the round-trip preserves
+every bit pattern — including `+0`/`−0`, `±Inf`, and *every* `NaN` payload —
+which a naïve `f32` round-trip would canonicalise away. The reference
+implementation proves this with `roundtrip_preserves_half_float_edge_patterns`.
+
+== Byte layout
+
+[NOTE]
+====
+All multi-byte integers and floats are *little-endian*. Offsets below are for
+the fixed header; the body is variable-length and described structurally.
+====
+
+=== Header (fixed, 48 bytes)
+
+[cols="1,3,2,6",options="header"]
+|===
+| Offset | Field | Type | Value / meaning
+| 0  | `magic`         | `u8[8]` | `89 50 54 59 50 45 0D 0A` (`0x89` `"PTYPE"` `CR` `LF`)
+| 8  | `version`       | `u16`   | `1` for this draft
+| 10 | `flags`         | `u16`   | `0` = uncompressed. Bit 0 _reserved_ for a future DEFLATE body. Unknown bits ⇒ hard error.
+| 12 | `format`        | `u32`   | `0` = RGBA16F (only value defined in draft v1)
+| 16 | `width`         | `u32`   | canvas width in pixels
+| 20 | `height`        | `u32`   | canvas height in pixels
+| 24 | `background`    | `f32[4]`| RGBA background colour (16 bytes)
+| 40 | `tile_size`     | `u32`   | `64` — tile edge length, recorded for validation / forward-compat
+| 44 | `tile_channels` | `u32`   | `4` — channels per pixel
+|===
+
+The magic mirrors PNG's signature design: the leading high-bit byte (`0x89`)
+detects 7-bit-stripping transports, the legible `PTYPE` aids `hexdump`
+inspection, and the trailing `CR LF` detects naïve newline translation.
+
+A decoder MUST reject the file if `version != 1`, if `flags` has any bit set,
+if `format != 0`, or if `(tile_size, tile_channels) != (64, 4)`.
+
+=== Body
+
+Immediately after the header:
+
+[source]
+----
+layer_count : u32
+layer_count × Layer
+----
+
+with each `Layer`:
+
+[source]
+----
+name_len    : u32            ; bytes of UTF-8 name
+name        : u8[name_len]   ; UTF-8, not NUL-terminated
+visible     : u8             ; 0 = hidden, non-zero = visible
+opacity     : f64
+blend       : u32            ; 0 = Normal, 1 = Multiply, 2 = Screen
+tile_count  : u32
+tile_count × Tile
+----
+
+and each `Tile`:
+
+[source]
+----
+tx     : u32                 ; tile-grid X (tile units)
+ty     : u32                 ; tile-grid Y (tile units)
+pixels : u16[16384]          ; raw RGBA16F half-float bit-patterns,
+                             ; row-major, channel-interleaved R,G,B,A,…
+----
+
+== Determinism
+
+Encoding is a deterministic function of the canvas: layers are written in stack
+order and a layer's tiles in ascending `(tx, ty)` key order. Therefore two
+equal canvases always encode to identical bytes, and re-encoding a decoded
+canvas is byte-identical (the `byte_stability_under_reencode` test, and the
+issue-#13 byte-equality acceptance criterion).
+
+== Error handling
+
+The decoder is *total*: every malformed input maps to a typed error and never
+panics. Defined rejections: bad magic, unsupported version/flags/format,
+tile-geometry mismatch, unknown blend mode, invalid UTF-8 in a name, unexpected
+end-of-input at any field, and trailing bytes after a complete canvas. The
+`reject_truncation_at_all_lengths` test exercises every truncation point.
+
+== Reserved for v1.0.0
+
+The following are deliberately *out of scope* for this draft and reserved:
+
+* `flags` bit 0 — DEFLATE-compressed body.
+* Per-canvas colour-space / ICC metadata.
+* Embedded undo-history serialisation (the canvas snapshot graph).
+* Variable tile size (the `tile_size` field already carries the value so a
+  future reader can branch on it).
+* A trailing checksum / integrity trailer.
+
+== Conformance
+
+An implementation conforms to draft v1 if, for every `Canvas` it can hold,
+`decode(encode(c)) == c` and `encode(decode(encode(c))) == encode(c)`, and if
+its decoder rejects each malformed input class above with a typed error rather
+than a crash. The Rust reference crate's test module is the executable
+conformance suite for this draft.

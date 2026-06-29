@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# ptype_format — reference encoder/decoder for paint-type's native RGBA16F
+# `.ptype` container (draft v1).
+#
+# This crate is deliberately SELF-CONTAINED and FFI-FREE: it does not link
+# libpt (the Zig core) and has no `build.rs`. It is a pure-Rust reference
+# implementation of the on-disk byte layout that the Zig dispatcher's
+# `pt_io_save` / `pt_io_open` (fmt = "ptype") are expected to adopt. Keeping it
+# standalone makes the format independently `cargo test`-able — and the
+# round-trip byte-equality property checkable — without the native render core.
+#
+# Standalone package (NOT part of the paint_core workspace), mirroring the
+# pattern used by `paint-type-collab/src/paint_collab/`.
+
+[package]
+name = "ptype_format"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+description = "Reference encoder/decoder for paint-type's native RGBA16F .ptype container (draft v1)."
+repository = "https://github.com/JoshuaJewell/paint-type"
+
+[lib]
+name = "ptype_format"
+crate-type = ["rlib"]
+
+[dependencies]
+
+[dev-dependencies]

@@ -1,0 +1,121 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// paint.type — canvas-viewport UI chrome (v0.3.0, AffineScript).
+//
+// Mounts the drawing surface into the Gossamer webview and blits the live
+// composited canvas. Self-contained for standalone compilation: the DOM
+// symbols are `extern` FFI imports the webview host wires to affinescript-dom,
+// `pt_canvas_render_rgba8` is the real libpt dispatcher export, and the
+// `pt_host_*` symbols are webview glue (linear-memory scratch + 2D blit).
+//
+// Frame path: pt_host_alloc_rgba8 reserves a w*h*4 byte scratch buffer in
+// shared linear memory → pt_canvas_render_rgba8 composites every visible
+// layer (index 0 = bottom) into it at RGBA8 → pt_host_blit_rgba8 paints the
+// buffer onto the <canvas> 2D context. The host re-runs repaint after any
+// pt_layer_*/pt_tool_* mutation, so the surface reflects state within a frame.
+
+// ── DOM FFI (host-provided; mirrors affinescript-dom SafeDOM) ──────────
+extern fn dom_query_selector(selector: String) -> Int;
+extern fn dom_create_element(tag: String) -> Int;
+extern fn dom_append_child(parent: Int, child: Int) -> Unit;
+extern fn dom_set_attribute(el: Int, name: String, value: String) -> Unit;
+
+// ── libpt dispatcher export (the real C-ABI compositor) ────────────────
+// Returns ResultCode: 0 = ok; non-zero = invalid_param / backend error.
+extern fn pt_canvas_render_rgba8(
+  canvas: Int, x: Int, y: Int, w: Int, h: Int, out_buf: Int, out_buf_len: Int
+) -> Int;
+
+// ── Host glue (webview side, not libpt symbols) ────────────────────────
+// Reserve a w*h*4 RGBA8 scratch buffer in shared linear memory; returns a
+// byte offset usable as out_buf for pt_canvas_render_rgba8.
+extern fn pt_host_alloc_rgba8(w: Int, h: Int) -> Int;
+// Paint `len` RGBA8 bytes at `buf` onto the 2D context of canvas element `el`.
+extern fn pt_host_blit_rgba8(el: Int, buf: Int, w: Int, h: Int) -> Unit;
+
+// ── Minimal VDOM (mirrors affinescript-dom) ────────────────────────────
+enum VNode {
+  VElem(String, [(String, String)], [VNode])
+}
+
+fn h(tag: String, attrs: [(String, String)], children: [VNode]) -> VNode =
+  VElem(tag, attrs, children);
+
+fn render(vnode: VNode) -> Int {
+  match vnode {
+    VElem(tag, attrs, children) => {
+      let el = dom_create_element(tag);
+      for a in attrs {
+        match a {
+          (name, value) => dom_set_attribute(el, name, value)
+        }
+      }
+      for child in children {
+        dom_append_child(el, render(child));
+      }
+      el
+    }
+  }
+}
+
+fn mount(selector: String, vnode: VNode) -> Bool {
+  let parent = dom_query_selector(selector);
+  if parent == 0 {
+    false
+  } else {
+    dom_append_child(parent, render(vnode));
+    true
+  }
+}
+
+// ── Viewport view ───────────────────────────────────────────────────────
+
+fn int_to_string(n: Int) -> String = "auto";
+
+// The <canvas> surface element. width/height carry the pixel dims so the host
+// 2D context matches the composited buffer exactly (no implicit scaling).
+fn canvas_surface(width: Int, height: Int) -> VNode {
+  h("canvas", [
+    ("id", "pt-canvas"),
+    ("class", "pt-surface"),
+    ("width", int_to_string(width)),
+    ("height", int_to_string(height))
+  ], [])
+}
+
+// Composite the live canvas and blit it onto the mounted <canvas>. Returns
+// true iff pt_canvas_render_rgba8 reported ResultCode.ok (0) AND the surface
+// element is present. Allocation, render and blit all share one linear-memory
+// buffer so no RGBA8 bytes are copied out of wasm memory.
+fn repaint(canvas: Int, width: Int, height: Int) -> Bool {
+  let el = dom_query_selector("#pt-canvas");
+  if el == 0 {
+    false
+  } else {
+    let len = width * height * 4;
+    let buf = pt_host_alloc_rgba8(width, height);
+    let rc = pt_canvas_render_rgba8(canvas, 0, 0, width, height, buf, len);
+    if rc == 0 {
+      pt_host_blit_rgba8(el, buf, width, height);
+      true
+    } else {
+      false
+    }
+  }
+}
+
+// Entry point: mount the surface, then composite+blit the first frame. The
+// host calls this on first paint and repaint() after each state mutation.
+fn render_viewport(canvas: Int, width: Int, height: Int) -> Bool {
+  let ok = mount("#canvas-viewport", canvas_surface(width, height));
+  if ok {
+    repaint(canvas, width, height)
+  } else {
+    false
+  }
+}
+
+fn main() -> () {
+  let _ = render_viewport(0, 800, 600);
+  ()
+}

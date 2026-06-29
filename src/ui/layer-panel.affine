@@ -1,0 +1,120 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// paint.type — layer-panel UI chrome (v0.3.0, AffineScript).
+//
+// Renders the layer-stack panel into the Gossamer webview and reflects the
+// live Ephapax `pt_layer_*` state. Self-contained for standalone compilation:
+// the DOM and `pt_layer_*` symbols are `extern` FFI imports that the webview
+// host wires to affinescript-dom and the libpt C ABI respectively.
+
+// ── DOM FFI (host-provided; mirrors affinescript-dom SafeDOM) ──────────
+extern fn dom_query_selector(selector: String) -> Int;
+extern fn dom_create_element(tag: String) -> Int;
+extern fn dom_create_text_node(content: String) -> Int;
+extern fn dom_append_child(parent: Int, child: Int) -> Unit;
+extern fn dom_set_attribute(el: Int, name: String, value: String) -> Unit;
+
+// ── Ephapax pt_layer_* FFI (the v0.2.0 tile bindings) ──────────────────
+extern fn pt_layer_count(stack: Int) -> Int;
+extern fn pt_layer_get_id_at(stack: Int, position: Int) -> Int;
+extern fn pt_layer_get_visible(stack: Int, id: Int) -> Int;
+
+// ── Minimal VDOM (mirrors affinescript-dom) ────────────────────────────
+enum VNode {
+  VText(String),
+  VElem(String, [(String, String)], [VNode])
+}
+
+fn text(content: String) -> VNode = VText(content);
+
+fn h(tag: String, attrs: [(String, String)], children: [VNode]) -> VNode =
+  VElem(tag, attrs, children);
+
+fn render(vnode: VNode) -> Int {
+  match vnode {
+    VText(content) => dom_create_text_node(content),
+    VElem(tag, attrs, children) => {
+      let el = dom_create_element(tag);
+      for a in attrs {
+        match a {
+          (name, value) => dom_set_attribute(el, name, value)
+        }
+      }
+      for child in children {
+        dom_append_child(el, render(child));
+      }
+      el
+    }
+  }
+}
+
+fn mount(selector: String, vnode: VNode) -> Bool {
+  let parent = dom_query_selector(selector);
+  if parent == 0 {
+    false
+  } else {
+    dom_append_child(parent, render(vnode));
+    true
+  }
+}
+
+// ── Layer panel view ───────────────────────────────────────────────────
+
+fn panel_header(count: Int) -> VNode {
+  let title = if count == 0 { "Layers (empty)" } else { "Layers" };
+  h("div", [("class", "pt-layer-header")], [text(title)])
+}
+
+// A single layer row (eye badge + name). One row per live layer.
+fn layer_row(visible: Int) -> VNode {
+  let eye = if visible == 1 { "view" } else { "hide" };
+  h("li", [("class", "pt-layer-row")], [
+    h("span", [("class", "pt-layer-eye"), ("data-state", eye)], [text(eye)]),
+    h("span", [("class", "pt-layer-name")], [text("Layer")])
+  ])
+}
+
+// Render the panel container; reads the live count from pt_layer_count so the
+// header reflects current Ephapax state. Rows are populated by populate_rows.
+fn layer_panel(count: Int) -> VNode {
+  h("aside", [("id", "pt-layer-panel"), ("class", "pt-panel")], [
+    panel_header(count),
+    h("ul", [("class", "pt-layer-list"), ("id", "pt-layer-list")], [])
+  ])
+}
+
+// Imperatively append one row per live layer onto #pt-layer-list, reading the
+// live stack (index 0 = bottom). Returns the number of rows rendered.
+fn populate_rows(stack: Int) -> Int {
+  let list = dom_query_selector("#pt-layer-list");
+  if list == 0 {
+    0
+  } else {
+    let count = pt_layer_count(stack);
+    let mut i = 0;
+    while i < count {
+      let id = pt_layer_get_id_at(stack, i);
+      let vis = pt_layer_get_visible(stack, id);
+      dom_append_child(list, render(layer_row(vis)));
+      i = i + 1;
+    }
+    count
+  }
+}
+
+// Entry point: mount the panel, then fill it from live pt_layer_* state. The
+// host calls this on first paint and after any pt_layer_* mutation (one frame).
+fn render_layer_panel(stack: Int) -> Bool {
+  let ok = mount("#layer-panel", layer_panel(pt_layer_count(stack)));
+  if ok {
+    let _ = populate_rows(stack);
+    true
+  } else {
+    false
+  }
+}
+
+fn main() -> () {
+  let _ = render_layer_panel(0);
+  ()
+}

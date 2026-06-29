@@ -1,0 +1,77 @@
+= ptype_format fuzzing (INV-1)
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+Coverage-guided fuzz harness for the `.ptype` container decoder, wired with
+`cargo-fuzz` (libFuzzer). This is the INV-1 invariant for paint-type v0.3.0:
+the `.ptype` decoder is a *total* function over bytes.
+
+== Targets
+
+[cols="1,3",options="header"]
+|===
+| Target | Property under test
+| `decode_total`
+  | *Totality.* `decode()` returns a typed `DecodeError` on ANY byte slice —
+    never panics, aborts, or OOMs. libFuzzer flags any crash.
+| `roundtrip`
+  | *Byte-stability.* For any input `decode()` accepts, re-encoding the decoded
+    canvas and decoding again reaches a byte-identical fixpoint (issue #13's
+    byte-equality criterion). Uses byte-equality, NOT structural `==` — see the
+    NaN note in `fuzz_targets/roundtrip.rs`.
+|===
+
+== Running
+
+IMPORTANT — *fuzzing requires nightly Rust.* The sanitizer-coverage /
+`-Zsanitizer=address` instrumentation `cargo-fuzz` injects is a nightly-only
+feature; invoked on stable it fails with _"the option `Z` is only accepted on
+the nightly compiler"_. This is normal cargo-fuzz behaviour, not a broken
+toolchain.
+
+Two equivalent ways to get nightly:
+
+[source,sh]
+----
+# (a) Run from THIS directory — fuzz/rust-toolchain.toml pins nightly, so the
+#     plain command works and the parent crate's `cargo test` stays on stable:
+cd fuzz
+cargo fuzz run decode_total
+cargo fuzz run roundtrip
+
+# (b) From anywhere, name the toolchain explicitly:
+cargo +nightly fuzz run decode_total
+----
+
+The `fuzz/rust-toolchain.toml` pin is *only* honoured when cargo-fuzz is invoked
+with the working directory inside `fuzz/` (rustup resolves the toolchain from
+the invocation CWD, and cargo-fuzz spawns the build from there). From the parent
+crate directory you must use the explicit `cargo +nightly fuzz …` form.
+
+Seed the corpus from the committed minimal seed for a faster start:
+
+[source,sh]
+----
+cd fuzz
+mkdir -p corpus/decode_total corpus/roundtrip
+cp seeds/*.ptype corpus/decode_total/
+cp seeds/*.ptype corpus/roundtrip/
+cargo fuzz run decode_total            # uses corpus/decode_total/ by default
+----
+
+== What this harness already found (and we fixed)
+
+* *Unbounded `Vec::with_capacity` from an untrusted `layer_count`* — a 52-byte
+  file claiming `0xFFFF_FFFF` layers made `decode()` eagerly reserve ~256 GiB
+  and OOM-abort, violating the totality contract. Fixed by capping the
+  preallocation to what the remaining input can actually hold
+  (`MIN_LAYER_BYTES`); locked in by the `reject_oversized_layer_count_without_oom`
+  unit test so it is caught on stable `cargo test` too.
+
+== Layout
+
+* `fuzz_targets/decode_total.rs`, `fuzz_targets/roundtrip.rs` — the two targets.
+* `rust-toolchain.toml` — pins nightly + `rust-src`/`llvm-tools` for fuzzing.
+* `seeds/` — committed minimal valid `.ptype` seed(s) to bootstrap the corpus.
+* `Cargo.toml` — its own workspace root (empty `[workspace]`), so the fuzz crate
+  is built only by `cargo fuzz`, never pulled into the parent crate's build.
+* `corpus/`, `artifacts/`, `target/`, `coverage/` — generated, git-ignored.

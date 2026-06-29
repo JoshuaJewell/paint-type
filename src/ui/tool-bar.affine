@@ -1,0 +1,134 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// paint.type — tool-bar UI chrome (v0.3.0, AffineScript).
+//
+// Renders the tool palette into the Gossamer webview and tracks the active
+// tool. Self-contained for standalone compilation: the DOM symbols are
+// `extern` FFI imports the webview host wires to affinescript-dom, and
+// `pt_host_set_active_tool` is the host-glue intent sink.
+//
+// Tool indices match the libpt dispatcher vtable ordering. Selecting a tool
+// does NOT itself stroke the canvas — it records the active tool in host
+// state; the canvas-viewport panel then routes pointer events to the matching
+// libpt op (pt_tool_stroke_brush / pt_tool_stroke_eraser / pt_tool_fill /
+// pt_selection_rect). Keeping selection and dispatch separate mirrors the
+// dispatcher's own split between "which backend op" and "invoke it".
+
+// ── DOM FFI (host-provided; mirrors affinescript-dom SafeDOM) ──────────
+extern fn dom_query_selector(selector: String) -> Int;
+extern fn dom_create_element(tag: String) -> Int;
+extern fn dom_create_text_node(content: String) -> Int;
+extern fn dom_append_child(parent: Int, child: Int) -> Unit;
+extern fn dom_set_attribute(el: Int, name: String, value: String) -> Unit;
+
+// ── Host intent sink (webview glue, not a libpt symbol) ────────────────
+// The host records the chosen tool and re-points its pointer-event router.
+extern fn pt_host_set_active_tool(tool: Int) -> Unit;
+
+// ── Minimal VDOM (mirrors affinescript-dom) ────────────────────────────
+enum VNode {
+  VText(String),
+  VElem(String, [(String, String)], [VNode])
+}
+
+fn text(content: String) -> VNode = VText(content);
+
+fn h(tag: String, attrs: [(String, String)], children: [VNode]) -> VNode =
+  VElem(tag, attrs, children);
+
+fn render(vnode: VNode) -> Int {
+  match vnode {
+    VText(content) => dom_create_text_node(content),
+    VElem(tag, attrs, children) => {
+      let el = dom_create_element(tag);
+      for a in attrs {
+        match a {
+          (name, value) => dom_set_attribute(el, name, value)
+        }
+      }
+      for child in children {
+        dom_append_child(el, render(child));
+      }
+      el
+    }
+  }
+}
+
+fn mount(selector: String, vnode: VNode) -> Bool {
+  let parent = dom_query_selector(selector);
+  if parent == 0 {
+    false
+  } else {
+    dom_append_child(parent, render(vnode));
+    true
+  }
+}
+
+// ── Tool model ──────────────────────────────────────────────────────────
+// Index order matches the dispatcher vtable: brush, eraser, fill, selection.
+
+enum Tool {
+  Brush,
+  Eraser,
+  Fill,
+  Selection
+}
+
+fn tool_index(t: Tool) -> Int {
+  match t {
+    Brush => 0,
+    Eraser => 1,
+    Fill => 2,
+    Selection => 3
+  }
+}
+
+fn tool_label(t: Tool) -> String {
+  match t {
+    Brush => "Brush",
+    Eraser => "Eraser",
+    Fill => "Fill",
+    Selection => "Select"
+  }
+}
+
+// One tool button. `active` is the currently-selected tool index; the button
+// carries `data-active` so the host stylesheet can highlight the live tool.
+fn tool_button(active: Int, t: Tool) -> VNode {
+  let idx = tool_index(t);
+  let state = if active == idx { "on" } else { "off" };
+  h("button", [
+    ("class", "pt-tool"),
+    ("data-tool", tool_label(t)),
+    ("data-active", state)
+  ], [text(tool_label(t))])
+}
+
+// The tool-bar container, one button per tool, highlighting `active`.
+fn tool_bar(active: Int) -> VNode {
+  h("nav", [("id", "pt-tool-bar"), ("class", "pt-panel")], [
+    tool_button(active, Brush),
+    tool_button(active, Eraser),
+    tool_button(active, Fill),
+    tool_button(active, Selection)
+  ])
+}
+
+// Record a tool selection in host state and report its index. The host re-runs
+// render_tool_bar with this index so the highlight tracks within one frame.
+fn select_tool(t: Tool) -> Int {
+  let idx = tool_index(t);
+  pt_host_set_active_tool(idx);
+  idx
+}
+
+// Entry point: mount the tool bar with `active` highlighted (the host passes
+// the live active-tool index; 0 = Brush on first paint).
+fn render_tool_bar(active: Int) -> Bool {
+  mount("#tool-bar", tool_bar(active))
+}
+
+fn main() -> () {
+  let _ = render_tool_bar(select_tool(Brush));
+  ()
+}
