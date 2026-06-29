@@ -7,6 +7,8 @@
 
 module ABI.Platform
 
+import Data.Nat
+
 %default total
 
 ||| Supported target platforms for ABI verification.
@@ -54,10 +56,10 @@ cIntAlways4 _ = Refl
 ||| Proof that pointer size is always at least 4 bytes.
 export
 ptrSizeAtLeast4 : (p : Platform) -> LTE 4 (ptrSize p)
-ptrSizeAtLeast4 WASM32 = lteRefl
-ptrSizeAtLeast4 Linux64 = lteSuccRight (lteSuccRight (lteSuccRight (lteSuccRight lteRefl)))
-ptrSizeAtLeast4 LinuxARM64 = lteSuccRight (lteSuccRight (lteSuccRight (lteSuccRight lteRefl)))
-ptrSizeAtLeast4 MacOS64 = lteSuccRight (lteSuccRight (lteSuccRight (lteSuccRight lteRefl)))
-ptrSizeAtLeast4 MacOSARM64 = lteSuccRight (lteSuccRight (lteSuccRight (lteSuccRight lteRefl)))
-ptrSizeAtLeast4 Windows64 = lteSuccRight (lteSuccRight (lteSuccRight (lteSuccRight lteRefl)))
-ptrSizeAtLeast4 FreeBSD64 = lteSuccRight (lteSuccRight (lteSuccRight (lteSuccRight lteRefl)))
+ptrSizeAtLeast4 WASM32 = reflexive
+ptrSizeAtLeast4 Linux64 = lteSuccRight (lteSuccRight (lteSuccRight (lteSuccRight reflexive)))
+ptrSizeAtLeast4 LinuxARM64 = lteSuccRight (lteSuccRight (lteSuccRight (lteSuccRight reflexive)))
+ptrSizeAtLeast4 MacOS64 = lteSuccRight (lteSuccRight (lteSuccRight (lteSuccRight reflexive)))
+ptrSizeAtLeast4 MacOSARM64 = lteSuccRight (lteSuccRight (lteSuccRight (lteSuccRight reflexive)))
+ptrSizeAtLeast4 Windows64 = lteSuccRight (lteSuccRight (lteSuccRight (lteSuccRight reflexive)))
+ptrSizeAtLeast4 FreeBSD64 = lteSuccRight (lteSuccRight (lteSuccRight (lteSuccRight reflexive)))
