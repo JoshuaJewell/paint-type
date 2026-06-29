@@ -1,0 +1,149 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+// Author: Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+= AFFIRMATION — paint.type, as of 2026-06-29 (UTC)
+:toc: macro
+:toclevels: 2
+
+_the No-Bullshit file: what we affirm was true and checkable at this moment._
+
+[NOTE]
+====
+*Genre.* An *affirmation* is a solemn declaration of the truth of a statement,
+made by someone who _declines to swear an oath_ — our truth-as-best-believed at a
+stamped instant, binding on our honesty, not a claim of infallibility. It is the
+third of the README / EXPLAINME / AFFIRMATION trio:
+
+[cols="1,3,2",options="header"]
+|===
+| File | Answers | Tense
+| `README.adoc` | _Where is this going, and why?_ — steering, intent, vision | future / aspirational
+| `EXPLAINME.adoc` | _How is it built, and what's the evidence?_ — engineering | descriptive / mechanism
+| *`AFFIRMATION.adoc`* (this file) | _What can we honestly affirm was *true and checkable* at a stamped moment?_ | a frozen instant, falsifiable
+|===
+
+It is deliberately small, dated, and signed, so a reader can hold us to exactly
+what we affirmed, when we affirmed it.
+====
+
+toc::[]
+
+== What this is, and how it stays trustworthy
+
+*What it is.* A short, dated, signed snapshot of what we can _honestly and
+verifiably_ claim about *paint.type* at one exact commit. Marketing and promises
+live in the README. This file is the receipt.
+
+*How it stays trustworthy.* Three moving parts: (1) *Ground truth, not memory* —
+every claim below was produced by _running the project's own checks_ in the
+session that wrote this file (`idris2 --check`, `cargo fmt --check`,
+`cargo test`) on 2026-06-29; where a status doc, a CI badge, or memory disagrees,
+the live run wins and the contradiction is flagged. (2) *A frozen anchor* — the
+exact SHA, branch, UTC timestamp, and toolchain (see <<verifiable-anchor>>).
+(3) *A real signature* — landed by a signed git commit, so the affirmation is
+tamper-evident and attributable.
+
+*We are fallible.* This is our best honest belief, not a proof of its own
+correctness. Treat it as a falsifiable claim, not gospel.
+
+== The epistemic contract (read before you trust _or_ attack)
+
+This document records our *best belief* at the timestamp below. The only
+guarantee is *no intentional overclaim*: where something checks we say
+"affirmed"; where it is aspiration, an unbuilt milestone, unpushed work, or a
+claim we could not reproduce in this session, we say so. An honest claim that
+later turns out false is an *error to be fixed* — not a lie. You are invited to
+bulldoze any claim here: read it at the stamped commit, reproduce (or fail to
+reproduce) the checks, then tell us where the discrepancy is.
+
+== What we affirm (live-verified this session)
+
+[cols="3,1,3",options="header"]
+|===
+| Claim | Status | Evidence (command)
+
+| All 7 curated Idris2 modules typecheck (the proof drift flagged on 2026-06-25 is fixed)
+| affirmed
+| `idris2 --check` OK for `Abi/{Types,Layout,Foreign}.idr` (from `src/interface/`) and `ABI/{Platform,Compliance}.idr`, `Pixel.idr`, `TilePool.idr` (from `verification/proofs/idris2/`)
+
+| `ABI/Platform.idr` specifically now typechecks (missing `import Data.Nat` + `lteRefl`→`reflexive` migration)
+| affirmed
+| `idris2 --check ABI/Platform.idr` — OK (was the one failure on 2026-06-25)
+
+| The Rust `paint_core` crate is `rustfmt`-clean at this commit
+| affirmed
+| `cargo fmt --manifest-path src/paint_core/Cargo.toml --check` — clean
+
+| The repository governance/doc scaffold is present
+| affirmed
+| README / EXPLAINME / ROADMAP / PROOF-STATUS / GOVERNANCE / MAINTAINERS / `0-AI-MANIFEST.a2ml` / `.machine_readable/` all present
+|===
+
+== What we do NOT claim — and live contradictions found
+
+*The Rust core does NOT link on `main`.* `src/paint_core/src/lib.rs` declares
+twelve `pt_layer_*` `extern "C"` functions, but the libpt source on `origin/main`
+(`src/interface/ffi/`) exports *none* of them — only the `pt_tile_*` /
+`pt_alloc_u` / `pt_version` set. So `cargo test` for `paint_core` *cannot link*
+on `main` (on CI or locally): `undefined symbol: pt_layer_push`, etc. This is
+currently *masked* because `rust.yml`'s check/fmt job fails first and the test
+job is **skipped**. *We do not claim `paint_core` builds or tests green on
+`main`.* The linkage fix exists only on an *unpushed* local branch
+(`16db486`, "resolve libpt layer FFI linkage"), entangled with unfinished v0.3
+work — see below.
+
+*The published Rust test counts could not be reproduced on `main` this session.*
+The README/ROADMAP "98/98" (now ~104) figures correspond to the unpushed branch
+built with the *pinned* zig 0.15.1. On `origin/main` with the available zig
+0.15.2, the link fails (the `pt_layer_*` gap above, plus a `__zig_probe_stack`
+toolchain skew between local 0.15.2 and pinned 0.15.1). *Reported by docs/CI,
+not re-verified here.*
+
+*CI on `main` is red.* `rust.yml` fails at `cargo fmt --check` (this PR clears
+that) and would then fail at the `pt_layer_*` link; `idris-ci` was stale-red
+until the Platform.idr fix in this change; OpenSSF Scorecard reports
+`startup_failure`. The README's green CI badges currently overclaim.
+
+*The v0.3 desktop-shell backend is unfinished WIP* (not on `main`, not in this
+PR). `src/backends/cpu/main.zig` is mid-migration to the zig-0.15 `ArrayList`
+API (`Layer.deinit`, `ArrayList.init` errors) and does not compile.
+
+*No runnable application exists.* paint.type is pre-alpha; there is nothing an
+end user can run today. The launcher's startup target is not built.
+
+*Everything in README "What it will be" is aspiration* — layers UI, plugin
+browser/SDK/sandbox, real-time Burble collaboration, LLM channel, colour
+management. None are built.
+
+[#verifiable-anchor]
+== Verifiable anchor
+
+[cols="1,3"]
+|===
+| Project | paint.type (GitHub repo slug: `paint-type`)
+| Repository | https://github.com/JoshuaJewell/paint-type
+| Branch | `chore/regreen-ci-fmt-proof` (off `origin/main` at `cfd9cf9`)
+| Commit (SHA) | the signed commit that introduces this file
+| Timestamp (UTC) | 2026-06-29
+| Toolchain (live) | idris2 0.8.0; cargo/rustc 1.95.0 _(repo pins nightly)_; zig 0.15.2 _(repo pins 0.15.1)_; just 1.50.0
+| Affirmed by | Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>; repo author Joshua Jewell (JoshuaJewell)
+|===
+
+[#reproduce]
+=== Reproduce it yourself
+
+[source,bash]
+----
+# Idris2 (0.8.0) — all curated modules; expect all OK
+cd src/interface             && idris2 --check Abi/Types.idr Abi/Layout.idr Abi/Foreign.idr
+cd verification/proofs/idris2 && idris2 --check ABI/Platform.idr ABI/Compliance.idr Pixel.idr TilePool.idr
+
+# Rust formatting — expect clean
+cargo fmt --manifest-path src/paint_core/Cargo.toml --check
+
+# Rust tests on main — expect LINK FAILURE (pt_layer_* not exported by libpt)
+cargo test --manifest-path src/paint_core/Cargo.toml   # undefined symbol: pt_layer_push
+----
+
+_Landed by a signed git commit. Verify with `git log --show-signature` that the
+anchor SHA matches the commit that introduced this affirmation._
