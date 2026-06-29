@@ -213,21 +213,7 @@ const Registry = struct {
     }
 };
 
-const SpinLock = struct {
-    state: std.atomic.Value(u32) = std.atomic.Value(u32).init(0),
-
-    pub fn lock(self: *SpinLock) void {
-        while (self.state.swap(1, .acquire) == 1) {
-            std.Thread.yield() catch {};
-        }
-    }
-
-    pub fn unlock(self: *SpinLock) void {
-        self.state.store(0, .release);
-    }
-};
-
-var global_registry_lock: SpinLock = .{};
+var global_registry_lock: std.Thread.Mutex = .{};
 var global_registry: ?Registry = null;
 
 pub fn init(allocator: std.mem.Allocator) !void {

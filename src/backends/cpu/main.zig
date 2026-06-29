@@ -89,22 +89,12 @@ const Layer = struct {
     }
 };
 
-const SpinLock = struct {
-    state: std.atomic.Value(u32) = std.atomic.Value(u32).init(0),
-
-    pub fn lock(self: *SpinLock) void {
-        while (self.state.swap(1, .acquire) == 1) {
-            std.Thread.yield() catch {};
-        }
-    }
-
-    pub fn unlock(self: *SpinLock) void {
-        self.state.store(0, .release);
-    }
-};
-
 const Canvas = struct {
-    lock: SpinLock = .{},
+    // std.Thread.Mutex sleeps under contention rather than burning a core, and
+    // is the standard, non-reentrant lock — do not re-enter on the same Canvas
+    // (see cpu_canvas_render_rgba8, which splits into an _internal helper to
+    // avoid re-acquiring this lock).
+    lock: std.Thread.Mutex = .{},
     width: u32,
     height: u32,
     format: u32, // 0=RGBA16F, 1=RGBA8, ...
@@ -371,7 +361,7 @@ const State = struct {
     alloc: std.mem.Allocator,
     canvases: std.AutoHashMapUnmanaged(u64, *Canvas) = .empty,
     next_canvas_id: u64 = 1,
-    lock: SpinLock = .{},
+    lock: std.Thread.Mutex = .{},
 
     fn put(self: *State, c: *Canvas) !u64 {
         self.lock.lock();
@@ -1652,5 +1642,3 @@ test "concurrent history records" {
         t.join();
     }
 }
-
-
