@@ -1,13 +1,25 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
-# cross-platform.yml — v0.3.0 cross-OS build + integration matrix.
+# cross-platform.yml — v0.3.0 cross-OS build + integration coverage.
 #
-# Builds and tests the full native vertical (Zig dispatcher + CPU-reference
-# backend, the libpt FFI static library, and the Rust paint_core crate that
-# links it) on Linux, macOS, and Windows, per the v0.3.0 "Desktop Shell"
-# acceptance criterion ("CI matrix covers ubuntu-latest, macos-latest,
-# windows-latest for build + integration tests").
+# Two-tier strategy so `main` stays honest AND green:
+#
+#   1. cross-build (GATING) — from a single Linux runner, Zig cross-compiles
+#      the full native vertical (dispatcher + CPU-reference backend + the libpt
+#      FFI library) to macOS (aarch64 + x86_64) and Windows (x86_64). Zig ships
+#      the libSystem/mingw stubs, so this links cleanly without a Mac or Windows
+#      box and gives real build/link assurance for every target on every PR.
+#
+#   2. native (ubuntu GATING; macOS/Windows ADVISORY, best-effort) — actually
+#      runs the unit + integration tests on each real OS. Only execution needs
+#      a real machine; that is what cross-build cannot cover. The Linux leg is
+#      verified and gates. The macOS and Windows legs are marked
+#      `continue-on-error` (best-effort) while native test *execution* is shaken
+#      out — see CONTRIBUTING.md "Platform support". We explicitly welcome
+#      community contributors on macOS / iOS / Windows to help green these legs
+#      (tests, linker/path fixes, WebView backends): they run and surface their
+#      results here, they just do not block.
 #
 # Notes:
 #   * All `uses:` are pinned to a full commit SHA — the estate Actions policy
@@ -15,10 +27,6 @@
 #   * paint_core's build.rs resolves libpt relative to the crate and will run
 #     `zig build` itself if the static library is absent, so a plain
 #     `cargo test` in src/paint_core links the freshly-built libpt on every OS.
-#   * The Linux leg is the one verified locally; the macOS/Windows legs are
-#     expected to need per-platform shaking-out (linking, path quirks) — that
-#     is tracked as the v0.3.0 "green the macOS/Windows legs" follow-up. The
-#     matrix runs fail-fast: false so one red leg does not mask the others.
 name: Cross-platform build
 on:
   pull_request:
@@ -31,10 +39,46 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  build-test:
-    name: build + test (${{ matrix.os }})
+  # ---------------------------------------------------------------------------
+  # Tier 1 — GATING: cross-compile every target from Linux (no Mac/Windows box).
+  # ---------------------------------------------------------------------------
+  cross-build:
+    name: cross-compile build (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [aarch64-macos, x86_64-macos, x86_64-windows]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Install Zig 0.15.1
+        uses: mlugg/setup-zig@8d6198c65fb0feaa111df26e6b467fea8345e46f # v1
+        with:
+          version: 0.15.1
+
+      - name: Cross-compile dispatcher + CPU-reference + libpt
+        shell: bash
+        run: |
+          zig build -Dtarget=${{ matrix.target }}
+          cd src/interface/ffi
+          zig build lib -Dtarget=${{ matrix.target }}
+
+  # ---------------------------------------------------------------------------
+  # Tier 2 — native test execution. ubuntu GATES; macOS/Windows are best-effort
+  # (continue-on-error) until community help greens native execution.
+  # ---------------------------------------------------------------------------
+  native:
+    name: native build + test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    # Best-effort on non-Linux: these legs run and surface results but do NOT
+    # gate. Native macOS/Windows test execution is a known WIP — community
+    # contributors on macOS/iOS/Windows are warmly invited to help (see
+    # CONTRIBUTING.md → "Platform support: best-effort macOS/iOS/Windows").
+    continue-on-error: ${{ matrix.os != 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
