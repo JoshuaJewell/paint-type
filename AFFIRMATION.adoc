@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 // Author: Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
-= AFFIRMATION — paint.type, as of 2026-06-29 (UTC)
+= AFFIRMATION — paint.type, as of 2026-07-04 (UTC)
 :toc: macro
 :toclevels: 2
 
@@ -35,85 +35,148 @@ verifiably_ claim about *paint.type* at one exact commit. Marketing and promises
 live in the README. This file is the receipt.
 
 *How it stays trustworthy.* Three moving parts: (1) *Ground truth, not memory* —
-every claim below was produced by _running the project's own checks_ in the
-session that wrote this file (`idris2 --check`, `cargo fmt --check`,
-`cargo test`) on 2026-06-29; where a status doc, a CI badge, or memory disagrees,
-the live run wins and the contradiction is flagged. (2) *A frozen anchor* — the
-exact SHA, branch, UTC timestamp, and toolchain (see <<verifiable-anchor>>).
-(3) *A real signature* — landed by a signed git commit, so the affirmation is
-tamper-evident and attributable.
+every claim below was produced by _running the project's own checks_, or by
+reading live CI results, in the session that wrote this file, on 2026-07-04;
+where a status doc or memory disagrees, the live result wins. (2) *A frozen
+anchor* — the exact SHA, branch, UTC timestamp, and toolchain (see
+<<verifiable-anchor>>). (3) *A real signature* — landed by a signed git commit.
 
 *We are fallible.* This is our best honest belief, not a proof of its own
 correctness. Treat it as a falsifiable claim, not gospel.
 
 == The epistemic contract (read before you trust _or_ attack)
 
-This document records our *best belief* at the timestamp below. The only
-guarantee is *no intentional overclaim*: where something checks we say
-"affirmed"; where it is aspiration, an unbuilt milestone, unpushed work, or a
-claim we could not reproduce in this session, we say so. An honest claim that
-later turns out false is an *error to be fixed* — not a lie. You are invited to
-bulldoze any claim here: read it at the stamped commit, reproduce (or fail to
-reproduce) the checks, then tell us where the discrepancy is.
+The only guarantee is *no intentional overclaim*: where something checks we say
+"affirmed"; where it is aspiration, an unbuilt milestone, or a claim we could not
+reproduce this session, we say so. An honest claim that later turns out false is
+an *error to be fixed* — not a lie. You are invited to bulldoze any claim here:
+reproduce (or fail to reproduce) the checks in <<reproduce>>, then tell us where
+the discrepancy is.
 
-== What we affirm (live-verified this session)
+== Since the last AFFIRMATION (2026-06-29) — what actually changed
+
+A large amount of real work landed on `main` in the intervening days (PRs
+#95–#102), separately from the two prior AFFIRMATIONs' findings:
+
+* **The `pt_layer_*` FFI gap is closed.** #98 ("shell slice — FFI layer stack,
+  ptype_format, Gossamer shell, UI, brand") added the missing libpt exports.
+  `paint_core` now genuinely links and tests green (see below) — the previous
+  AFFIRMATION's headline finding ("Rust core does NOT link on `main`") is
+  **resolved**, not just claimed.
+* **`SpinLock` was deduped to `std.Thread.Mutex`** (#97) across the CPU backend's
+  `Canvas`/`State` locks.
+* **v0.3 desktop-shell work is genuinely underway on `main`**, not just in local
+  WIP: Gossamer shell bootstrap, `ptype_format`, brand pack, cross-platform CI
+  gating (Linux gated + cross-compile, macOS/Windows advisory) (#98, #100).
+* A local checkout (`feat/v0.3.0-tools-port`) was found this session holding an
+  **unresolved merge conflict** in `src/backends/cpu/main.zig` between the
+  Mutex refactor and further local WIP (`SelectionMask`/`Clipboard` — MVP-3
+  selection tools). The working-tree content was already a correct manual
+  resolution (verified: `zig build test` exit 0, all tests pass); it has been
+  committed and the branch pushed to `origin/feat/v0.3.0-tools-port` for
+  safekeeping. **This branch is WIP, not merged, and not evaluated for
+  correctness beyond "it builds."**
+* Three more Governance CI sub-checks were found and fixed on `main` this
+  session (PRs #101, #102): stale `standards` reusable-workflow pins, a false-
+  positive `{{PLACEHOLDER}}` match in `.github/SECURITY.md`, a vendored-Java
+  false positive in `third_party/gossamer/android/`, and a missing SPDX
+  header/`permissions:` block on `verify-manifests.yml`.
+
+== What we affirm (live-verified this session, 2026-07-04)
 
 [cols="3,1,3",options="header"]
 |===
-| Claim | Status | Evidence (command)
+| Claim | Status | Evidence
 
-| All 7 curated Idris2 modules typecheck (the proof drift flagged on 2026-06-25 is fixed)
+| `paint_core` links and passes all tests against a freshly built `libpt`
 | affirmed
-| `idris2 --check` OK for `Abi/{Types,Layout,Foreign}.idr` (from `src/interface/`) and `ABI/{Platform,Compliance}.idr`, `Pixel.idr`, `TilePool.idr` (from `verification/proofs/idris2/`)
+| `cargo test --manifest-path src/paint_core/Cargo.toml` — **104/104** (101 unit + 2 e2e + 1 doctest), after `rm -rf src/interface/ffi/{zig-out,.zig-cache} src/paint_core/target` and a clean rebuild
 
-| `ABI/Platform.idr` specifically now typechecks (missing `import Data.Nat` + `lteRefl`→`reflexive` migration)
+| The stale-libpt-artifact failure seen mid-session was a **local build-cache** issue, not a source defect
 | affirmed
-| `idris2 --check ABI/Platform.idr` — OK (was the one failure on 2026-06-25)
+| Same `pt_layer_*` symbols the stale cache reported "undefined" resolved cleanly from a clean `zig build lib`; `nm`/`ar` had reported "file format not recognized" on the stale `.o` — a corrupted/incompatible cached object, not a missing export
 
-| The Rust `paint_core` crate is `rustfmt`-clean at this commit
+| Root `zig build` and `zig build test` are clean
 | affirmed
-| `cargo fmt --manifest-path src/paint_core/Cargo.toml --check` — clean
+| Both exit 0 on this commit
 
-| The repository governance/doc scaffold is present
+| `rust.yml` CI is green on `main`
 | affirmed
-| README / EXPLAINME / ROADMAP / PROOF-STATUS / GOVERNANCE / MAINTAINERS / `0-AI-MANIFEST.a2ml` / `.machine_readable/` all present
+| GitHub Actions: `completed/success` at this HEAD
+
+| `idris-ci` CI is green on `main`
+| affirmed (carried forward)
+| GitHub Actions: `completed/success` (no `.idr` files have changed since the last direct `idris2 --check` verification on 2026-06-29, which passed all 7 curated modules — confirmed via `git diff --stat` showing zero `.idr` changes between that commit and this one)
+
+| `e2e.yml` CI is green on `main`
+| affirmed
+| GitHub Actions: `completed/success` at this HEAD
+
+| Governance CI: 9 of 10 sub-checks green
+| affirmed
+| `Well-Known (RFC 9116+RSR)`, `Language/package anti-pattern policy`, `Guix primary/Nix fallback policy`, `Workflow security linter`, `Code quality + docs`, `Licence consistency`, `Security policy checks`, `Check Workflow Staleness` all `success`; `Validate Hypatia Baseline` `skipped`
+
+| `OpenSSF Compliance` CI is green
+| affirmed
+| GitHub Actions: `completed/success` at this HEAD (was failing on the `{{PLACEHOLDER}}` false positive as of 2026-06-29)
 |===
 
-== What we do NOT claim — and live contradictions found
+== What we do NOT claim — remaining red, precisely diagnosed
 
-*The Rust core does NOT link on `main`.* `src/paint_core/src/lib.rs` declares
-twelve `pt_layer_*` `extern "C"` functions, but the libpt source on `origin/main`
-(`src/interface/ffi/`) exports *none* of them — only the `pt_tile_*` /
-`pt_alloc_u` / `pt_version` set. So `cargo test` for `paint_core` *cannot link*
-on `main` (on CI or locally): `undefined symbol: pt_layer_push`, etc. This is
-currently *masked* because `rust.yml`'s check/fmt job fails first and the test
-job is **skipped**. *We do not claim `paint_core` builds or tests green on
-`main`.* The linkage fix exists only on an *unpushed* local branch
-(`16db486`, "resolve libpt layer FFI linkage"), entangled with unfinished v0.3
-work — see below.
+*Governance: "Trusted-base reduction policy" still fails.* It reports "no
+`docs/proof-debt.md` found, but 8 escape hatches exist." We checked: this
+repo's *own* Idris2 proofs contain **zero** `believe_me`/`assert_total`/`OWED`
+markers — every curated module's own header comment ("no believe_me, no
+assert_total") holds under direct `idris2 --check`. The only real
+`believe_me`/`OWED` hits found by direct grep are inside vendored
+`third_party/gossamer/`. This strongly suggests the checker's "8" figure is
+counting vendored code again — the same class of bug as the Java/Kotlin false
+positive we did fix (#102) — but we did **not** have the checker's exact
+counting script, so we did not fabricate a `docs/proof-debt.md` or guess at the
+disposition of hatches we haven't individually verified are even ours. Left
+open, precisely diagnosed, for the next session or the owner.
 
-*The published Rust test counts could not be reproduced on `main` this session.*
-The README/ROADMAP "98/98" (now ~104) figures correspond to the unpushed branch
-built with the *pinned* zig 0.15.1. On `origin/main` with the available zig
-0.15.2, the link fails (the `pt_layer_*` gap above, plus a `__zig_probe_stack`
-toolchain skew between local 0.15.2 and pinned 0.15.1). *Reported by docs/CI,
-not re-verified here.*
+*"Verify Manifest Files" still fails* — for two separable reasons, neither
+fixed here: (1) its inline shell script has a genuine bash syntax bug
+(`syntax error near unexpected token 'newline'`); (2) even if fixed, it
+enforces a per-directory `README.adoc` + numbered `0.N-AI-MANIFEST.a2ml` on
+*every* directory in the tree — a convention most of paint-type's source dirs
+(`src/paint_core/src/`, `src/backends/cpu/`, etc.) do not and arguably should
+not follow. Whether this convention even applies to paint-type is a
+`TEMPLATE-APPLICABILITY-POLICY` call for the owner, not something to silently
+route around.
 
-*CI on `main` is red.* `rust.yml` fails at `cargo fmt --check` (this PR clears
-that) and would then fail at the `pt_layer_*` link; `idris-ci` was stale-red
-until the Platform.idr fix in this change; OpenSSF Scorecard reports
-`startup_failure`. The README's green CI badges currently overclaim.
+*"OSSF Scorecard" still `startup_failure`* and *"Instant Sync" still fails*
+(`Parameter token or opts.auth is required`) — the latter needs a repository
+secret (a PAT/token) that isn't configured here. Neither is a content bug we
+can fix from inside the repo.
 
-*The v0.3 desktop-shell backend is unfinished WIP* (not on `main`, not in this
-PR). `src/backends/cpu/main.zig` is mid-migration to the zig-0.15 `ArrayList`
-API (`Layer.deinit`, `ArrayList.init` errors) and does not compile.
+*Two divergent `SECURITY.md` files exist* — the substantive, GitHub-native
+`.github/SECURITY.md` (406 lines, `paint-type@pm.me` contact — the one CI
+checks and the one the fix above targeted) and a stale, 20-line root
+`SECURITY.md` with a generic, seemingly-unrelated contact email. Nobody has
+reconciled these; not touched here (a content/policy call, not mechanical
+hygiene).
+
+*`.machine_readable/STATE.a2ml` is significantly stale.* Dated 2026-05-11,
+claims `version = "0.1.0"`, `completion-percentage = 10`, and **0% completion
+on v0.2.0 and v0.3.0** — both of which have substantial landed work per
+README/ROADMAP history and this session's own verification. Also note:
+`.machine_readable/6a2/STATE.a2ml` exists alongside
+`.machine_readable/STATE.a2ml` — `6a2` is the deprecated estate naming (the
+canonical family is now `descriptiles`; a separate, estate-wide, owner-led
+migration, not touched here).
+
+*The `feat/v0.3.0-tools-port` branch is WIP, not evaluated further.* Beyond
+confirming it builds and its own tests pass, no review of the `SelectionMask`/
+`Clipboard` (MVP-3 selection tools) design or correctness was performed.
 
 *No runnable application exists.* paint.type is pre-alpha; there is nothing an
-end user can run today. The launcher's startup target is not built.
+end user can run today.
 
-*Everything in README "What it will be" is aspiration* — layers UI, plugin
-browser/SDK/sandbox, real-time Burble collaboration, LLM channel, colour
-management. None are built.
+*Everything in README "What it will be" remains aspiration* — layers UI,
+plugin browser/SDK/sandbox, real-time Burble collaboration, LLM channel,
+colour management. None are built.
 
 [#verifiable-anchor]
 == Verifiable anchor
@@ -122,10 +185,10 @@ management. None are built.
 |===
 | Project | paint.type (GitHub repo slug: `paint-type`)
 | Repository | https://github.com/JoshuaJewell/paint-type
-| Branch | `chore/regreen-ci-fmt-proof` (off `origin/main` at `cfd9cf9`)
-| Commit (SHA) | the signed commit that introduces this file
-| Timestamp (UTC) | 2026-06-29
-| Toolchain (live) | idris2 0.8.0; cargo/rustc 1.95.0 _(repo pins nightly)_; zig 0.15.2 _(repo pins 0.15.1)_; just 1.50.0
+| Branch | `main`
+| Commit (SHA) | the signed commit that introduces this file (parent: `57bfbd93fdbd6434c818a7bd0d4068bdb1b82701`)
+| Timestamp (UTC) | 2026-07-04
+| Toolchain (live) | cargo/rustc 1.95.0 _(repo pins nightly)_; zig 0.15.2 _(repo pins 0.15.1)_; just 1.50.0; idris2 0.8.0 _(shared toolchain install was transiently unavailable at the exact moment of this write-up — `.idr` re-check carried forward from 2026-06-29 per the zero-diff check above, and independently confirmed green by `idris-ci` on GitHub Actions at this HEAD)_
 | Affirmed by | Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>; repo author Joshua Jewell (JoshuaJewell)
 |===
 
@@ -134,15 +197,20 @@ management. None are built.
 
 [source,bash]
 ----
+# Clean rebuild libpt first — a stale zig-out/.zig-cache can produce
+# misleading "undefined symbol" link errors that look like a source gap
+rm -rf src/interface/ffi/zig-out src/interface/ffi/.zig-cache src/paint_core/target
+cd src/interface/ffi && zig build lib && cd -
+
 # Idris2 (0.8.0) — all curated modules; expect all OK
 cd src/interface             && idris2 --check Abi/Types.idr Abi/Layout.idr Abi/Foreign.idr
 cd verification/proofs/idris2 && idris2 --check ABI/Platform.idr ABI/Compliance.idr Pixel.idr TilePool.idr
 
-# Rust formatting — expect clean
-cargo fmt --manifest-path src/paint_core/Cargo.toml --check
+# Zig — expect exit 0
+zig build && zig build test
 
-# Rust tests on main — expect LINK FAILURE (pt_layer_* not exported by libpt)
-cargo test --manifest-path src/paint_core/Cargo.toml   # undefined symbol: pt_layer_push
+# Rust — expect 104/104 passed
+cargo test --manifest-path src/paint_core/Cargo.toml
 ----
 
 _Landed by a signed git commit. Verify with `git log --show-signature` that the
