@@ -357,11 +357,68 @@ fn ensureHistoryInit(alloc: std.mem.Allocator, c: *Canvas) !void {
     c.history.used_bytes = cost;
 }
 
+//==============================================================================
+// 1b. Selection masks + clipboard (MVP-3 — selection tools)
+//==============================================================================
+
+/// Magic for a live SelectionMask, validated on every handle deref. "PMSK".
+const PT_MASK_MAGIC: u32 = 0x504D534B;
+
+/// A canvas-sized boolean selection mask. Handles cross the FFI as
+/// @intFromPtr(mask); `liveMask` validates the magic before use so a stale or
+/// garbage handle is a reported error, not a crash. (The selection ABI has no
+/// explicit free; masks are owned by the backend allocator for its lifetime,
+/// matching the canvas registry.)
+const SelectionMask = struct {
+    magic: u32,
+    w: u32,
+    h: u32,
+    /// w*h bytes; 1 = selected, 0 = unselected. Row-major.
+    sel: []u8,
+};
+
+fn liveMask(handle: u64) ?*SelectionMask {
+    if (handle == 0) return null;
+    const m: *SelectionMask = @ptrFromInt(handle);
+    if (m.magic != PT_MASK_MAGIC) return null;
+    return m;
+}
+
+fn newMask(alloc: std.mem.Allocator, w: u32, h: u32) !*SelectionMask {
+    const m = try alloc.create(SelectionMask);
+    errdefer alloc.destroy(m);
+    const sel = try alloc.alloc(u8, @as(usize, w) * @as(usize, h));
+    @memset(sel, 0);
+    m.* = .{ .magic = PT_MASK_MAGIC, .w = w, .h = h, .sel = sel };
+    return m;
+}
+
+/// A copied/cut region: a dense bbox of straight RGBA plus a per-cell selected
+/// flag and the bbox origin in canvas coordinates. paste replays it at an
+/// offset from that origin.
+const Clipboard = struct {
+    w: u32,
+    h: u32,
+    ox: u32,
+    oy: u32,
+    px: [][4]f32,
+    has: []u8,
+};
+
 const State = struct {
     alloc: std.mem.Allocator,
     canvases: std.AutoHashMapUnmanaged(u64, *Canvas) = .empty,
     next_canvas_id: u64 = 1,
+    clipboard: ?Clipboard = null,
     lock: std.Thread.Mutex = .{},
+
+    fn replaceClipboard(self: *State, cb: Clipboard) void {
+        if (self.clipboard) |old| {
+            self.alloc.free(old.px);
+            self.alloc.free(old.has);
+        }
+        self.clipboard = cb;
+    }
 
     fn put(self: *State, c: *Canvas) !u64 {
         self.lock.lock();
@@ -893,6 +950,145 @@ fn stampBrush(
 }
 
 //==============================================================================
+// 6c. Eraser / fill / selection helpers (MVP-3 tool primitives)
+//==============================================================================
+
+/// Shorthand for returning a dispatcher result code from a C-ABI tool fn.
+inline fn rcode(code: dispatcher.ResultCode) u32 {
+    return @intFromEnum(code);
+}
+
+/// Erase footprint: lower destination alpha by the brush coverage, leaving RGB
+/// intact. `strength` is the already-clamped erase opacity. Fully-transparent
+/// pixels are skipped so no tile is allocated just to write zero.
+fn stampEraser(
+    layer: *Layer,
+    alloc: std.mem.Allocator,
+    canvas_w: u32,
+    canvas_h: u32,
+    cx: f64,
+    cy: f64,
+    radius: f64,
+    hardness: f64,
+    strength: f64,
+) !void {
+    if (radius <= 0 or strength <= 0) return;
+    if (!std.math.isFinite(cx) or !std.math.isFinite(cy) or !std.math.isFinite(radius)) return;
+
+    const w_i: i64 = @intCast(canvas_w);
+    const h_i: i64 = @intCast(canvas_h);
+    const x0: i64 = finiteToI64Clamped(@floor(cx - radius - 1.0), 0, w_i);
+    const y0: i64 = finiteToI64Clamped(@floor(cy - radius - 1.0), 0, h_i);
+    const x1: i64 = finiteToI64Clamped(@ceil(cx + radius + 1.0), 0, w_i);
+    const y1: i64 = finiteToI64Clamped(@ceil(cy + radius + 1.0), 0, h_i);
+
+    var y: i64 = y0;
+    while (y <= y1) : (y += 1) {
+        if (y < 0 or y >= h_i) continue;
+        var x: i64 = x0;
+        while (x <= x1) : (x += 1) {
+            if (x < 0 or x >= w_i) continue;
+            const fx: f64 = @as(f64, @floatFromInt(x)) + 0.5;
+            const fy: f64 = @as(f64, @floatFromInt(y)) + 0.5;
+            const ddx = fx - cx;
+            const ddy = fy - cy;
+            const dist = @sqrt(ddx * ddx + ddy * ddy);
+            if (dist >= radius) continue;
+            const cov = brushAlphaProfile(dist / radius, hardness);
+            const e: f64 = cov * strength;
+            if (e <= 0) continue;
+
+            const ux: u32 = @intCast(x);
+            const uy: u32 = @intCast(y);
+            const dst = readPixelF32(layer, ux, uy);
+            if (dst[3] <= 0) continue; // already transparent — nothing to erase
+            const ef: f32 = @floatCast(std.math.clamp(e, 0.0, 1.0));
+            const new_a: f32 = dst[3] * (1.0 - ef);
+            try writePixelF16(layer, alloc, ux, uy, .{ dst[0], dst[1], dst[2], new_a });
+        }
+    }
+}
+
+/// Chebyshev (per-channel max-abs) colour match used by the fill tool.
+fn colourWithin(a: [4]f32, b: [4]f32, tol: f32) bool {
+    var i: usize = 0;
+    while (i < 4) : (i += 1) {
+        if (@abs(a[i] - b[i]) > tol) return false;
+    }
+    return true;
+}
+
+/// Even-odd ray-casting point-in-polygon test for the lasso. `pts` holds
+/// `2*n` f64s as (x, y) pairs; the polygon is implicitly closed.
+fn pointInPoly(x: f64, y: f64, pts: [*]const f64, n: u32) bool {
+    var inside = false;
+    var i: usize = 0;
+    var j: usize = @as(usize, n) - 1;
+    while (i < n) : (i += 1) {
+        const xi = pts[i * 2];
+        const yi = pts[i * 2 + 1];
+        const xj = pts[j * 2];
+        const yj = pts[j * 2 + 1];
+        if (((yi > y) != (yj > y)) and
+            (x < (xj - xi) * (y - yi) / (yj - yi) + xi))
+        {
+            inside = !inside;
+        }
+        j = i;
+    }
+    return inside;
+}
+
+const SelectionError = error{ OutOfMemory, EmptySelection };
+
+/// Copy the masked pixels of `l` into the state clipboard as a tight bbox.
+/// Caller must hold `c.lock`. Errors if the selection is empty.
+fn copyMaskedRegion(s: *State, c: *Canvas, l: *Layer, m: *SelectionMask) SelectionError!void {
+    var minx: u32 = c.width;
+    var miny: u32 = c.height;
+    var maxx: u32 = 0;
+    var maxy: u32 = 0;
+    var any = false;
+    var y: u32 = 0;
+    while (y < c.height) : (y += 1) {
+        var x: u32 = 0;
+        while (x < c.width) : (x += 1) {
+            if (m.sel[@as(usize, y) * c.width + x] != 0) {
+                any = true;
+                if (x < minx) minx = x;
+                if (y < miny) miny = y;
+                if (x > maxx) maxx = x;
+                if (y > maxy) maxy = y;
+            }
+        }
+    }
+    if (!any) return SelectionError.EmptySelection;
+
+    const bw: u32 = maxx - minx + 1;
+    const bh: u32 = maxy - miny + 1;
+    const cnt: usize = @as(usize, bw) * @as(usize, bh);
+    const px = try s.alloc.alloc([4]f32, cnt);
+    errdefer s.alloc.free(px);
+    const has = try s.alloc.alloc(u8, cnt);
+    @memset(has, 0);
+
+    var yy: u32 = miny;
+    while (yy <= maxy) : (yy += 1) {
+        var xx: u32 = minx;
+        while (xx <= maxx) : (xx += 1) {
+            const bi: usize = @as(usize, yy - miny) * bw + (xx - minx);
+            if (m.sel[@as(usize, yy) * c.width + xx] != 0) {
+                px[bi] = readPixelF32(l, xx, yy);
+                has[bi] = 1;
+            } else {
+                px[bi] = .{ 0, 0, 0, 0 };
+            }
+        }
+    }
+    s.replaceClipboard(.{ .w = bw, .h = bh, .ox = minx, .oy = miny, .px = px, .has = has });
+}
+
+//==============================================================================
 // 6a. Codecs — PNG and PPM encoders used by io_save (MVP-2)
 //
 //   These are pure-Zig encoders with no external dependencies. PNG uses
@@ -1198,15 +1394,64 @@ fn cpu_tool_stroke_brush(
     return @intFromEnum(dispatcher.ResultCode.ok);
 }
 
-fn cpu_tool_stroke_eraser(_c: u64, _l: u64, _bs: *const dispatcher.BrushStateC, _n: u32, _p: [*]const dispatcher.StrokePointC, _pl: usize, _m: u32) callconv(.c) u32 {
-    _ = _c;
-    _ = _l;
-    _ = _bs;
-    _ = _n;
-    _ = _p;
-    _ = _pl;
-    _ = _m;
-    return @intFromEnum(dispatcher.ResultCode.not_implemented);
+fn cpu_tool_stroke_eraser(
+    canvas: u64,
+    layer: u64,
+    brush_state: *const dispatcher.BrushStateC,
+    n: u32,
+    points: [*]const dispatcher.StrokePointC,
+    points_len: usize,
+    mode: u32,
+) callconv(.c) u32 {
+    const s = requireState();
+    const c = s.get(canvas) orelse return rcode(.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
+    if (layer == 0 or layer > c.layers.items.len) return rcode(.invalid_param);
+    // Only mode 0 (Normal — lower alpha) is defined for v0.3.0; reject others
+    // loudly rather than silently treating them as Normal.
+    if (mode != 0) return rcode(.invalid_param);
+    if (n > points_len) return rcode(.invalid_param);
+    const l = c.layers.items[@intCast(layer - 1)];
+
+    const radius: f64 = brush_state.radius;
+    if (radius <= 0) return rcode(.invalid_param);
+    const hardness: f64 = std.math.clamp(brush_state.hardness, 0.0, 1.0);
+    const strength: f64 = std.math.clamp(brush_state.opacity, 0.0, 1.0);
+    const spacing_frac: f64 = if (brush_state.spacing > 0.0) brush_state.spacing else 0.25;
+    const spacing_px: f64 = spacing_frac * radius * 2.0;
+
+    if (n == 0) return rcode(.ok);
+
+    stampEraser(l, s.alloc, c.width, c.height, points[0].x, points[0].y, radius, hardness, strength) catch return rcode(.out_of_memory);
+
+    var i: u32 = 1;
+    while (i < n) : (i += 1) {
+        const prev = points[i - 1];
+        const curr = points[i];
+        if (!std.math.isFinite(prev.x) or !std.math.isFinite(prev.y) or
+            !std.math.isFinite(curr.x) or !std.math.isFinite(curr.y)) continue;
+        const dx = curr.x - prev.x;
+        const dy = curr.y - prev.y;
+        const dist = @sqrt(dx * dx + dy * dy);
+        if (dist <= 0) continue;
+        const stamps_f = dist / spacing_px;
+        const stamps: u32 = if (stamps_f < 1.0)
+            1
+        else if (stamps_f >= @as(f64, @floatFromInt(MAX_STROKE_STAMPS)))
+            MAX_STROKE_STAMPS
+        else
+            @intFromFloat(@ceil(stamps_f));
+        var k: u32 = 1;
+        while (k <= stamps) : (k += 1) {
+            const t: f64 = @as(f64, @floatFromInt(k)) / @as(f64, @floatFromInt(stamps));
+            const sx = prev.x + dx * t;
+            const sy = prev.y + dy * t;
+            stampEraser(l, s.alloc, c.width, c.height, sx, sy, radius, hardness, strength) catch return rcode(.out_of_memory);
+        }
+    }
+
+    return rcode(.ok);
 }
 
 fn cpu_tool_sample_colour(_c: u64, _x: f64, _y: f64, _a: u32, _out: *[4]f32) callconv(.c) u32 {
@@ -1218,62 +1463,205 @@ fn cpu_tool_sample_colour(_c: u64, _x: f64, _y: f64, _a: u32, _out: *[4]f32) cal
     return @intFromEnum(dispatcher.ResultCode.not_implemented);
 }
 
-fn cpu_tool_fill(_c: u64, _l: u64, _x: f64, _y: f64, _col: *const [4]f32, _t: f64, _m: u32) callconv(.c) u32 {
-    _ = _c;
-    _ = _l;
-    _ = _x;
-    _ = _y;
-    _ = _col;
-    _ = _t;
-    _ = _m;
-    return @intFromEnum(dispatcher.ResultCode.not_implemented);
+fn cpu_tool_fill(canvas: u64, layer: u64, sx: f64, sy: f64, colour: *const [4]f32, tol: f64, contig: u32) callconv(.c) u32 {
+    const s = requireState();
+    const c = s.get(canvas) orelse return rcode(.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
+    if (layer == 0 or layer > c.layers.items.len) return rcode(.invalid_param);
+    const l = c.layers.items[@intCast(layer - 1)];
+
+    const seed_x = finiteFloorU32(sx, c.width) orelse return rcode(.invalid_param);
+    const seed_y = finiteFloorU32(sy, c.height) orelse return rcode(.invalid_param);
+
+    const target = readPixelF32(l, seed_x, seed_y);
+    const fill_colour = colour.*;
+    const tolf: f32 = if (std.math.isNan(tol) or tol < 0) 0.0 else @floatCast(tol);
+    const total: usize = @as(usize, c.width) * @as(usize, c.height);
+
+    if (contig != 0) {
+        // Contiguous 4-connected flood fill. Mark pixels visited on push so each
+        // enters the work stack at most once (stack bounded by pixel count).
+        const visited = s.alloc.alloc(u8, total) catch return rcode(.out_of_memory);
+        defer s.alloc.free(visited);
+        @memset(visited, 0);
+
+        var stack: std.ArrayListUnmanaged(usize) = .empty;
+        defer stack.deinit(s.alloc);
+        const seed_idx: usize = @as(usize, seed_y) * c.width + seed_x;
+        visited[seed_idx] = 1;
+        stack.append(s.alloc, seed_idx) catch return rcode(.out_of_memory);
+
+        while (stack.items.len != 0) {
+            const idx = stack.items[stack.items.len - 1];
+            stack.items.len -= 1;
+            const x: u32 = @intCast(idx % c.width);
+            const y: u32 = @intCast(idx / c.width);
+            if (!colourWithin(readPixelF32(l, x, y), target, tolf)) continue;
+            writePixelF16(l, s.alloc, x, y, fill_colour) catch return rcode(.out_of_memory);
+            if (x > 0 and visited[idx - 1] == 0) {
+                visited[idx - 1] = 1;
+                stack.append(s.alloc, idx - 1) catch return rcode(.out_of_memory);
+            }
+            if (x + 1 < c.width and visited[idx + 1] == 0) {
+                visited[idx + 1] = 1;
+                stack.append(s.alloc, idx + 1) catch return rcode(.out_of_memory);
+            }
+            if (y > 0 and visited[idx - c.width] == 0) {
+                visited[idx - c.width] = 1;
+                stack.append(s.alloc, idx - c.width) catch return rcode(.out_of_memory);
+            }
+            if (y + 1 < c.height and visited[idx + c.width] == 0) {
+                visited[idx + c.width] = 1;
+                stack.append(s.alloc, idx + c.width) catch return rcode(.out_of_memory);
+            }
+        }
+    } else {
+        // Global fill: every pixel matching the seed colour within tolerance.
+        var y: u32 = 0;
+        while (y < c.height) : (y += 1) {
+            var x: u32 = 0;
+            while (x < c.width) : (x += 1) {
+                if (colourWithin(readPixelF32(l, x, y), target, tolf)) {
+                    writePixelF16(l, s.alloc, x, y, fill_colour) catch return rcode(.out_of_memory);
+                }
+            }
+        }
+    }
+    return rcode(.ok);
 }
 
-fn cpu_selection_rect(_c: u64, _x0: u32, _y0: u32, _x1: u32, _y1: u32, _m: *u64) callconv(.c) u32 {
-    _ = _c;
-    _ = _x0;
-    _ = _y0;
-    _ = _x1;
-    _ = _y1;
-    _ = _m;
-    return @intFromEnum(dispatcher.ResultCode.not_implemented);
+fn cpu_selection_rect(canvas: u64, x0: u32, y0: u32, x1: u32, y1: u32, out_mask: *u64) callconv(.c) u32 {
+    const s = requireState();
+    const c = s.get(canvas) orelse return rcode(.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
+    const m = newMask(s.alloc, c.width, c.height) catch return rcode(.out_of_memory);
+    // Half-open [lo, hi) in each axis, clamped to the canvas; corners may arrive
+    // in any order.
+    const lo_x = @min(@min(x0, x1), c.width);
+    const hi_x = @min(@max(x0, x1), c.width);
+    const lo_y = @min(@min(y0, y1), c.height);
+    const hi_y = @min(@max(y0, y1), c.height);
+    var yy: u32 = lo_y;
+    while (yy < hi_y) : (yy += 1) {
+        var xx: u32 = lo_x;
+        while (xx < hi_x) : (xx += 1) {
+            m.sel[@as(usize, yy) * c.width + xx] = 1;
+        }
+    }
+    out_mask.* = @intFromPtr(m);
+    return rcode(.ok);
 }
 
-fn cpu_selection_lasso(_c: u64, _n: u32, _p: [*]const f64, _m: *u64) callconv(.c) u32 {
-    _ = _c;
-    _ = _n;
-    _ = _p;
-    _ = _m;
-    return @intFromEnum(dispatcher.ResultCode.not_implemented);
+fn cpu_selection_lasso(canvas: u64, n: u32, pts: [*]const f64, out_mask: *u64) callconv(.c) u32 {
+    const s = requireState();
+    const c = s.get(canvas) orelse return rcode(.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
+    if (n < 3) return rcode(.invalid_param);
+    const m = newMask(s.alloc, c.width, c.height) catch return rcode(.out_of_memory);
+    var py: u32 = 0;
+    while (py < c.height) : (py += 1) {
+        const fy: f64 = @as(f64, @floatFromInt(py)) + 0.5;
+        var px: u32 = 0;
+        while (px < c.width) : (px += 1) {
+            const fx: f64 = @as(f64, @floatFromInt(px)) + 0.5;
+            if (pointInPoly(fx, fy, pts, n)) m.sel[@as(usize, py) * c.width + px] = 1;
+        }
+    }
+    out_mask.* = @intFromPtr(m);
+    return rcode(.ok);
 }
 
-fn cpu_selection_invert(_c: u64, _m: u64, _om: *u64) callconv(.c) u32 {
-    _ = _c;
-    _ = _m;
-    _ = _om;
-    return @intFromEnum(dispatcher.ResultCode.not_implemented);
+fn cpu_selection_invert(canvas: u64, mask: u64, out_mask: *u64) callconv(.c) u32 {
+    const s = requireState();
+    const c = s.get(canvas) orelse return rcode(.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
+    const src = liveMask(mask) orelse return rcode(.invalid_param);
+    if (src.w != c.width or src.h != c.height) return rcode(.invalid_param);
+    const m = newMask(s.alloc, c.width, c.height) catch return rcode(.out_of_memory);
+    var i: usize = 0;
+    while (i < src.sel.len) : (i += 1) {
+        m.sel[i] = if (src.sel[i] != 0) 0 else 1;
+    }
+    out_mask.* = @intFromPtr(m);
+    return rcode(.ok);
 }
 
-fn cpu_selection_cut(_c: u64, _l: u64, _m: u64) callconv(.c) u32 {
-    _ = _c;
-    _ = _l;
-    _ = _m;
-    return @intFromEnum(dispatcher.ResultCode.not_implemented);
+fn cpu_selection_cut(canvas: u64, layer: u64, mask: u64) callconv(.c) u32 {
+    const s = requireState();
+    const c = s.get(canvas) orelse return rcode(.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
+    if (layer == 0 or layer > c.layers.items.len) return rcode(.invalid_param);
+    const l = c.layers.items[@intCast(layer - 1)];
+    const m = liveMask(mask) orelse return rcode(.invalid_param);
+    if (m.w != c.width or m.h != c.height) return rcode(.invalid_param);
+
+    copyMaskedRegion(s, c, l, m) catch |e| return switch (e) {
+        error.OutOfMemory => rcode(.out_of_memory),
+        error.EmptySelection => rcode(.invalid_param),
+    };
+
+    // Clear the selected pixels (skip already-transparent ones so we don't
+    // allocate tiles just to write zero).
+    var y: u32 = 0;
+    while (y < c.height) : (y += 1) {
+        var x: u32 = 0;
+        while (x < c.width) : (x += 1) {
+            if (m.sel[@as(usize, y) * c.width + x] == 0) continue;
+            const p = readPixelF32(l, x, y);
+            if (p[0] != 0 or p[1] != 0 or p[2] != 0 or p[3] != 0) {
+                writePixelF16(l, s.alloc, x, y, .{ 0, 0, 0, 0 }) catch return rcode(.out_of_memory);
+            }
+        }
+    }
+    return rcode(.ok);
 }
 
-fn cpu_selection_copy(_c: u64, _l: u64, _m: u64) callconv(.c) u32 {
-    _ = _c;
-    _ = _l;
-    _ = _m;
-    return @intFromEnum(dispatcher.ResultCode.not_implemented);
+fn cpu_selection_copy(canvas: u64, layer: u64, mask: u64) callconv(.c) u32 {
+    const s = requireState();
+    const c = s.get(canvas) orelse return rcode(.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
+    if (layer == 0 or layer > c.layers.items.len) return rcode(.invalid_param);
+    const l = c.layers.items[@intCast(layer - 1)];
+    const m = liveMask(mask) orelse return rcode(.invalid_param);
+    if (m.w != c.width or m.h != c.height) return rcode(.invalid_param);
+
+    copyMaskedRegion(s, c, l, m) catch |e| return switch (e) {
+        error.OutOfMemory => rcode(.out_of_memory),
+        error.EmptySelection => rcode(.invalid_param),
+    };
+    return rcode(.ok);
 }
 
-fn cpu_selection_paste(_c: u64, _l: u64, _x: f64, _y: f64) callconv(.c) u32 {
-    _ = _c;
-    _ = _l;
-    _ = _x;
-    _ = _y;
-    return @intFromEnum(dispatcher.ResultCode.not_implemented);
+fn cpu_selection_paste(canvas: u64, layer: u64, dx: f64, dy: f64) callconv(.c) u32 {
+    const s = requireState();
+    const c = s.get(canvas) orelse return rcode(.invalid_param);
+    c.lock.lock();
+    defer c.lock.unlock();
+    if (layer == 0 or layer > c.layers.items.len) return rcode(.invalid_param);
+    const l = c.layers.items[@intCast(layer - 1)];
+    const cb = s.clipboard orelse return rcode(.invalid_param); // nothing copied yet
+    if (!std.math.isFinite(dx) or !std.math.isFinite(dy)) return rcode(.invalid_param);
+
+    const base_x: f64 = @round(@as(f64, @floatFromInt(cb.ox)) + dx);
+    const base_y: f64 = @round(@as(f64, @floatFromInt(cb.oy)) + dy);
+    var by: u32 = 0;
+    while (by < cb.h) : (by += 1) {
+        var bx: u32 = 0;
+        while (bx < cb.w) : (bx += 1) {
+            const bi: usize = @as(usize, by) * cb.w + bx;
+            if (cb.has[bi] == 0) continue;
+            const tx = finiteFloorU32(base_x + @as(f64, @floatFromInt(bx)), c.width) orelse continue;
+            const ty = finiteFloorU32(base_y + @as(f64, @floatFromInt(by)), c.height) orelse continue;
+            writePixelF16(l, s.alloc, tx, ty, cb.px[bi]) catch return rcode(.out_of_memory);
+        }
+    }
+    return rcode(.ok);
 }
 
 fn cpu_shape_line(_c: u64, _l: u64, _ax: f64, _ay: f64, _bx: f64, _by: f64, _w: f64, _col: *const [4]f32, _aa: u32) callconv(.c) u32 {
@@ -1641,4 +2029,129 @@ test "concurrent history records" {
     for (threads) |t| {
         t.join();
     }
+}
+
+//==============================================================================
+// MVP-3 tool primitive tests (eraser / fill / selection)
+//
+// These drive the real C-ABI tool functions through the global backend state
+// (initialised with the C allocator, so the intentionally-unfreed selection
+// masks/clipboard do not trip the test leak detector) and assert the
+// gesture -> tile-mutation round-trip.
+//==============================================================================
+
+fn testNewCanvas(w: u32, h: u32) u64 {
+    if (state == null) state = .{ .alloc = std.heap.c_allocator };
+    var handle: u64 = 0;
+    std.debug.assert(cpu_canvas_new(w, h, 0, 0, 0, 0, 0, &handle) == rcode(.ok));
+    return handle;
+}
+
+test "colourWithin: Chebyshev tolerance" {
+    try std.testing.expect(colourWithin(.{ 0.5, 0.5, 0.5, 1 }, .{ 0.5, 0.5, 0.5, 1 }, 0.0));
+    try std.testing.expect(colourWithin(.{ 0.5, 0.5, 0.5, 1 }, .{ 0.55, 0.5, 0.5, 1 }, 0.1));
+    try std.testing.expect(!colourWithin(.{ 0.5, 0.5, 0.5, 1 }, .{ 0.7, 0.5, 0.5, 1 }, 0.1));
+}
+
+test "pointInPoly: square containment" {
+    const sq = [_]f64{ 0, 0, 10, 0, 10, 10, 0, 10 };
+    try std.testing.expect(pointInPoly(5, 5, &sq, 4));
+    try std.testing.expect(!pointInPoly(15, 5, &sq, 4));
+    try std.testing.expect(!pointInPoly(-1, 5, &sq, 4));
+    try std.testing.expect(!pointInPoly(5, 11, &sq, 4));
+}
+
+test "eraser lowers destination alpha and preserves rgb" {
+    const canvas = testNewCanvas(64, 64);
+    const c = requireState().get(canvas).?;
+    const l = c.layers.items[0];
+    try writePixelF16(l, requireState().alloc, 10, 10, .{ 0.25, 0.5, 0.75, 1.0 });
+
+    const bs = dispatcher.BrushStateC{ .radius = 4, .hardness = 1, .opacity = 1, .spacing = 0.25, .profile = 0 };
+    const pts = [_]dispatcher.StrokePointC{.{ .x = 10, .y = 10, .pressure = 1, .tilt_x = 0, .tilt_y = 0 }};
+    try std.testing.expectEqual(rcode(.ok), cpu_tool_stroke_eraser(canvas, 1, &bs, 1, &pts, pts.len, 0));
+
+    const p = readPixelF32(l, 10, 10);
+    try std.testing.expect(p[3] < 0.01); // alpha erased at the hard centre
+    try std.testing.expectApproxEqAbs(@as(f32, 0.25), p[0], 0.01); // rgb preserved
+    try std.testing.expectApproxEqAbs(@as(f32, 0.5), p[1], 0.01);
+    try std.testing.expectApproxEqAbs(@as(f32, 0.75), p[2], 0.01);
+
+    // Unknown erase mode is rejected loudly.
+    try std.testing.expectEqual(rcode(.invalid_param), cpu_tool_stroke_eraser(canvas, 1, &bs, 1, &pts, pts.len, 9));
+}
+
+test "fill flood fills a uniform layer (contiguous)" {
+    const canvas = testNewCanvas(8, 8);
+    const c = requireState().get(canvas).?;
+    const l = c.layers.items[0];
+    const red = [4]f32{ 1, 0, 0, 1 };
+    try std.testing.expectEqual(rcode(.ok), cpu_tool_fill(canvas, 1, 0, 0, &red, 0.0, 1));
+    var y: u32 = 0;
+    while (y < 8) : (y += 1) {
+        var x: u32 = 0;
+        while (x < 8) : (x += 1) {
+            const p = readPixelF32(l, x, y);
+            try std.testing.expectApproxEqAbs(@as(f32, 1.0), p[0], 0.01);
+            try std.testing.expectApproxEqAbs(@as(f32, 1.0), p[3], 0.01);
+        }
+    }
+}
+
+test "fill (contiguous) stops at a colour boundary" {
+    const canvas = testNewCanvas(8, 8);
+    const c = requireState().get(canvas).?;
+    const l = c.layers.items[0];
+    const alloc = requireState().alloc;
+    // Full-height blue wall at x = 4 separates left from right.
+    var yy: u32 = 0;
+    while (yy < 8) : (yy += 1) try writePixelF16(l, alloc, 4, yy, .{ 0, 0, 1, 1 });
+    const green = [4]f32{ 0, 1, 0, 1 };
+    try std.testing.expectEqual(rcode(.ok), cpu_tool_fill(canvas, 1, 0, 0, &green, 0.0, 1));
+    try std.testing.expectApproxEqAbs(@as(f32, 1.0), readPixelF32(l, 0, 0)[1], 0.01); // filled green
+    try std.testing.expectApproxEqAbs(@as(f32, 1.0), readPixelF32(l, 3, 5)[1], 0.01); // filled green
+    try std.testing.expectApproxEqAbs(@as(f32, 1.0), readPixelF32(l, 4, 5)[2], 0.01); // wall intact (blue)
+    try std.testing.expectApproxEqAbs(@as(f32, 0.0), readPixelF32(l, 5, 5)[3], 0.01); // right side untouched
+}
+
+test "selection rect -> cut -> paste round-trips" {
+    const canvas = testNewCanvas(16, 16);
+    const c = requireState().get(canvas).?;
+    const l = c.layers.items[0];
+    try writePixelF16(l, requireState().alloc, 2, 2, .{ 1, 0, 0, 1 }); // red marker
+
+    var mask: u64 = 0;
+    try std.testing.expectEqual(rcode(.ok), cpu_selection_rect(canvas, 0, 0, 8, 8, &mask));
+    try std.testing.expect(mask != 0);
+
+    // Cut: copy the [0,8)x[0,8) region to the clipboard and clear it.
+    try std.testing.expectEqual(rcode(.ok), cpu_selection_cut(canvas, 1, mask));
+    try std.testing.expectApproxEqAbs(@as(f32, 0.0), readPixelF32(l, 2, 2)[3], 0.001);
+
+    // Paste at the original origin restores the marker exactly.
+    try std.testing.expectEqual(rcode(.ok), cpu_selection_paste(canvas, 1, 0, 0));
+    try std.testing.expectApproxEqAbs(@as(f32, 1.0), readPixelF32(l, 2, 2)[0], 0.001);
+    try std.testing.expectApproxEqAbs(@as(f32, 1.0), readPixelF32(l, 2, 2)[3], 0.001);
+
+    // Paste shifted by (5,5): the marker reappears at (7,7).
+    try std.testing.expectEqual(rcode(.ok), cpu_selection_paste(canvas, 1, 5, 5));
+    try std.testing.expectApproxEqAbs(@as(f32, 1.0), readPixelF32(l, 7, 7)[0], 0.001);
+
+    // Invert yields a fresh, distinct complementary mask handle.
+    var inv: u64 = 0;
+    try std.testing.expectEqual(rcode(.ok), cpu_selection_invert(canvas, mask, &inv));
+    try std.testing.expect(inv != 0 and inv != mask);
+}
+
+test "selection lasso selects a triangle interior" {
+    const canvas = testNewCanvas(16, 16);
+    // Triangle (1,1)-(14,1)-(1,14): (3,3) inside, (12,12) outside.
+    const poly = [_]f64{ 1, 1, 14, 1, 1, 14 };
+    var mask: u64 = 0;
+    try std.testing.expectEqual(rcode(.ok), cpu_selection_lasso(canvas, 3, &poly, &mask));
+    const m = liveMask(mask).?;
+    try std.testing.expect(m.sel[@as(usize, 3) * 16 + 3] != 0); // inside
+    try std.testing.expect(m.sel[@as(usize, 12) * 16 + 12] == 0); // outside
+    // Degenerate polygons are rejected.
+    try std.testing.expectEqual(rcode(.invalid_param), cpu_selection_lasso(canvas, 2, &poly, &mask));
 }
