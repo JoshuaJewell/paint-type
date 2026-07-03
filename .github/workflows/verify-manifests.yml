@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
 name: Verify Manifest Files
 on:
   push:
@@ -8,6 +9,8 @@ on:
     # Run daily at midnight UTC
     - cron: '0 0 * * *'
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   verify-manifests:
     name: Verify AI-MANIFEST and README.adoc files

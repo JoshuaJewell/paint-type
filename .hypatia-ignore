@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# .hypatia-ignore — repo-scoped exemptions for the estate governance
+# bundle's anti-pattern scanner. Format (per the bundle's `is_exempt`
+# function): each non-comment line is `${rule}:${path}` matched as a
+# fixed-string whole-line equality (`grep -qxF`).
+#
+# Comment lines (`#`) and blank lines are tolerated because they never
+# match the `rule:path` shape under -xF.
+
+# ─── Gossamer's vendored Android platform shell (third_party/) ─────────
+#
+# third_party/gossamer/android/src/main/java/io/gossamer/{GossamerActivity,
+# GossamerBridge}.java are part of the vendored Gossamer webview shell
+# (third_party/gossamer/), not paint-type's own source. The estate's
+# "Kotlin is goodbye" policy targets hand-written JVM bindings written
+# BY a project's own FFI/interop layer; Android's platform contract
+# itself requires a JVM-hosted Activity + WebView bridge class regardless
+# of implementation language underneath (Gossamer's own core is Zig/Rust
+# per its architecture — these two files are the unavoidable Android
+# platform glue, not a policy violation of paint-type's own tier mapping).
+# Rewriting vendored upstream code to route around a shell policy is out
+# of scope and not owned by paint-type; the exemption travels with the
+# vendored copy.
+cicd_rules/banned_language_file:third_party/gossamer/android/src/main/java/io/gossamer/GossamerActivity.java
+cicd_rules/banned_language_file:third_party/gossamer/android/src/main/java/io/gossamer/GossamerBridge.java
