@@ -111,5 +111,3 @@ in-tree Rust callers exist; the Idris `Abstract` spec lists op names only.
 
 - `third_party/gossamer/**` (vendored dependency).
 - Licence/SPDX content (owner-managed).
-</content>
-</invoke>
