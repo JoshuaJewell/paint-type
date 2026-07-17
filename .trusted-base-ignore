@@ -1,0 +1,15 @@
+# Trusted-base reduction policy — path exemptions.
+# Consumed by standards/scripts/check-trusted-base.sh (governance CI).
+# Each non-comment line is a path-fragment; markers in matching files are
+# exempt from per-site documentation. Keep every entry justified here.
+
+# VENDORED dependency: gossamer's escape hatches (believe_me in the ABI
+# string proofs, assert_total/partial in its Idris2 tests) are gossamer's
+# own trusted base, tracked upstream in hyperpolymath/gossamer — not
+# paint-type proof debt. This mirrors the exclusion that
+# audits/SECURITY-REVIEW-2026-06-15.md applies to third_party/gossamer/**.
+# Fixes belong upstream; re-vendoring picks them up.
+third_party/gossamer/
+
+# Local worktree shadows would duplicate every marker as self-scan noise.
+.claude/worktrees/
