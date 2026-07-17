@@ -44,3 +44,7 @@ start:
 Open or comment on the platform-testing tracking issue (see the issues tab,
 label `platform-support` / `help wanted`) and tag your PRs with the OS you
 tested on. Best-effort from us, warmly credited from you.
+
+A step-by-step runbook — including the currently-known per-OS failure
+signatures so you don't re-diagnose known issues — is in
+[`docs/developer/native-platform-testing.adoc`](docs/developer/native-platform-testing.adoc).

@@ -1,0 +1,76 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+= Native Platform Testing — macOS / Windows / iOS
+:toc:
+:icons: font
+
+A concrete runbook for testers on the best-effort platforms. Background and
+policy: `CONTRIBUTING.md` → "Platform support: best-effort macOS / iOS /
+Windows". Tracking issue: #99 (`platform-support`, `help wanted`).
+
+== What we need from you
+
+Linux is the gated, first-class platform. macOS and Windows *cross-compile*
+green on every PR; what we cannot verify from Linux CI is *native execution*.
+That is where you come in: run the suite on real hardware, report what breaks,
+and (if you like) send the fix.
+
+== The runbook (any OS)
+
+Prerequisites: Zig *0.15.1* (exact pin — matches CI), stable Rust.
+
+[source,shell]
+----
+# 1. Dispatcher + CPU-reference backend, unit tests
+zig build
+zig build test
+
+# 2. libpt FFI library (static + shared)
+cd src/interface/ffi
+zig build
+cd ../../..
+
+# 3. Rust integration tests (link the freshly built libpt)
+cd src/paint_core
+cargo test --all-targets
+
+# 4. (not Windows) aspect tests
+bash tests/aspect_tests.sh
+----
+
+This is exactly what the `native` job of
+`.github/workflows/cross-platform.yml` runs — a green local run means the CI
+leg should be green too.
+
+== Known failure signatures (state as of 2026-07-17)
+
+Check these before reporting a duplicate:
+
+*Windows*::
+`cargo test` exits with `STATUS_DLL_NOT_FOUND` (0xc0000135). Cause: the ffi
+build installs both a dynamic `pt` (`pt.dll` + import-lib `pt.lib`) and a
+static `pt` (also `pt.lib`) into `zig-out/lib`, so the tests may link the
+import lib and then need `pt.dll` on `PATH` at runtime. Workaround: add
+`src\interface\ffi\zig-out\bin` to `PATH` before `cargo test` (CI now does
+this). Durable fix under discussion in #99 (rename or per-OS install in
+`src/interface/ffi/build.zig`).
+
+*macOS*::
+The build *runner itself* fails to link (~24 undefined libSystem symbols)
+before any project code is compiled — a Zig 0.15.1 vs current-macOS-SDK
+mismatch. If you hit this, please report your macOS + Xcode/CLT versions;
+testing whether Zig 0.15.2+ resolves it is an open experiment in #99.
+
+*iOS*::
+Not started. No shell backend exists; nothing to test yet.
+
+== Reporting
+
+Comment on issue #99 (or the per-OS issue if one has been split out) with:
+
+* OS + version, CPU arch, Zig + Rust versions
+* which runbook step failed, full error output (use a `<details>` block)
+* crash logs / screenshots if the failure is at runtime
+
+Tag any fix PR with the OS you tested on. Best-effort from us, warmly
+credited from you.
