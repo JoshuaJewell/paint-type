@@ -38,10 +38,24 @@ jobs:
 
       - name: Validate A2ML manifests
         if: steps.detect.outputs.count > 0
-        uses: hyperpolymath/a2ml-validate-action@cb3c1e298169dc5ac2b42e257068b0fb5920cd5e # main
+        # Pinned to a2ml-validate-action main @55e8c28 (2026-07): the previous
+        # pin (cb3c1e2) predated the estate false-positive carve-outs and
+        # reported 63 spurious identity errors on canonical-template files.
+        uses: hyperpolymath/a2ml-validate-action@55e8c28bab4e7f2399fdbd57a6da1051369f3847 # main
         with:
           path: '.'
           strict: 'false'
+          # Vendored third_party/ manifests are the upstream's concern — same
+          # carve-out as audits/ and .trusted-base-ignore.
+          paths-ignore: |
+            vendor/
+            vendored/
+            third_party/
+            verified-container-spec/
+            .audittraining/
+            integration/fixtures/
+            test/fixtures/
+            tests/fixtures/
 
       - name: Write summary
         run: |
