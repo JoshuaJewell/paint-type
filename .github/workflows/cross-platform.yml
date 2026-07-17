@@ -91,6 +91,10 @@ jobs:
         uses: mlugg/setup-zig@8d6198c65fb0feaa111df26e6b467fea8345e46f # v1
         with:
           version: 0.15.1
+          # Windows: a stale restored Zig cache has been poisoning this leg
+          # (compiler_rt.lib not found in run 29103001370) — skip the cache
+          # until the leg is green, then re-enable.
+          use-cache: ${{ matrix.os != 'windows-latest' }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
@@ -113,6 +117,16 @@ jobs:
         run: |
           cd src/interface/ffi
           zig build
+
+      - name: Put pt.dll on PATH (Windows)
+        # The ffi build installs BOTH a dynamic pt (pt.dll + import-lib
+        # pt.lib) and a static pt (also pt.lib) into zig-out/lib, so which
+        # pt.lib the Rust tests link is install-order dependent. When it is
+        # the import lib, the test exe needs pt.dll at runtime
+        # (STATUS_DLL_NOT_FOUND without this). zig-out/bin holds the DLL.
+        if: runner.os == 'Windows'
+        shell: bash
+        run: echo "$GITHUB_WORKSPACE/src/interface/ffi/zig-out/bin" >> "$GITHUB_PATH"
 
       - name: paint_core integration tests (links libpt)
         shell: bash
