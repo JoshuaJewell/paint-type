@@ -15,7 +15,9 @@ permissions:
 jobs:
   trigger-boj:
     runs-on: ubuntu-latest
-    if: ${{ vars.BOJ_SERVER_URL != '' || secrets.BOJ_SERVER_URL != '' }}
+    # NOTE: no job-level gate — the `secrets` context is not available in
+    # job-level `if`, which made this workflow invalid and red on every push.
+    # The first step below already no-ops cleanly when BOJ_SERVER_URL is unset.
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
