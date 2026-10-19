@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
 
       - name: Install GTK3 + WebKitGTK + Xvfb
         run: |
@@ -34,7 +34,7 @@ jobs:
             libgtk-3-dev libwebkit2gtk-4.1-dev xvfb
 
       - name: Install Zig 0.15.1
-        uses: mlugg/setup-zig@8d6198c65fb0feaa111df26e6b467fea8345e46f # v1
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v1
         with:
           version: 0.15.1
 

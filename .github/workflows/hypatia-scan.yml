@@ -21,12 +21,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0  # Full history for better pattern analysis
 
       - name: Setup Elixir for Hypatia scanner
-        uses: erlef/setup-beam@e6d7c94229049569db56a7ad5a540c051a010af9 # v1.18.2
+        uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1.18.2
         with:
           elixir-version: '1.19.4'
           otp-version: '28.3'
@@ -78,7 +78,7 @@ jobs:
           echo "- Medium: $MEDIUM" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload findings artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hypatia-findings
           path: hypatia-findings.json
@@ -155,7 +155,7 @@ jobs:
       - name: Comment on PR with findings
         if: github.event_name == 'pull_request' && steps.scan.outputs.findings_count > 0
         continue-on-error: true
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v7
         with:
           script: |
             const fs = require('fs');

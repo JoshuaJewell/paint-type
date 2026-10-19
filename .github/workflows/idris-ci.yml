@@ -35,14 +35,14 @@ jobs:
         idris2-version: ['0.8.0']
     steps:
       - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
       - name: Install Idris 2 dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y chezscheme libgmp-dev
       - name: Cache Idris 2
         id: cache-idris2
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.idris2
